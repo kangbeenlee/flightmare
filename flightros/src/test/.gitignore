@@ -1,0 +1,5 @@
+# flightros test data
+quadrotor_image_with_box/
+quadrotor_image/
+quadrotor_label/
+point_cloud_data/
