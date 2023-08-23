@@ -82,9 +82,6 @@ class TargetTrackingEnv {
   RenderMessage_t unity_output_;
   uint16_t receive_id_{0};
 
-  // // Trajectory
-  // polynomial_trajectories::PolynomialTrajectory trajectory_;
-
   // auxiliar variables
   int seed_, num_envs_, obs_dim_, act_dim_;
   Matrix<> obs_dummy_;

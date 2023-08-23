@@ -51,6 +51,10 @@ find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 find_package(OpenMP REQUIRED)
 
+# Including dependencies 
+find_package(Eigen3 REQUIRED)
+include_directories(${EIGEN3_INCLUDE_DIR})
+
 if(ENABLE_BLAS)
   set(BLA_VENDOR "Generic")
   find_package(BLAS REQUIRED)
@@ -148,6 +152,7 @@ file(GLOB_RECURSE FLIGHTLIB_SOURCES
   src/envs/*.cpp
   src/controller/*.cpp
   src/tracking_algorithm/*.cpp
+  src/trajectory_planner/*.cpp
   src/common/*.cpp
 )
 
