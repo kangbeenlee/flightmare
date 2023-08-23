@@ -16,6 +16,9 @@ TargetQuadrotorEnv::TargetQuadrotorEnv(const std::string &cfg_path) : EnvBase()
   dynamics.updateParams(cfg_);
   target_ptr_->updateDynamics(dynamics);
 
+  // Minimum snap trajectory
+  trajectory_ = MinimumSnapTrajectory();
+
   // define a bounding box
   world_box_ << -20, 20, -20, 20, 0, 20;
   if (!target_ptr_->setWorldBox(world_box_))
@@ -59,7 +62,7 @@ bool TargetQuadrotorEnv::reset(Ref<Vector<>> obs, const bool random)
   else
   {
     quad_state_.x(QS::POSX) = 0.0;
-    quad_state_.x(QS::POSY) = 3.0;
+    quad_state_.x(QS::POSY) = 2.0;
     quad_state_.x(QS::POSZ) = 5.0;
   }
   // Reset quadrotor with random states
@@ -67,6 +70,15 @@ bool TargetQuadrotorEnv::reset(Ref<Vector<>> obs, const bool random)
 
   // Reset control command
   sim_time_ = 0.0;
+
+  Eigen::MatrixXf way_points(5, 3); // Should be n
+  way_points << 0, 2, 5, 2, 4, 5, 0, 6, 5, -2, 4, 5, 0, 2, 5;
+  //
+  Eigen::VectorXf segment_times(4); // Should be n-1
+  segment_times << 2.0, 2.0, 2.0, 2.0;
+
+  // Set minimum snap trajectory (The number of way points must be less than the number of segment times by 1 !!!)
+  trajectory_.setMinimumSnapTrajectory(way_points, segment_times);
 
   // Obtain observations
   getObs(obs);
@@ -89,22 +101,25 @@ Scalar TargetQuadrotorEnv::step(const Ref<Vector<>> act, Ref<Vector<>> obs)
 {
   // Reward function of tracker quadrotor
   Scalar total_reward = 0.0;
-
   return total_reward;
 }
 
 Scalar TargetQuadrotorEnv::targetStep(Ref<Vector<>> obs)
 {
-  // if (quad_state_.x[QS::POSY] <= 5.0)
-  // {
-  //   quad_state_.x[QS::POSY] += 0.05;
-  // }
-  // target_ptr_->setState(quad_state_);
+
+  Eigen::VectorXf desPosVelAcc = trajectory_.getDesiredPosVelAcc(sim_time_);
+  // std::cout << ">>> sim time: " << sim_time_ << std::endl;
+  // std::cout << ">>> desPosVelAcc: " << desPosVelAcc[0] << ", " << desPosVelAcc[1] << ", " << desPosVelAcc[2] << std::endl;
+  quad_state_.x[QS::POSX] = desPosVelAcc[0];
+  quad_state_.x[QS::POSY] = desPosVelAcc[1];
+  quad_state_.x[QS::POSZ] = desPosVelAcc[2];
+  target_ptr_->setState(quad_state_);
+
+  //
+  sim_time_ += sim_dt_;
 
   // update observations
   getObs(obs);
-
-  Matrix<3, 3> rot = quad_state_.q().toRotationMatrix();
 
   // Reward function of tracker quadrotor
   Scalar total_reward = 0.0;

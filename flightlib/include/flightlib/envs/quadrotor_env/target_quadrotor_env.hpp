@@ -16,6 +16,7 @@
 #include "flightlib/common/types.hpp"
 #include "flightlib/envs/env_base.hpp"
 #include "flightlib/objects/target_quadrotor.hpp"
+#include "flightlib/trajectory_planner/minimum_snap_trajectory.hpp"
 
 
 
@@ -76,9 +77,9 @@ class TargetQuadrotorEnv final : public EnvBase{
   QuadState quad_state_;
   Logger logger_{"TargetQaudrotorEnv"};
 
-  // Minimum snap trajectory
+  // // Minimum snap trajectory
+  MinimumSnapTrajectory trajectory_;
   Scalar sim_time_;
-  // ros::Time step_t0_, step_now_, step_end_;
 
   // Observations and actions (for RL)
   Vector<targetquadenv::kNObs> quad_obs_;
