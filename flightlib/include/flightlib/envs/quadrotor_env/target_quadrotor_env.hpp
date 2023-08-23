@@ -53,7 +53,6 @@ class TargetQuadrotorEnv final : public EnvBase{
   // - public OpenAI-gym-style functions
   bool reset(Ref<Vector<>> obs, const bool random = true) override;
   Scalar step(const Ref<Vector<>> act, Ref<Vector<>> obs) override; // Not used
-  // Scalar targetStep(const polynomial_trajectories::PolynomialTrajectory &trajectory_, Ref<Vector<>> obs);
   Scalar targetStep(Ref<Vector<>> obs);
 
   //

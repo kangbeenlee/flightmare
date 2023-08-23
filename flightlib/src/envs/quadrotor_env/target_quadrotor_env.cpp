@@ -75,7 +75,7 @@ bool TargetQuadrotorEnv::reset(Ref<Vector<>> obs, const bool random)
   way_points << 0, 2, 5, 2, 4, 5, 0, 6, 5, -2, 4, 5, 0, 2, 5;
   //
   Eigen::VectorXf segment_times(4); // Should be n-1
-  segment_times << 2.0, 2.0, 2.0, 2.0;
+  segment_times << 1.0, 1.0, 1.0, 1.0;
 
   // Set minimum snap trajectory (The number of way points must be less than the number of segment times by 1 !!!)
   trajectory_.setMinimumSnapTrajectory(way_points, segment_times);
