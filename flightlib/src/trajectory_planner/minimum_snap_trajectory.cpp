@@ -209,8 +209,10 @@ void MinimumSnapTrajectory::setMinimumSnapTrajectory(const Eigen::MatrixXf& way_
 Eigen::VectorXf MinimumSnapTrajectory::getDesiredPosVelAcc(float time)
 {
     if (time > total_time_)
-        time -= total_time_;
-    std::cout << ">>> time: " << time << std::endl;
+    {
+        int time_lap = time / total_time_; // Forced type changed to make int, not float
+        time -= time_lap * total_time_;
+    }
     return posWayPointMin(time, time_step_, way_point_times_, order_, coeff_x_, coeff_y_, coeff_z_);
 }
 
