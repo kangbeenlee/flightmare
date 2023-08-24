@@ -2,12 +2,12 @@
 
 namespace flightlib {
 
-// TrackerQuadrotorEnv::TrackerQuadrotorEnv() : TrackerQuadrotorEnv(getenv("FLIGHTMARE_PATH") + std::string("/flightlib/configs/custom_quadrotor_env.yaml")) {}
-TrackerQuadrotorEnv::TrackerQuadrotorEnv(const YAML::Node &cfg_path) : EnvBase()
+TrackerQuadrotorEnv::TrackerQuadrotorEnv() : TrackerQuadrotorEnv(getenv("FLIGHTMARE_PATH") + std::string("/flightlib/configs/tracker_quadrotor_env.yaml")) {}
+TrackerQuadrotorEnv::TrackerQuadrotorEnv(const std::string &cfg_path) : EnvBase()
 {
   // load configuration file
   // YAML::Node cfg_ = YAML::LoadFile(cfg_path);
-  YAML::Node cfg_ = cfg_path;
+  YAML::Node cfg_ = YAML::LoadFile(cfg_path);
 
   // load parameters
   loadParam(cfg_);
@@ -155,20 +155,19 @@ bool TrackerQuadrotorEnv::getObs(Ref<Vector<>> obs)
 
 Scalar TrackerQuadrotorEnv::step(const Ref<Vector<>> act, Ref<Vector<>> obs)
 {
-  quad_act_ = act;
-  cmd_.t += sim_dt_;
-  cmd_.velocity = quad_act_;
-
-  // Simulate quadrotor (apply rungekutta4th 8 times during 0.02s)
-  tracker_ptr_->run(cmd_, sim_dt_);
-
-  // Update observations
-  getObs(obs);
-
   // Reward function of tracker quadrotor
   Scalar total_reward = 0.0;
-
   return total_reward;
+}
+
+Scalar TrackerQuadrotorEnv::rewardFunction(const Scalar range)
+{
+  Scalar d_U2T = 1.0; // (m)
+
+  if (range < d_U2T)
+    return -1.0;
+  else
+    return 1 - exp(1 - range / d_U2T);
 }
 
 Scalar TrackerQuadrotorEnv::trackerStep(const Ref<Vector<>> act, Ref<Vector<>> obs, Vector<3> target_point)
@@ -228,9 +227,9 @@ Scalar TrackerQuadrotorEnv::trackerStep(const Ref<Vector<>> act, Ref<Vector<>> o
   getObs(obs);
 
   // Reward function of tracker quadrotor
-  Scalar total_reward = 0.0;
+  Scalar reward = rewardFunction(estimated_range);
 
-  return total_reward;
+  return reward;
 }
 
 bool TrackerQuadrotorEnv::isTerminalState(Scalar &reward) {

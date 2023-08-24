@@ -26,6 +26,7 @@ class TargetTrackingEnv {
  public:
   // TargetTrackingEnv();
   // TargetTrackingEnv(const YAML::Node& cfgs_node);
+  TargetTrackingEnv(const std::string& cfgs, const bool from_file);
   TargetTrackingEnv(const std::string& cfgs, const std::string& cfgs_quadrotor, const bool from_file);
   ~TargetTrackingEnv();
 
@@ -87,7 +88,7 @@ class TargetTrackingEnv {
   Matrix<> obs_dummy_;
 
   // yaml configurations
-  YAML::Node cfg_, cfg_quadrotor_;
+  YAML::Node cfg_, cfg_target_;
 };
 
 }  // namespace flightlib

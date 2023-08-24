@@ -2,7 +2,7 @@
 
 namespace flightlib {
 
-TargetQuadrotorEnv::TargetQuadrotorEnv() : TargetQuadrotorEnv(getenv("FLIGHTMARE_PATH") + std::string("/flightlib/configs/custom_quadrotor_env.yaml")) {}
+TargetQuadrotorEnv::TargetQuadrotorEnv() : TargetQuadrotorEnv(getenv("FLIGHTMARE_PATH") + std::string("/flightlib/configs/target_quadrotor_env.yaml")) {}
 TargetQuadrotorEnv::TargetQuadrotorEnv(const std::string &cfg_path) : EnvBase()
 {
   // load configuration file
@@ -71,11 +71,17 @@ bool TargetQuadrotorEnv::reset(Ref<Vector<>> obs, const bool random)
   // Reset control command
   sim_time_ = 0.0;
 
-  Eigen::MatrixXf way_points(5, 3); // Should be n
-  way_points << 0, 2, 5, 2, 4, 5, 0, 6, 5, -2, 4, 5, 0, 2, 5;
+  Eigen::MatrixXf way_points(7, 3); // Should be n
+  way_points << 0, 2, 5,
+                3, 4, 7,
+                3, 6, 4,
+                0, 8, 5,
+                -3, 6, 7,
+                -3, 4, 4,
+                0, 2, 5;
   //
-  Eigen::VectorXf segment_times(4); // Should be n-1
-  segment_times << 1.0, 1.0, 1.0, 1.0;
+  Eigen::VectorXf segment_times(6); // Should be n-1
+  segment_times << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
 
   // Set minimum snap trajectory (The number of way points must be less than the number of segment times by 1 !!!)
   trajectory_.setMinimumSnapTrajectory(way_points, segment_times);
