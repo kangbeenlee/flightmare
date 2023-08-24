@@ -14,20 +14,38 @@ namespace flightlib
 // }
 
 template<typename EnvBase>
-TargetTrackingEnv<EnvBase>::TargetTrackingEnv(const std::string& cfgs, const std::string& cfgs_quadrotor, const bool from_file)
+TargetTrackingEnv<EnvBase>::TargetTrackingEnv(const std::string& cfgs, const bool from_file)
 {
   // Load environment configuration
   if (from_file)
   {
     // Load directly from a yaml file
     cfg_ = YAML::LoadFile(cfgs);
-    cfg_quadrotor_ = YAML::LoadFile(cfgs_quadrotor);
   }
   else
   {
     // Load from a string or dictionary
     cfg_ = YAML::Load(cfgs);
-    cfg_quadrotor_ = YAML::Load(cfgs_quadrotor);
+  }
+  // Initialization
+  init();
+}
+
+template<typename EnvBase>
+TargetTrackingEnv<EnvBase>::TargetTrackingEnv(const std::string& cfgs, const std::string& cfgs_target, const bool from_file)
+{
+  // Load environment configuration
+  if (from_file)
+  {
+    // Load directly from a yaml file
+    cfg_ = YAML::LoadFile(cfgs);
+    cfg_target_ = YAML::LoadFile(cfgs_target);
+  }
+  else
+  {
+    // Load from a string or dictionary
+    cfg_ = YAML::Load(cfgs);
+    cfg_target_ = YAML::Load(cfgs_target);
   }
   // Initialization
   init();
@@ -50,7 +68,7 @@ void TargetTrackingEnv<EnvBase>::init(void)
   const bool render = false;
   for (int i = 0; i < num_envs_; i++)
   {
-    envs_.push_back(std::make_unique<EnvBase>(cfg_quadrotor_));
+    envs_.push_back(std::make_unique<EnvBase>());
   }
 
   // Define target drone

@@ -50,14 +50,17 @@ class TrackerQuadrotorEnv final : public EnvBase {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   TrackerQuadrotorEnv();
-  TrackerQuadrotorEnv(const YAML::Node &cfg_path);
+  TrackerQuadrotorEnv(const std::string &cfg_path);
   ~TrackerQuadrotorEnv();
 
   // - public OpenAI-gym-style functions
   bool reset(Ref<Vector<>> obs, const bool random = true) override;
   // Test for only tracker without target tracking
-  Scalar step(const Ref<Vector<>> act, Ref<Vector<>> obs) override;
+  Scalar step(const Ref<Vector<>> act, Ref<Vector<>> obs) override;  // Not used
   Scalar trackerStep(const Ref<Vector<>> act, Ref<Vector<>> obs, Vector<3> target_point);
+
+  // Reward function for RL
+  Scalar rewardFunction(const Scalar range);
 
   //
   Vector<4> eulerToQuaternion(const Ref<Vector<3>> euler_zyx) const;

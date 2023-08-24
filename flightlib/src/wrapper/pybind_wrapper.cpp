@@ -15,6 +15,7 @@ PYBIND11_MODULE(flightgym, m) {
   py::class_<TargetTrackingEnv<TrackerQuadrotorEnv>>(m, "TargetTrackingEnv_v0")
     // .def(py::init<>())
     // .def(py::init<const std::string&>())
+    .def(py::init<const std::string&, const bool>())
     .def(py::init<const std::string&, const std::string&, const bool>())
     .def("reset", &TargetTrackingEnv<TrackerQuadrotorEnv>::reset)
     .def("step", &TargetTrackingEnv<TrackerQuadrotorEnv>::step)
