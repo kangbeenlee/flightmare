@@ -1,0 +1,29 @@
+quadrotor_env:
+   camera: no
+   sim_dt: 0.02 
+   max_t: 5.0
+   add_camera: yes
+
+quadrotor_dynamics:
+  mass: 1.0
+  arm_l: 0.25
+  motor_omega_min: 150.0 # motor rpm min
+  motor_omega_max: 3000.0 # motor rpm max
+  motor_tau: 0.0001 # motor step response
+  thrust_map: [1.3298253500372892e-06, 0.0038360810526746033, -1.7689986848125325]
+  kappa: 0.016 # rotor coeff relating the drag torque and the thrust
+  omega_max: [6.0, 6.0, 6.0]  # body rate constraint (x, y, z)
+
+quadrotor_pid_controller_gain:
+  kp_vxy: 5.0
+  ki_vxy: 0.0
+  kd_vxy: 0.0
+  kp_vz: 4.0
+  ki_vz: 0.0
+  kd_vz: 0.3
+  kp_angle: 5.0
+  ki_angle: 0.0
+  kd_angle: 1.5
+  kp_wz: 4.0
+  ki_wz: 0.0
+  kd_wz: 0.0
