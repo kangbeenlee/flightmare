@@ -83,8 +83,7 @@ def main():
                      use_hard_update=args.use_hard_update,
                      target_update_period=args.target_update_period,
                      obs_dim=env.num_obs,
-                     action_dim=env.num_acts,
-                     save_dir=args.save_dir)
+                     action_dim=env.num_acts)
         
         trainer = Trainer(model=model,
                           env=env,
@@ -96,18 +95,11 @@ def main():
                           batch_size=args.batch_size,
                           training_start=args.training_start)
         trainer.learn(render=args.render)
-        trainer.save()
+        trainer.save(save_dir=args.save_dir)
     else:
         # Load trained model!
         # model = DDPG()
         # model.load_models(args.load_nn)
-        
-        
-        print("-----------")
-        print("obs dim, action dim")
-        print(env.num_obs)
-        print(env.num_acts)
-        
         # test_model(env, model=model, render=args.render)
         test_model(env, render=args.render)
 

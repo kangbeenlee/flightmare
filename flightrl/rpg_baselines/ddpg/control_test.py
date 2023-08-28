@@ -3,8 +3,8 @@ import numpy as np
 import matplotlib.gridspec as gridspec
 
 
-def test_model(env, model=None, render=False):
-    max_ep_length = 300
+def test_model(env, render=False):
+    max_ep_length = env.max_episode_steps
     print(">>> max_ep_length:", max_ep_length)
     
     num_rollouts = 5
@@ -32,8 +32,8 @@ def test_model(env, model=None, render=False):
             vz = 0.0
             wz = 0.0
             
-            # print("obs: ", obs)
-            # print("target obs: ", target_obs)
+            print("obs: ", obs)
+            print("target obs: ", target_obs)
             
             if ep_len < 150:
                 act = np.array([[vx, vy, vz, wz]], dtype=np.float32)
@@ -46,10 +46,9 @@ def test_model(env, model=None, render=False):
             else:
                 act = np.array([[0.0, 0.0, 0.0, 0.0]], dtype=np.float32)
             
-            print(act.shape)
             
             obs, rew, done, infos = env.step(act)
-            # target_obs = env.get_target_state()
+            target_obs = env.get_target_state()
             #
             ep_len += 1
             #
