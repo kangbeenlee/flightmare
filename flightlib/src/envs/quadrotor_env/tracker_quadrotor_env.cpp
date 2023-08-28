@@ -178,11 +178,7 @@ Scalar TrackerQuadrotorEnv::trackerStep(const Ref<Vector<>> act, Ref<Vector<>> o
   Matrix<4, 4> T_W_B = T_B_W.inverse();
 
   kf_->predict();
-  if (!stereo_camera_->processImagePoint(target_point, T_W_B))
-  {
-    // std::cout << ">>> Impossible to detect target" << std::endl;
-  }
-  else
+  if (stereo_camera_->processImagePoint(target_point, T_W_B))
   {
     gt_pixels_ = stereo_camera_->getGroundTruthPixels();
     gt_target_position_ = stereo_camera_->getGroundTruthPosition();
@@ -191,6 +187,10 @@ Scalar TrackerQuadrotorEnv::trackerStep(const Ref<Vector<>> act, Ref<Vector<>> o
 
     kf_->update(target_position_, pixels_);
   }
+  // else
+  // {
+  //   std::cout << ">>> Impossible to detect target" << std::endl;
+  // }
 
   Matrix<4, 4> T_LC_B = stereo_camera_->getFromLeftCameraToBody();
   Matrix<4, 4> T_LC_W = T_B_W * T_LC_B;
@@ -241,18 +241,18 @@ bool TrackerQuadrotorEnv::loadParam(const YAML::Node &cfg) {
   if (cfg["quadrotor_env"]) {
     sim_dt_ = cfg["quadrotor_env"]["sim_dt"].as<Scalar>();
     max_t_ = cfg["quadrotor_env"]["max_t"].as<Scalar>();
-    kp_vxy_ = cfg_["quadrotor_pid_controller_gain"]["kp_vxy"].as<Scalar>();
-    ki_vxy_ = cfg_["quadrotor_pid_controller_gain"]["ki_vxy"].as<Scalar>();
-    kd_vxy_ = cfg_["quadrotor_pid_controller_gain"]["kd_vxy"].as<Scalar>();
-    kp_vz_ = cfg_["quadrotor_pid_controller_gain"]["kp_vz"].as<Scalar>();
-    ki_vz_ = cfg_["quadrotor_pid_controller_gain"]["ki_vz"].as<Scalar>();
-    kd_vz_ = cfg_["quadrotor_pid_controller_gain"]["kd_vz"].as<Scalar>();
-    kp_angle_ = cfg_["quadrotor_pid_controller_gain"]["kp_angle"].as<Scalar>();
-    ki_angle_ = cfg_["quadrotor_pid_controller_gain"]["ki_angle"].as<Scalar>();
-    kd_angle_ = cfg_["quadrotor_pid_controller_gain"]["kd_angle"].as<Scalar>();
-    kp_wz_ = cfg_["quadrotor_pid_controller_gain"]["kp_wz"].as<Scalar>();
-    ki_wz_ = cfg_["quadrotor_pid_controller_gain"]["ki_wz"].as<Scalar>();
-    kd_wz_ = cfg_["quadrotor_pid_controller_gain"]["kd_wz"].as<Scalar>();
+    kp_vxy_ = cfg["quadrotor_pid_controller_gain"]["kp_vxy"].as<Scalar>();
+    ki_vxy_ = cfg["quadrotor_pid_controller_gain"]["ki_vxy"].as<Scalar>();
+    kd_vxy_ = cfg["quadrotor_pid_controller_gain"]["kd_vxy"].as<Scalar>();
+    kp_vz_ = cfg["quadrotor_pid_controller_gain"]["kp_vz"].as<Scalar>();
+    ki_vz_ = cfg["quadrotor_pid_controller_gain"]["ki_vz"].as<Scalar>();
+    kd_vz_ = cfg["quadrotor_pid_controller_gain"]["kd_vz"].as<Scalar>();
+    kp_angle_ = cfg["quadrotor_pid_controller_gain"]["kp_angle"].as<Scalar>();
+    ki_angle_ = cfg["quadrotor_pid_controller_gain"]["ki_angle"].as<Scalar>();
+    kd_angle_ = cfg["quadrotor_pid_controller_gain"]["kd_angle"].as<Scalar>();
+    kp_wz_ = cfg["quadrotor_pid_controller_gain"]["kp_wz"].as<Scalar>();
+    ki_wz_ = cfg["quadrotor_pid_controller_gain"]["ki_wz"].as<Scalar>();
+    kd_wz_ = cfg["quadrotor_pid_controller_gain"]["kd_wz"].as<Scalar>();
   } else {
     return false;
   }
