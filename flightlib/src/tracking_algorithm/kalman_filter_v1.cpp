@@ -64,6 +64,17 @@ Vector<3> KalmanFilterV1::computeEstimatedPositionWrtWorld(Ref<Matrix<4, 4>> T_L
     return p_w;
 }
 
+Vector<3> KalmanFilterV1::computeEstimatedVelocityWrtWorld(Ref<Matrix<4, 4>> T_LC_W)
+{
+    // To homogeneous coordinates
+    Vector<4> V_C(x_[1], x_[4], x_[7], 1);
+
+    // Target coordinates w.r.t. body frame
+    Vector<3> v_w = (T_LC_W * V_C).segment<3>(0);
+
+    return v_w;
+}
+
 Scalar KalmanFilterV1::computeRangeWrtBody(Ref<Vector<3>> from, Ref<Matrix<4, 4>> T_LC_B)
 {
     // To homogeneous coordinates
