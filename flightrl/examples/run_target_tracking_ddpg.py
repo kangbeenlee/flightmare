@@ -34,8 +34,8 @@ def main():
 
     parser.add_argument('--total_timesteps', default=25000000, type=int, help='Number of training episode (epochs)')
     # Training parameters
-    parser.add_argument('--episodes', default=1000, type=int, help='Number of training episode (epochs)')
-    parser.add_argument('--max_episode_steps', default=200, type=int, help='Number of steps per episode')
+    parser.add_argument('--num_episodes', default=1000, type=int, help='Number of training episode (epochs)')
+    parser.add_argument('--max_episode_steps', default=300, type=int, help='Number of steps per episode')
     parser.add_argument('--memory_capacity', default=50000, type=int, help='Replay memory capacity')
     parser.add_argument('--batch_size', default=32, type=int, help='Batch size')
     parser.add_argument('--training_start', default=2000, type=int, help='Batch size')
@@ -88,18 +88,18 @@ def main():
         
         trainer = Trainer(model=model,
                           env=env,
-                          episodes=args.episodes,
+                          num_episodes=args.num_episodes,
                           max_episode_steps=args.max_episode_steps,
                           obs_dim=env.num_obs,
                           action_dim=env.num_acts,
                           memory_capacity=args.memory_capacity,
                           batch_size=args.batch_size,
                           training_start=args.training_start)
-        trainer.learn()
+        trainer.learn(render=args.render)
         trainer.save()
     else:
         # Load trained model!
-        model = DDPG()
+        # model = DDPG()
         # model.load_models(args.load_nn)
         
         
@@ -108,7 +108,8 @@ def main():
         print(env.num_obs)
         print(env.num_acts)
         
-        test_model(env, model=model, render=args.render)
+        # test_model(env, model=model, render=args.render)
+        test_model(env, render=args.render)
 
 if __name__ == "__main__":
     main()

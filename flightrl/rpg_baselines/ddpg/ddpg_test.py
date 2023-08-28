@@ -15,7 +15,9 @@ def test_model(env, render=False):
     for n_roll in range(num_rollouts):
         pos, euler, dpos, deuler = [], [], [], []
         actions = []
-        obs, target_obs = env.reset()
+        obs = env.reset()
+        target_obs = env.get_target_state()
+
         done, ep_len = False, 0
 
         # while not (done or (ep_len >= max_ep_length)):
@@ -30,6 +32,9 @@ def test_model(env, render=False):
             vz = 0.0
             wz = 0.0
             
+            print("obs: ", obs)
+            print("target obs: ", target_obs)
+            
             if ep_len < 150:
                 act = np.array([[vx, vy, vz, wz]], dtype=np.float32)
             elif 150 <= ep_len < 300:
@@ -41,7 +46,8 @@ def test_model(env, render=False):
             else:
                 act = np.array([[0.0, 0.0, 0.0, 0.0]], dtype=np.float32)
             
-            obs, target_obs, rew, done, infos = env.step(act)
+            obs, rew, done, infos = env.step(act)
+            target_obs = env.get_target_state()
             #
             ep_len += 1
             #

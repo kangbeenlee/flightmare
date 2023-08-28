@@ -8,6 +8,7 @@ class FlightmareTargetTrackingEnv():
         self.wrapper = impl
         # Multi-Quadrotor
         self.num_obs = self.wrapper.getObsDim()
+        self.num_target_obs = self.wrapper.getTargetObsDim()
         self.num_acts = self.wrapper.getActDim()
         self._observation_space = spaces.Box(np.ones(self.num_obs) * -np.Inf, np.ones(self.num_obs) * np.Inf, dtype=np.float32)
         self._action_space = spaces.Box(low=np.ones(self.num_acts) * -1., high=np.ones(self.num_acts) * 1., dtype=np.float32)
@@ -19,7 +20,7 @@ class FlightmareTargetTrackingEnv():
         self.rewards = [[] for _ in range(self.num_envs)]
 
         # Target Quadrotor
-        self._target_observation = np.zeros([self.num_obs], dtype=np.float32) # target ground truth state
+        self._target_observation = np.zeros([self.num_target_obs], dtype=np.float32) # target ground truth state
         
         self.max_episode_steps = 300
 
@@ -44,7 +45,10 @@ class FlightmareTargetTrackingEnv():
                 info[i]['episode'] = epinfo
                 self.rewards[i].clear()
 
-        return self._observation.copy(), self._target_observation, self._reward.copy(), self._done.copy(), info.copy()
+        return self._observation.copy(), self._reward.copy(), self._done.copy(), info.copy()
+
+    def get_target_state(self):
+        return self._target_observation
 
     def sample_actions(self):
         actions = []
@@ -56,7 +60,7 @@ class FlightmareTargetTrackingEnv():
     def reset(self):
         self._reward = np.zeros(self.num_envs, dtype=np.float32)
         self.wrapper.reset(self._observation, self._target_observation)
-        return self._observation.copy(), self._target_observation
+        return self._observation.copy()
 
     def reset_and_update_info(self):
         return self.reset(), self._update_epi_info()

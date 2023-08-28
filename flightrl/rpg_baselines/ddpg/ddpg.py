@@ -52,130 +52,171 @@ class OrnsteinUhlenbeckNoise:
         return x
 
 class ReplayBuffer:
-    def __init__(self, N=1, obs_dim=None, action_dim=None, memory_capacity=50000):
+    def __init__(self, obs_dim=None, action_dim=None, memory_capacity=None, batch_size=None):
+        self.obs_dim = obs_dim
+        self.action_dim = action_dim
         self.memory_capacity = memory_capacity
+        self.batch_size = batch_size
+
         self.ptr = 0
         self.size = 0
         
         # Initialize replay buffer
-        self.buffer = {'obs_n': np.zeros([self.memory_capacity, N, obs_dim]),
-                       'a_n': np.zeros([self.memory_capacity, N, action_dim]),
-                       'r_n': np.zeros([self.memory_capacity, N, 1]),
-                       'obs_prime_n': np.zeros([self.memory_capacity, N, obs_dim]),
-                       'done_n': np.ones([self.memory_capacity, N, 1])
+        self.buffer = {'obs': np.zeros([self.memory_capacity, self.obs_dim]),
+                       'a': np.zeros([self.memory_capacity, self.action_dim]),
+                       'r': np.zeros([self.memory_capacity, 1]),
+                       'obs_prime': np.zeros([self.memory_capacity, self.obs_dim]),
+                       'done': np.ones([self.memory_capacity, 1])
                        }
 
-    def store(self, obs_n, a_n, r_n, obs_prime_n, done_n):
-        self.buffer['obs_n'][self.ptr] = obs_n
-        self.buffer['a_n'][self.ptr] = a_n
-        self.buffer['r_n'][self.ptr] = r_n
-        self.buffer['obs_prime_n'][self.ptr] = obs_prime_n
-        self.buffer['done_n'][self.ptr] = done_n
+    def store(self, obs, a, r, obs_prime, done):
+        self.buffer['obs'][self.ptr] = obs
+        self.buffer['a'][self.ptr] = a
+        self.buffer['r'][self.ptr] = r
+        self.buffer['obs_prime'][self.ptr] = obs_prime
+        self.buffer['done'][self.ptr] = done
 
         # Rewrite the experience from the begining like FIFO style rather than pop
         self.ptr = (self.ptr + 1) % self.memory_capacity
         self.size = min(self.size + 1, self.memory_capacity)
 
     def sample(self):
-        idx = np.random.choice(self.size, replace=False)
+        indices = np.random.choice(self.size, size=self.batch_size, replace=False)
         mini_batch = {}
         for key in self.buffer.keys():
-            mini_batch[key] = torch.tensor(self.buffer[key][idx], dtype=torch.float32).squeeze(0)
+            mini_batch[key] = torch.tensor(self.buffer[key][indices], dtype=torch.float32)
         return mini_batch
     
     def __len__(self):
         return self.size
 
-
-class Trainer:
-    def __init__(self, env=None, total_timesteps=1000, rollout_steps=200, gamma=0.99, lr_q=0.001, lr_mu=5e-4,
-                 training_start=2000, tau=0.005, use_hard_update=False, target_update_period=300,
-                 memory_capacity=50000, device=None):
+class DDPG:
+    def __init__(self, device=None, gamma=0.99, lr_actor=5e-4, lr_critic=0.001, tau=0.005, use_hard_update=False, target_update_period=None):
         self.device = device
-        self.env = env
-        # The number of parallelized drones
-        self.N = env.num_envs
-        self.obs_dim = env.num_obs
-        self.action_dim = env.num_obs
-
-        # Discount factor
-        self.gamma = gamma
-
-        # Training paramters
-        self.total_timesteps = total_timesteps
-        self.rollout_steps = rollout_steps
-
-        # Store episode
-        self.replay_buffer = ReplayBuffer(N=env.num_envs, obs_dim=env.num_obs, action_dim=env.num_acts, memory_capacity=memory_capacity)
-
-        # Actor network and Q network
-        self.mu = Actor(obs_dim=env.num_obs, action_dim=env.num_acts).to(device)
-        self.target_mu = Actor(obs_dim=env.num_obs, action_dim=env.num_acts).to(device)
-        self.q_network = Critic(obs_dim=env.num_obs, action_dim=env.num_acts).to(device)
-        self.target_q_network = Critic(obs_dim=env.num_obs, action_dim=env.num_acts).to(device)
-        self.target_mu.load_state_dict(self.mu.state_dict())
-        self.target_q_network.load_state_dict(self.q_network.state_dict())
-
-        # Target network update
-        self.train_update = 0
-        self.training_start = training_start
-        self.target_update_period = target_update_period
-        self.use_hard_update = use_hard_update
-        self.tau = tau
+        
+        self.actor = Actor().to(device)
+        self.critic = Critic().to(device)
+        # Target network
+        self.target_actor = Actor().to(device)
+        self.target_critic = Critic().to(device)
+        self.target_actor.load_state_dict(self.actor.state_dict())
+        self.target_critic.load_state_dict(self.critic.state_dict())
 
         # Optimizer        
-        self.lr_q = lr_q
-        self.lr_mu = lr_mu
-        self.q_optimizer = optim.Adam(self.q_network.parameters(), lr=self.lr_q)
-        self.mu_optimizer = optim.Adam(self.mu.parameters(), lr=self.lr_mu)
-        self.ou_noise = OrnsteinUhlenbeckNoise(mu=np.zeros(1))
+        self.critic_optimizer = optim.Adam(self.critic.parameters(), lr=lr_critic)
+        self.actor_optimizer = optim.Adam(self.actor.parameters(), lr=lr_actor)
+        self.ou_noise = OrnsteinUhlenbeckNoise(actor=np.zeros(4))
         
-        # Tensorboard results
-        self.writer = SummaryWriter(log_dir="runs/DDPG/")
-
+        self.gamma = gamma
+        
+        self.tau = tau
+        self.update = 0
+        self.use_hard_update = use_hard_update
+        self.target_update_period = target_update_period
+        
     # Sample continuous action
-    def chooseAction(self, obs):
+    def choose_action(self, obs):
+        obs = torch.from_numpy(obs).float().to(self.device)
         with torch.no_grad():
-            action = self.mu(obs) + self.ou_noise()[0]
+            action = self.actor(obs) + self.ou_noise()
         return action.cpu().numpy()
 
-    def train(self):
-        self.train_update += 1
-        mini_batch = self.replay_buffer.sample()
+    def train(self, memory):
+        self.update += 1
+        mini_batch = memory.sample()
         
-        obs_n = mini_batch['obs_n'].to(self.device) # obs_n.shape=(n_envs, obs_dim)
-        a_n = mini_batch['a_n'].to(self.device) # obs_n.shape=(n_envs, action_dim)
-        r_n = mini_batch['r_n'].to(self.device) # obs_n.shape=(n_envs, 1)
-        obs_prime_n = mini_batch['obs_prime_n'].to(self.device) # obs_n.shape=(n_envs, obs_dim)
-        done_n = mini_batch['done_n'].to(self.device) # obs_n.shape=(n_envs, 1)
-
+        obs = mini_batch['obs'].to(self.device)
+        a = mini_batch['a'].to(self.device)
+        r = mini_batch['r'].to(self.device)
+        obs_prime = mini_batch['obs_prime'].to(self.device)
+        done = mini_batch['done'].to(self.device)
+        
         with torch.no_grad():
-            td_target = r_n + self.gamma * self.target_q_network(obs_prime_n, self.target_mu(obs_prime_n)) * (1 - done_n)
-
-        # Weights update of policy network (gradient ascent)
-        mu_loss = -self.q_network(obs_n, self.mu(obs_n)).mean() # .mean() -> batch mean
-        self.mu_optimizer.zero_grad()
-        mu_loss.backward()
-        self.mu_optimizer.step()
+            td_target = r + self.gamma * self.target_critic(obs_prime, self.target_actor(obs_prime)) * (1 - done)
 
         # Weights update of value network (gradient descent)
-        q_loss = F.smooth_l1_loss(self.q_network(obs_n, a_n), td_target.detach())
-        self.q_optimizer.zero_grad()
+        q_loss = F.smooth_l1_loss(self.critic(obs, a), td_target.detach())
+        self.critic_optimizer.zero_grad()
         q_loss.backward()
-        self.q_optimizer.step()
+        self.critic_optimizer.step()
+        
+        # Weights update of policy network (gradient ascent)
+        actor_loss = -self.critic(obs, self.actor(obs)).mean() # .mean() -> batch mean
+        self.actor_optimizer.zero_grad()
+        actor_loss.backward()
+        self.actor_optimizer.step()
 
         # Target update
         if self.use_hard_update:
-            if self.train_update % self.target_update_period == 0:
-                self.target_mu.load_state_dict(self.mu.state_dict())
-                self.target_q_network.load_state_dict(self.q_network.state_dict())
+            if self.update % self.target_update_period == 0:
+                self.target_actor.load_state_dict(self.actor.state_dict())
+                self.target_critic.load_state_dict(self.critic.state_dict())
         else:
-            for param, target_param in zip(self.mu.parameters(), self.target_mu.parameters()):
+            for param, target_param in zip(self.actor.parameters(), self.target_actor.parameters()):
                 target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
-            for param, target_param in zip(self.q_network.parameters(), self.target_q_network.parameters()):
+            for param, target_param in zip(self.critic.parameters(), self.target_critic.parameters()):
                 target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
 
-        return (mu_loss.data.item() + q_loss.data.item()) / 2
+
+        return (q_loss.data.item() + actor_loss.data.item()) / 2
+
+class Trainer:
+    def __init__(self, model=None, env=None, num_episodes=None, max_episode_steps=None, obs_dim=None, action_dim=None, memory_capacity=None,
+                 batch_size=None, training_start=None):
+        self.model = model
+        self.env = env
+        self.num_episodes = num_episodes
+        self.max_episode_step = max_episode_steps
+        self.replay_buffer = ReplayBuffer(obs_dim=obs_dim, action_dim=action_dim, memory_capacity=memory_capacity, batch_size=batch_size)
+
+        # Tensorboard results
+        self.writer = SummaryWriter(log_dir="runs/DDPG/")
+
+    def learn(self, render=False):
+        score = 0.0
+        step = 0
+        render = False
+        average_reward = -1000
+
+        if render:
+            self.env.connectUnity()
+
+        for episode in range(self.num_episodes):
+            # Initialize
+            obs = self.env.reset()
+
+            for i in range(self.max_episode_steps):
+                if average_reward > -200:
+                    self.env.render()
+                step += 1
+                
+                action = self.model.choose_action(obs)
+                obs_prime, reward, done, _ = self.env.step(action)
+                self.replay_buffer.store(obs, action, reward/100, obs_prime, done)
+                obs = obs_prime
+
+                score += reward
+                if done:
+                    break
+
+                if len(self.replay_buffer) > self.training_start:
+                    loss = self.model.train(self.replay_buffer)
+                    self.writer.add_scalar("loss", loss, global_step=step)
+
+            if ((episode+1) % 20) == 0:
+                average_reward = round(score/20, 1)
+                print("train episode: {}, average reward: {:.1f}, buffer size: {}".format(episode+1, average_reward, len(self.replay_buffer)))
+                self.writer.add_scalar("score", average_reward, global_step=episode)
+                # Initialize score every 20 episodes
+                score = 0.0
+
+        self.env.close()
+        self.writer.flush()
+        self.writer.close()
+
+        if render:
+            self.env.disconnectUnity()
+
 
     def learn(self, render=False):
         step = 0
@@ -206,10 +247,6 @@ class Trainer:
 
                 score += reward_n.mean()
                 
-                # if done:
-                #     print("Done step:", epi_step)
-                #     break
-
                 if len(self.replay_buffer) > self.training_start:
                     loss = self.train()
                     self.writer.add_scalar("loss", loss, global_step=step)
