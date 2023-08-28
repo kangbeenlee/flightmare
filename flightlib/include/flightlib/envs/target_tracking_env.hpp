@@ -56,6 +56,7 @@ class TargetTrackingEnv {
   inline SceneID getSceneID(void) { return scene_id_; };
   inline bool getUnityRender(void) { return unity_render_; };
   inline int getObsDim(void) { return obs_dim_; };
+  inline int getTargetObsDim(void) { return target_obs_dim_; };
   inline int getActDim(void) { return act_dim_; };
   inline int getExtraInfoDim(void) { return extra_info_names_.size(); };
   inline int getNumOfEnvs(void) { return envs_.size(); };
@@ -84,7 +85,7 @@ class TargetTrackingEnv {
   uint16_t receive_id_{0};
 
   // auxiliar variables
-  int seed_, num_envs_, obs_dim_, act_dim_;
+  int seed_, num_envs_, obs_dim_, target_obs_dim_, act_dim_;
   Matrix<> obs_dummy_;
 
   // yaml configurations
