@@ -12,7 +12,7 @@ from rpg_baselines.envs import target_tracking_env_wrapper as wrapper
 from flightgym import TargetTrackingEnv_v0
 
 from rpg_baselines.ddpg.ddpg import Trainer, DDPG
-from rpg_baselines.ddpg.test import test_model
+from rpg_baselines.ddpg.ddpg_test import test_model
 
 
 
