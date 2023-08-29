@@ -19,7 +19,7 @@ TrackerQuadrotorEnv::TrackerQuadrotorEnv(const std::string &cfg_path) : EnvBase(
   tracking_save_ = TrackingSaveV2();
 
   // Initialize kalman filter
-  Vector<9> x0 = (Vector<9>() << 5, 0, 0, 1, 0, 0, 1, 0, 0).finished();
+  Vector<9> x0 = (Vector<9>() << 5, 0, 0, 0, 0, 0, 0, 0, 0).finished(); // w.r.t. camera frame
   Matrix<9, 9> P0 = 1e2 * Matrix<9, 9>::Identity();
   Scalar f = stereo_camera_->getFocalLength();
   Scalar c = stereo_camera_->getPrincipalPoint();
@@ -161,7 +161,7 @@ Scalar TrackerQuadrotorEnv::rewardFunction(const Scalar range)
   if (range < d_U2T)
     return -1.0;
   else
-    return 1 - exp(1 - range / d_U2T);
+    return exp(1 - range / d_U2T);
 }
 
 Scalar TrackerQuadrotorEnv::trackerStep(const Ref<Vector<>> act, Ref<Vector<>> obs, Vector<3> target_point)

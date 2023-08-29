@@ -48,10 +48,10 @@ class KalmanFilterV1 {
   Scalar Ts_;
 
   // Estimated state (w.r.t. left camera frame)
-  Vector<9> x_;
+  Vector<9> x_, x0_;
 
   // Kalman filter matrix
-  Matrix<9, 9> F_, P_;
+  Matrix<9, 9> F_, P_, P0_;
   Matrix<3, 9> H_;
   Matrix<3, 3> Q_;
   Matrix<3, 3> R_;

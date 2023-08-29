@@ -128,7 +128,7 @@ bool TrackerQuadrotor::reset(void) {
   velocity_controller_.reset();
   velocity_controller_.setQuadrotorMass(dynamics_.getMass());
   velocity_controller_.setGravity(-Gz);
-  controller_save_.reset();
+  // controller_save_.reset();
   return true;
 }
 
@@ -137,7 +137,7 @@ bool TrackerQuadrotor::reset(const QuadState &state) {
   state_ = state;
   motor_omega_.setZero();
   motor_thrusts_.setZero();
-  // velocity_controller_.reset();
+  velocity_controller_.reset();
   velocity_controller_.setQuadrotorMass(dynamics_.getMass());
   velocity_controller_.setGravity(-Gz);
   // controller_save_.reset();

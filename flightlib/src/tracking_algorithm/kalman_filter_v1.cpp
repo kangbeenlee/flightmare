@@ -11,7 +11,8 @@ KalmanFilterV1::~KalmanFilterV1() {}
 
 void KalmanFilterV1::reset()
 {
-    P_ = 1e2 * Matrix<9, 9>::Identity();
+    x_ = x0_;
+    P_ = P0_;
 }
 
 void KalmanFilterV1::init(const Scalar Ts, Ref<Vector<9>> x0, Ref<Matrix<9, 9>> P0, const Scalar sigma_w, const Scalar sigma_v,
@@ -23,6 +24,10 @@ void KalmanFilterV1::init(const Scalar Ts, Ref<Vector<9>> x0, Ref<Matrix<9, 9>> 
     // Initial guess
     x_ = x0;
     P_ = P0;
+
+    // Store initial setting
+    x0_ = x0;
+    P0_ = P0;
 
     useConstantAccModel();
     setSystemNoise(sigma_w);
