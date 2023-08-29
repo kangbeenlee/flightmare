@@ -101,7 +101,8 @@ class TrackerQuadrotorEnv final : public EnvBase {
   Scalar kp_vxy_, ki_vxy_, kd_vxy_, kp_vz_, ki_vz_, kd_vz_, kp_angle_, ki_angle_, kd_angle_, kp_wz_, ki_wz_, kd_wz_;
 
   // Observations and actions (for RL)
-  Vector<trackerquadenv::kNObs> quad_obs_;
+  // Vector<trackerquadenv::kNObs> quad_obs_;
+  Vector<10> quad_obs_;
   Vector<trackerquadenv::kNAct> quad_act_;
 
   YAML::Node cfg_;

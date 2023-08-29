@@ -33,6 +33,7 @@ class KalmanFilterV1 {
 
   // Public compute functions
   Vector<3> computeEstimatedPositionWrtWorld(Ref<Matrix<4, 4>> T_LC_W);
+  Vector<3> computeEstimatedVelocityWrtWorld(Ref<Matrix<4, 4>> T_LC_W);
   Scalar computeRangeWrtBody(Ref<Vector<3>> from, Ref<Matrix<4, 4>> T_LC_B); // compute range from tracker to target
 
  private:
@@ -47,10 +48,10 @@ class KalmanFilterV1 {
   Scalar Ts_;
 
   // Estimated state (w.r.t. left camera frame)
-  Vector<9> x_;
+  Vector<9> x_, x0_;
 
   // Kalman filter matrix
-  Matrix<9, 9> F_, P_;
+  Matrix<9, 9> F_, P_, P0_;
   Matrix<3, 9> H_;
   Matrix<3, 3> Q_;
   Matrix<3, 3> R_;

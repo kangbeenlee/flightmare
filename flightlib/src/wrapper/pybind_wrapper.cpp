@@ -26,6 +26,7 @@ PYBIND11_MODULE(flightgym, m) {
     .def("disconnectUnity", &TargetTrackingEnv<TrackerQuadrotorEnv>::disconnectUnity)
     .def("getNumOfEnvs", &TargetTrackingEnv<TrackerQuadrotorEnv>::getNumOfEnvs)
     .def("getObsDim", &TargetTrackingEnv<TrackerQuadrotorEnv>::getObsDim)
+    .def("getTargetObsDim", &TargetTrackingEnv<TrackerQuadrotorEnv>::getTargetObsDim)
     .def("getActDim", &TargetTrackingEnv<TrackerQuadrotorEnv>::getActDim)
     .def("getExtraInfoNames", &TargetTrackingEnv<TrackerQuadrotorEnv>::getExtraInfoNames)
     .def("__repr__", [](const TargetTrackingEnv<TrackerQuadrotorEnv>& a) { return "Target Tracking Environment"; });

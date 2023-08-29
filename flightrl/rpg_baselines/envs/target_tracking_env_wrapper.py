@@ -22,8 +22,6 @@ class FlightmareTargetTrackingEnv():
         # Target Quadrotor
         self._target_observation = np.zeros([self.num_target_obs], dtype=np.float32) # target ground truth state
         
-        self.max_episode_steps = 300
-
     def seed(self, seed=0):
         self.wrapper.setSeed(seed)
 

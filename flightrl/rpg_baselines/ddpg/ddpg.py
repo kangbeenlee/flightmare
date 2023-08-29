@@ -5,6 +5,8 @@ import torch.optim as optim
 import numpy as np
 import sys
 import os
+from tqdm import tqdm
+
 from torch.utils.tensorboard import SummaryWriter
 
 
@@ -19,7 +21,7 @@ class Actor(nn.Module):
     def forward(self, x):
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
-        mu = torch.tanh(self.fc_mu(x))
+        mu = torch.tanh(self.fc_mu(x)) * 3 # Velocity limitation
         return mu
 
 # Action value network
@@ -91,21 +93,22 @@ class ReplayBuffer:
         return self.size
 
 class DDPG:
-    def __init__(self, device=None, gamma=0.99, lr_actor=5e-4, lr_critic=0.001, tau=0.005, use_hard_update=False, target_update_period=None):
+    def __init__(self, device=None, gamma=0.99, lr_actor=5e-4, lr_critic=0.001, tau=0.005, use_hard_update=False, target_update_period=None,
+                 obs_dim=12, action_dim=4):
         self.device = device
         
-        self.actor = Actor().to(device)
-        self.critic = Critic().to(device)
+        self.actor = Actor(obs_dim, action_dim).to(device)
+        self.critic = Critic(obs_dim, action_dim).to(device)
         # Target network
-        self.target_actor = Actor().to(device)
-        self.target_critic = Critic().to(device)
+        self.target_actor = Actor(obs_dim, action_dim).to(device)
+        self.target_critic = Critic(obs_dim, action_dim).to(device)
         self.target_actor.load_state_dict(self.actor.state_dict())
         self.target_critic.load_state_dict(self.critic.state_dict())
 
         # Optimizer        
         self.critic_optimizer = optim.Adam(self.critic.parameters(), lr=lr_critic)
         self.actor_optimizer = optim.Adam(self.actor.parameters(), lr=lr_actor)
-        self.ou_noise = OrnsteinUhlenbeckNoise(actor=np.zeros(4))
+        self.ou_noise = OrnsteinUhlenbeckNoise(mu=np.zeros(action_dim))
         
         self.gamma = gamma
         
@@ -118,8 +121,8 @@ class DDPG:
     def choose_action(self, obs):
         obs = torch.from_numpy(obs).float().to(self.device)
         with torch.no_grad():
-            action = self.actor(obs) + self.ou_noise()
-        return action.cpu().numpy()
+            action = self.actor(obs).cpu().numpy() + self.ou_noise()
+        return action.astype(np.float32)
 
     def train(self, memory):
         self.update += 1
@@ -160,13 +163,29 @@ class DDPG:
 
         return (q_loss.data.item() + actor_loss.data.item()) / 2
 
+    def save_models(self, save_path):
+        filename_actor = os.path.join(save_path, "saved/ddpg_actor.pkl")
+        filename_critic = os.path.join(save_path, "saved/ddpg_critic.pkl")
+        
+        with open(filename_actor, 'wb') as f:
+            torch.save(self.actor.state_dict(), f)
+        with open(filename_critic, 'wb') as f:
+            torch.save(self.critic.state_dict(), f)
+            
+    def load_models(self, load_nn):
+        filename_actor = os.path.join(load_nn, "ddpg_actor.pkl")
+        filename_critic = os.path.join(load_nn, "ddpg_critic.pkl")
+        self.actor.load_state_dict(torch.load(filename_actor))
+        self.critic.load_state_dict(torch.load(filename_critic))
+
 class Trainer:
     def __init__(self, model=None, env=None, num_episodes=None, max_episode_steps=None, obs_dim=None, action_dim=None, memory_capacity=None,
                  batch_size=None, training_start=None):
         self.model = model
         self.env = env
         self.num_episodes = num_episodes
-        self.max_episode_step = max_episode_steps
+        self.max_episode_steps = max_episode_steps
+        self.training_start = training_start
         self.replay_buffer = ReplayBuffer(obs_dim=obs_dim, action_dim=action_dim, memory_capacity=memory_capacity, batch_size=batch_size)
 
         # Tensorboard results
@@ -174,42 +193,39 @@ class Trainer:
 
     def learn(self, render=False):
         score = 0.0
-        step = 0
-        render = False
-        average_reward = -1000
+        epi_step = 0
+        tqdm_bar = tqdm(initial=0, desc="Training", total=self.num_episodes, unit="episode")
 
         if render:
             self.env.connectUnity()
 
         for episode in range(self.num_episodes):
             # Initialize
+            epi_step += 1
+            tqdm_bar.update(1)
             obs = self.env.reset()
 
             for i in range(self.max_episode_steps):
-                if average_reward > -200:
-                    self.env.render()
-                step += 1
-                
                 action = self.model.choose_action(obs)
                 obs_prime, reward, done, _ = self.env.step(action)
-                self.replay_buffer.store(obs, action, reward/100, obs_prime, done)
+                self.replay_buffer.store(obs, action, reward, obs_prime, done)
                 obs = obs_prime
 
-                score += reward
+                score += reward[0] # Just for single agent
                 if done:
                     break
 
                 if len(self.replay_buffer) > self.training_start:
                     loss = self.model.train(self.replay_buffer)
-                    self.writer.add_scalar("loss", loss, global_step=step)
 
-            if ((episode+1) % 20) == 0:
+            if episode % 20 == 0 and episode != 0:
                 average_reward = round(score/20, 1)
-                print("train episode: {}, average reward: {:.1f}, buffer size: {}".format(episode+1, average_reward, len(self.replay_buffer)))
+                print("train episode: {}, average reward: {:.1f}, buffer size: {}".format(episode, average_reward, len(self.replay_buffer)))
                 self.writer.add_scalar("score", average_reward, global_step=episode)
-                # Initialize score every 20 episodes
-                score = 0.0
+                self.writer.add_scalar("loss", loss, global_step=episode)
+                score = 0.0 # Initialize score every 100 episodes
 
+        tqdm_bar.close()
         self.env.close()
         self.writer.flush()
         self.writer.close()
@@ -217,55 +233,5 @@ class Trainer:
         if render:
             self.env.disconnectUnity()
 
-
-    def learn(self, render=False):
-        step = 0
-
-        assert self.total_timesteps % self.rollout_steps == 0, "Total time steps should be divided into rollout steps without rest"
-        num_episodes = self.total_timesteps // (self.N * self.rollout_steps)
-
-        if render:
-            self.env.connectUnity()
-
-        for episode in range(num_episodes):
-            # Initialize
-            score = 0
-            obs_n = self.env.reset()
-
-            for epi_step in range(self.rollout_steps):
-                step += 1
-                
-                action_n = self.chooseAction(torch.from_numpy(obs_n).float().to(self.device))      
-                obs_prime_n, reward_n, done_n, _ = self.env.step(action_n)
-                
-                # Reshape
-                reward_n = reward_n.reshape(-1, 1)
-                done_n = done_n.reshape(-1, 1)
-                
-                self.replay_buffer.store(obs_n, action_n, reward_n, obs_prime_n, done_n)
-                obs_n = obs_prime_n
-
-                score += reward_n.mean()
-                
-                if len(self.replay_buffer) > self.training_start:
-                    loss = self.train()
-                    self.writer.add_scalar("loss", loss, global_step=step)
-
-            print("train episode: {}, score: {:.1f}, buffer size: {}".format(episode+1, score, len(self.replay_buffer)))
-            self.writer.add_scalar("score", score, global_step=episode)
-
-        self.env.close()
-        self.writer.flush()
-        self.writer.close()
-
-        if render:
-            self.env.disconnectUnity()
-
-    def save(self, save_path=None):
-        filename_actor = os.path.join(save_path, "ddpg_actor.pkl")
-        filename_critic = os.path.join(save_path, "ddpg_critic.pkl")
-        
-        with open(filename_actor, 'wb') as f:
-            torch.save(self.mu.state_dict(), f)
-        with open(filename_critic, 'wb') as f:
-            torch.save(self.q_network.state_dict(), f)
+    def save(self, save_dir=None):
+        self.model.save_models(save_dir)

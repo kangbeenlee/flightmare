@@ -19,33 +19,18 @@ TrackerQuadrotorEnv::TrackerQuadrotorEnv(const std::string &cfg_path) : EnvBase(
   tracking_save_ = TrackingSaveV2();
 
   // Initialize kalman filter
-  Vector<9> x0 = (Vector<9>() << 5, 0, 0, 1, 0, 0, 1, 0, 0).finished();
+  Vector<9> x0 = (Vector<9>() << 5, 0, 0, 0, 0, 0, 0, 0, 0).finished(); // w.r.t. camera frame
   Matrix<9, 9> P0 = 1e2 * Matrix<9, 9>::Identity();
   Scalar f = stereo_camera_->getFocalLength();
   Scalar c = stereo_camera_->getPrincipalPoint();
   Scalar b = stereo_camera_->getBaseline();
-  kf_->init(sim_dt_, x0, P0, 1.0, 30, f, c, b);
+  kf_->init(sim_dt_, x0, P0, 1.0, 20, f, c, b);
 
   // update dynamics
   QuadrotorDynamics dynamics;
   dynamics.updateParams(cfg_);
   tracker_ptr_->updateDynamics(dynamics);
-
-  // Quadrotor PID controller gain
-  Scalar kp_vxy = cfg_["quadrotor_pid_controller_gain"]["kp_vxy"].as<Scalar>();
-  Scalar ki_vxy = cfg_["quadrotor_pid_controller_gain"]["ki_vxy"].as<Scalar>();
-  Scalar kd_vxy = cfg_["quadrotor_pid_controller_gain"]["kd_vxy"].as<Scalar>();
-  Scalar kp_vz = cfg_["quadrotor_pid_controller_gain"]["kp_vz"].as<Scalar>();
-  Scalar ki_vz = cfg_["quadrotor_pid_controller_gain"]["ki_vz"].as<Scalar>();
-  Scalar kd_vz = cfg_["quadrotor_pid_controller_gain"]["kd_vz"].as<Scalar>();
-  Scalar kp_angle = cfg_["quadrotor_pid_controller_gain"]["kp_angle"].as<Scalar>();
-  Scalar ki_angle = cfg_["quadrotor_pid_controller_gain"]["ki_angle"].as<Scalar>();
-  Scalar kd_angle = cfg_["quadrotor_pid_controller_gain"]["kd_angle"].as<Scalar>();
-  Scalar kp_wz = cfg_["quadrotor_pid_controller_gain"]["kp_wz"].as<Scalar>();
-  Scalar ki_wz = cfg_["quadrotor_pid_controller_gain"]["ki_wz"].as<Scalar>();
-  Scalar kd_wz = cfg_["quadrotor_pid_controller_gain"]["kd_wz"].as<Scalar>();
-
-  tracker_ptr_->setVelocityPIDGain(kp_vxy, ki_vxy, kd_vxy, kp_vz, ki_vz, kd_vz, kp_angle, ki_angle, kd_angle, kp_wz, ki_wz, kd_wz);
+  tracker_ptr_->setVelocityPIDGain(kp_vxy_, ki_vxy_, kd_vxy_, kp_vz_, ki_vz_, kd_vz_, kp_angle_, ki_angle_, kd_angle_, kp_wz_, ki_wz_, kd_wz_);
 
   // define a bounding box
   world_box_ << -20, 20, -20, 20, 0, 20;
@@ -55,7 +40,8 @@ TrackerQuadrotorEnv::TrackerQuadrotorEnv(const std::string &cfg_path) : EnvBase(
   };
 
   // define input and output dimension for the environment
-  obs_dim_ = trackerquadenv::kNObs;
+  // obs_dim_ = trackerquadenv::kNObs;
+  obs_dim_ = 10;
   act_dim_ = trackerquadenv::kNAct;
 }
 
@@ -146,10 +132,18 @@ bool TrackerQuadrotorEnv::getObs(Ref<Vector<>> obs)
 
   // convert quaternion to euler angle
   Vector<3> euler_zyx = quad_state_.q().toRotationMatrix().eulerAngles(2, 1, 0);
-  // quaternionToEuler(quad_state_.q(), euler);
-  quad_obs_ << quad_state_.p, euler_zyx, quad_state_.v, quad_state_.w;
+  // quad_obs_ << quad_state_.p, euler_zyx, quad_state_.v, quad_state_.w;
 
-  obs.segment<trackerquadenv::kNObs>(trackerquadenv::kObs) = quad_obs_;
+
+  Matrix<4, 4> T_B_W = getBodyToWorld();
+  Matrix<4, 4> T_LC_B = stereo_camera_->getFromLeftCameraToBody();
+  Matrix<4, 4> T_LC_W = T_B_W * T_LC_B;
+  Vector<3> target_p = kf_->computeEstimatedPositionWrtWorld(T_LC_W);
+  Scalar target_r = kf_->computeRangeWrtBody(quad_state_.p, T_LC_B);
+
+  quad_obs_ << quad_state_.p, quad_state_.v, target_r, target_p;
+  obs.segment<10>(0) = quad_obs_;
+
   return true;
 }
 
@@ -167,7 +161,7 @@ Scalar TrackerQuadrotorEnv::rewardFunction(const Scalar range)
   if (range < d_U2T)
     return -1.0;
   else
-    return 1 - exp(1 - range / d_U2T);
+    return exp(1 - range / d_U2T);
 }
 
 Scalar TrackerQuadrotorEnv::trackerStep(const Ref<Vector<>> act, Ref<Vector<>> obs, Vector<3> target_point)
@@ -184,9 +178,7 @@ Scalar TrackerQuadrotorEnv::trackerStep(const Ref<Vector<>> act, Ref<Vector<>> o
   Matrix<4, 4> T_W_B = T_B_W.inverse();
 
   kf_->predict();
-  if (!stereo_camera_->processImagePoint(target_point, T_W_B))
-    std::cout << ">>> Impossible to detect target" << std::endl;
-  else
+  if (stereo_camera_->processImagePoint(target_point, T_W_B))
   {
     gt_pixels_ = stereo_camera_->getGroundTruthPixels();
     gt_target_position_ = stereo_camera_->getGroundTruthPosition();
@@ -195,6 +187,10 @@ Scalar TrackerQuadrotorEnv::trackerStep(const Ref<Vector<>> act, Ref<Vector<>> o
 
     kf_->update(target_position_, pixels_);
   }
+  // else
+  // {
+  //   std::cout << ">>> Impossible to detect target" << std::endl;
+  // }
 
   Matrix<4, 4> T_LC_B = stereo_camera_->getFromLeftCameraToBody();
   Matrix<4, 4> T_LC_W = T_B_W * T_LC_B;
@@ -245,6 +241,18 @@ bool TrackerQuadrotorEnv::loadParam(const YAML::Node &cfg) {
   if (cfg["quadrotor_env"]) {
     sim_dt_ = cfg["quadrotor_env"]["sim_dt"].as<Scalar>();
     max_t_ = cfg["quadrotor_env"]["max_t"].as<Scalar>();
+    kp_vxy_ = cfg["quadrotor_pid_controller_gain"]["kp_vxy"].as<Scalar>();
+    ki_vxy_ = cfg["quadrotor_pid_controller_gain"]["ki_vxy"].as<Scalar>();
+    kd_vxy_ = cfg["quadrotor_pid_controller_gain"]["kd_vxy"].as<Scalar>();
+    kp_vz_ = cfg["quadrotor_pid_controller_gain"]["kp_vz"].as<Scalar>();
+    ki_vz_ = cfg["quadrotor_pid_controller_gain"]["ki_vz"].as<Scalar>();
+    kd_vz_ = cfg["quadrotor_pid_controller_gain"]["kd_vz"].as<Scalar>();
+    kp_angle_ = cfg["quadrotor_pid_controller_gain"]["kp_angle"].as<Scalar>();
+    ki_angle_ = cfg["quadrotor_pid_controller_gain"]["ki_angle"].as<Scalar>();
+    kd_angle_ = cfg["quadrotor_pid_controller_gain"]["kd_angle"].as<Scalar>();
+    kp_wz_ = cfg["quadrotor_pid_controller_gain"]["kp_wz"].as<Scalar>();
+    ki_wz_ = cfg["quadrotor_pid_controller_gain"]["ki_wz"].as<Scalar>();
+    kd_wz_ = cfg["quadrotor_pid_controller_gain"]["kd_wz"].as<Scalar>();
   } else {
     return false;
   }

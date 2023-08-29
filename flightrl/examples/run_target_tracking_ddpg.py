@@ -29,10 +29,8 @@ def main():
     parser.add_argument('--render', type=int, default=1, help="Enable Unity Render")
     parser.add_argument('--save_dir', type=str, default=os.path.dirname(os.path.realpath(__file__)), help="Directory where to save the checkpoints and training metrics")
     parser.add_argument('--seed', type=int, default=0, help="Random seed")
-    # parser.add_argument('--load_nn', type=str, default='./saved/quadrotor_env.zip', help='trained weight path')
     parser.add_argument('--load_nn', type=str, default='./saved', help='Trained weight path')
 
-    parser.add_argument('--total_timesteps', default=25000000, type=int, help='Number of training episode (epochs)')
     # Training parameters
     parser.add_argument('--num_episodes', default=1000, type=int, help='Number of training episode (epochs)')
     parser.add_argument('--max_episode_steps', default=300, type=int, help='Number of steps per episode')
@@ -83,8 +81,7 @@ def main():
                      use_hard_update=args.use_hard_update,
                      target_update_period=args.target_update_period,
                      obs_dim=env.num_obs,
-                     action_dim=env.num_acts,
-                     save_dir=args.save_dir)
+                     action_dim=env.num_acts)
         
         trainer = Trainer(model=model,
                           env=env,
@@ -96,20 +93,14 @@ def main():
                           batch_size=args.batch_size,
                           training_start=args.training_start)
         trainer.learn(render=args.render)
-        trainer.save()
+        trainer.save(save_dir=args.save_dir)
     else:
         # Load trained model!
-        # model = DDPG()
-        # model.load_models(args.load_nn)
-        
-        
-        print("-----------")
-        print("obs dim, action dim")
-        print(env.num_obs)
-        print(env.num_acts)
-        
-        # test_model(env, model=model, render=args.render)
-        test_model(env, render=args.render)
+        model = DDPG(obs_dim=env.num_obs,
+                     action_dim=env.num_acts)
+        model.load_models(args.load_nn)
+        test_model(env, model=model, render=args.render, max_episode_steps=args.max_episode_steps)
+        # test_model(env, render=args.render)
 
 if __name__ == "__main__":
     main()

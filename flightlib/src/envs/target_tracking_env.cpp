@@ -78,6 +78,7 @@ void TargetTrackingEnv<EnvBase>::init(void)
   setUnity(unity_render_);
 
   obs_dim_ = envs_[0]->getObsDim();
+  target_obs_dim_ = target_->getObsDim();
   act_dim_ = envs_[0]->getActDim();
 
   // Generate reward names
@@ -95,7 +96,7 @@ TargetTrackingEnv<EnvBase>::~TargetTrackingEnv() {}
 template<typename EnvBase>
 bool TargetTrackingEnv<EnvBase>::reset(Ref<MatrixRowMajor<>> obs, Ref<Vector<>> target_obs)
 {
-  if (obs.rows() != num_envs_ || obs.cols() != obs_dim_ || target_obs.rows() != obs_dim_) 
+  if (obs.rows() != num_envs_ || obs.cols() != obs_dim_) 
   {
     logger_.error("Input matrix dimensions do not match with that of the environment.");
     return false;
