@@ -5,6 +5,8 @@ import torch.optim as optim
 import numpy as np
 import sys
 import os
+from tqdm import tqdm
+
 from torch.utils.tensorboard import SummaryWriter
 
 
@@ -19,7 +21,7 @@ class Actor(nn.Module):
     def forward(self, x):
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
-        mu = torch.tanh(self.fc_mu(x))
+        mu = torch.tanh(self.fc_mu(x)) * 3 # Velocity limitation
         return mu
 
 # Action value network
@@ -92,7 +94,7 @@ class ReplayBuffer:
 
 class DDPG:
     def __init__(self, device=None, gamma=0.99, lr_actor=5e-4, lr_critic=0.001, tau=0.005, use_hard_update=False, target_update_period=None,
-                 obs_dim=None, action_dim=None):
+                 obs_dim=12, action_dim=4):
         self.device = device
         
         self.actor = Actor(obs_dim, action_dim).to(device)
@@ -162,13 +164,19 @@ class DDPG:
         return (q_loss.data.item() + actor_loss.data.item()) / 2
 
     def save_models(self, save_path):
-        filename_actor = os.path.join(save_path, "ddpg_actor.pkl")
-        filename_critic = os.path.join(save_path, "ddpg_critic.pkl")
+        filename_actor = os.path.join(save_path, "saved/ddpg_actor.pkl")
+        filename_critic = os.path.join(save_path, "saved/ddpg_critic.pkl")
         
         with open(filename_actor, 'wb') as f:
             torch.save(self.actor.state_dict(), f)
         with open(filename_critic, 'wb') as f:
             torch.save(self.critic.state_dict(), f)
+            
+    def load_models(self, load_nn):
+        filename_actor = os.path.join(load_nn, "ddpg_actor.pkl")
+        filename_critic = os.path.join(load_nn, "ddpg_critic.pkl")
+        self.actor.load_state_dict(torch.load(filename_actor))
+        self.critic.load_state_dict(torch.load(filename_critic))
 
 class Trainer:
     def __init__(self, model=None, env=None, num_episodes=None, max_episode_steps=None, obs_dim=None, action_dim=None, memory_capacity=None,
@@ -185,37 +193,39 @@ class Trainer:
 
     def learn(self, render=False):
         score = 0.0
-        step = 0
+        epi_step = 0
+        tqdm_bar = tqdm(initial=0, desc="Training", total=self.num_episodes, unit="episode")
 
         if render:
             self.env.connectUnity()
 
         for episode in range(self.num_episodes):
             # Initialize
+            epi_step += 1
+            tqdm_bar.update(1)
             obs = self.env.reset()
 
             for i in range(self.max_episode_steps):
-                step += 1
-                
                 action = self.model.choose_action(obs)
                 obs_prime, reward, done, _ = self.env.step(action)
                 self.replay_buffer.store(obs, action, reward, obs_prime, done)
                 obs = obs_prime
 
-                score += reward
+                score += reward[0] # Just for single agent
                 if done:
                     break
 
                 if len(self.replay_buffer) > self.training_start:
                     loss = self.model.train(self.replay_buffer)
-                    self.writer.add_scalar("loss", loss, global_step=step)
 
-            if episode % 100 == 0 and episode != 0:
-                average_reward = round(score/100, 1)
+            if episode % 20 == 0 and episode != 0:
+                average_reward = round(score/20, 1)
                 print("train episode: {}, average reward: {:.1f}, buffer size: {}".format(episode, average_reward, len(self.replay_buffer)))
                 self.writer.add_scalar("score", average_reward, global_step=episode)
+                self.writer.add_scalar("loss", loss, global_step=episode)
                 score = 0.0 # Initialize score every 100 episodes
 
+        tqdm_bar.close()
         self.env.close()
         self.writer.flush()
         self.writer.close()
