@@ -163,29 +163,29 @@ class DDPG:
 
         return (q_loss.data.item() + actor_loss.data.item()) / 2
 
-    def save_models(self, save_path):
-        filename_actor = os.path.join(save_path, "saved/ddpg_actor.pkl")
-        filename_critic = os.path.join(save_path, "saved/ddpg_critic.pkl")
+    def save_models(self, save_path, episode):
+        save_path = os.path.join(save_path, "saved")
+        filename_actor = os.path.join(save_path, "ddpg_actor_{}.pkl".format(episode))
+        filename_critic = os.path.join(save_path, "ddpg_critic_{}.pkl".format(episode))
         
         with open(filename_actor, 'wb') as f:
             torch.save(self.actor.state_dict(), f)
         with open(filename_critic, 'wb') as f:
             torch.save(self.critic.state_dict(), f)
             
-    def load_models(self, load_nn):
-        filename_actor = os.path.join(load_nn, "ddpg_actor.pkl")
-        filename_critic = os.path.join(load_nn, "ddpg_critic.pkl")
-        self.actor.load_state_dict(torch.load(filename_actor))
-        self.critic.load_state_dict(torch.load(filename_critic))
+    def load_models(self, load_nn_actor, load_nn_critic):
+        self.actor.load_state_dict(torch.load(load_nn_actor))
+        self.critic.load_state_dict(torch.load(load_nn_critic))
 
 class Trainer:
     def __init__(self, model=None, env=None, num_episodes=None, max_episode_steps=None, obs_dim=None, action_dim=None, memory_capacity=None,
-                 batch_size=None, training_start=None):
+                 batch_size=None, training_start=None, save_dir=None):
         self.model = model
         self.env = env
         self.num_episodes = num_episodes
         self.max_episode_steps = max_episode_steps
         self.training_start = training_start
+        self.save_dir = save_dir
         self.replay_buffer = ReplayBuffer(obs_dim=obs_dim, action_dim=action_dim, memory_capacity=memory_capacity, batch_size=batch_size)
 
         # Tensorboard results
@@ -193,23 +193,30 @@ class Trainer:
 
     def learn(self, render=False):
         score = 0.0
-        epi_step = 0
         tqdm_bar = tqdm(initial=0, desc="Training", total=self.num_episodes, unit="episode")
+        best_score = None
 
         if render:
             self.env.connectUnity()
 
         for episode in range(self.num_episodes):
             # Initialize
-            epi_step += 1
             tqdm_bar.update(1)
-            obs = self.env.reset()
+            obs, done, epi_step = self.env.reset(), False, 0
 
-            for i in range(self.max_episode_steps):
+            while not (done or (epi_step >= self.max_episode_steps)):
+                epi_step += 1
                 action = self.model.choose_action(obs)
-                obs_prime, reward, done, _ = self.env.step(action)
+                
+                w_z = np.array([[0.0]])
+                temp_action = np.concatenate((action, w_z), axis=1).astype(np.float32)
+                obs_prime, reward, done, _ = self.env.step(temp_action)
+                # obs_prime, reward, done, _ = self.env.step(action)
+                
                 self.replay_buffer.store(obs, action, reward, obs_prime, done)
                 obs = obs_prime
+
+                # print(">>> reward:", reward[0])
 
                 score += reward[0] # Just for single agent
                 if done:
@@ -221,6 +228,14 @@ class Trainer:
             if episode % 20 == 0 and episode != 0:
                 average_reward = round(score/20, 1)
                 print("train episode: {}, average reward: {:.1f}, buffer size: {}".format(episode, average_reward, len(self.replay_buffer)))
+                
+                if best_score == None:
+                    best_score = average_reward
+                    self.save(self.save_dir, episode)
+                elif average_reward > best_score:
+                    self.save(self.save_dir, episode)
+                    best_score = average_reward
+                    
                 self.writer.add_scalar("score", average_reward, global_step=episode)
                 self.writer.add_scalar("loss", loss, global_step=episode)
                 score = 0.0 # Initialize score every 100 episodes
@@ -233,5 +248,5 @@ class Trainer:
         if render:
             self.env.disconnectUnity()
 
-    def save(self, save_dir=None):
-        self.model.save_models(save_dir)
+    def save(self, save_dir=None, episode=None):
+        self.model.save_models(save_dir, episode)

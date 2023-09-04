@@ -13,7 +13,7 @@ from flightgym import TargetTrackingEnv_v0
 
 from rpg_baselines.ddpg.ddpg import Trainer, DDPG
 from rpg_baselines.ddpg.ddpg_test import test_model
-
+# from rpg_baselines.ddpg.control_test import test_model
 
 
 def configure_random_seed(seed, env=None):
@@ -29,13 +29,14 @@ def main():
     parser.add_argument('--render', type=int, default=1, help="Enable Unity Render")
     parser.add_argument('--save_dir', type=str, default=os.path.dirname(os.path.realpath(__file__)), help="Directory where to save the checkpoints and training metrics")
     parser.add_argument('--seed', type=int, default=0, help="Random seed")
-    parser.add_argument('--load_nn', type=str, default='./saved', help='Trained weight path')
+    parser.add_argument('--load_nn_actor', type=str, default='./saved/ddpg_actor.pkl', help='Trained actor weight path')
+    parser.add_argument('--load_nn_critic', type=str, default='./saved/ddpg_critic.pkl', help='Trained critic weight path')
 
     # Training parameters
-    parser.add_argument('--num_episodes', default=1000, type=int, help='Number of training episode (epochs)')
+    parser.add_argument('--num_episodes', default=5000, type=int, help='Number of training episode (epochs)')
     parser.add_argument('--max_episode_steps', default=300, type=int, help='Number of steps per episode')
-    parser.add_argument('--memory_capacity', default=50000, type=int, help='Replay memory capacity')
-    parser.add_argument('--batch_size', default=32, type=int, help='Batch size')
+    parser.add_argument('--memory_capacity', default=100000, type=int, help='Replay memory capacity')
+    parser.add_argument('--batch_size', default=64, type=int, help='Batch size')
     parser.add_argument('--training_start', default=2000, type=int, help='Batch size')
     
     # Model hyperparameters
@@ -58,9 +59,11 @@ def main():
     if args.train:
         cfg["env"]["num_envs"] = 1
         cfg["env"]["num_threads"] = 1
+        cfg["env"]["scene_id"] = 0
     else:
         cfg["env"]["num_envs"] = 1
-        cfg["env"]["num_threads"] = 1        
+        cfg["env"]["num_threads"] = 1  
+        cfg["env"]["scene_id"] = 0      
     if args.render:
         cfg["env"]["render"] = "yes"
     else:
@@ -81,24 +84,24 @@ def main():
                      use_hard_update=args.use_hard_update,
                      target_update_period=args.target_update_period,
                      obs_dim=env.num_obs,
-                     action_dim=env.num_acts)
+                     action_dim=env.num_acts - 1)
         
         trainer = Trainer(model=model,
                           env=env,
                           num_episodes=args.num_episodes,
                           max_episode_steps=args.max_episode_steps,
                           obs_dim=env.num_obs,
-                          action_dim=env.num_acts,
+                          action_dim=env.num_acts - 1,
                           memory_capacity=args.memory_capacity,
                           batch_size=args.batch_size,
-                          training_start=args.training_start)
+                          training_start=args.training_start,
+                          save_dir=args.save_dir)
         trainer.learn(render=args.render)
-        trainer.save(save_dir=args.save_dir)
     else:
         # Load trained model!
         model = DDPG(obs_dim=env.num_obs,
-                     action_dim=env.num_acts)
-        model.load_models(args.load_nn)
+                     action_dim=env.num_acts - 1)
+        model.load_models(args.load_nn_actor, args.load_nn_critic)
         test_model(env, model=model, render=args.render, max_episode_steps=args.max_episode_steps)
         # test_model(env, render=args.render)
 

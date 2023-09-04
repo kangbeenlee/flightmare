@@ -23,6 +23,8 @@
 #include "flightlib/data/tracking_save_v1.hpp"
 #include "flightlib/data/tracking_save_v2.hpp"
 
+#include "flightlib/tracking_algorithm/moving_average_filter.hpp"
+
 namespace flightlib {
 
 namespace trackerquadenv {
@@ -97,12 +99,20 @@ class TrackerQuadrotorEnv final : public EnvBase {
   Vector<4> gt_pixels_, pixels_;
   bool tracking_flag_{true};
   
+
+  //
+  Vector<3> gt_target_point_;
+
+  //
+  MovingAverageFilter maf_;
+
+
   // PID controller
   Scalar kp_vxy_, ki_vxy_, kd_vxy_, kp_vz_, ki_vz_, kd_vz_, kp_angle_, ki_angle_, kd_angle_, kp_wz_, ki_wz_, kd_wz_;
 
   // Observations and actions (for RL)
   // Vector<trackerquadenv::kNObs> quad_obs_;
-  Vector<10> quad_obs_;
+  Vector<17> quad_obs_;
   Vector<trackerquadenv::kNAct> quad_act_;
 
   YAML::Node cfg_;
