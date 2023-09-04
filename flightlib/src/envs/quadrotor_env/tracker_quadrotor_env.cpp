@@ -18,6 +18,8 @@ TrackerQuadrotorEnv::TrackerQuadrotorEnv(const std::string &cfg_path) : EnvBase(
   kf_ = std::make_shared<KalmanFilterV1>();
   tracking_save_ = TrackingSaveV2();
 
+  maf_ = MovingAverageFilter(20);
+
   // Initialize kalman filter
   Vector<9> x0 = (Vector<9>() << 5, 0, 0, 0, 0, 0, 0, 0, 0).finished(); // w.r.t. camera frame
   Matrix<9, 9> P0 = 1e2 * Matrix<9, 9>::Identity();
@@ -41,7 +43,7 @@ TrackerQuadrotorEnv::TrackerQuadrotorEnv(const std::string &cfg_path) : EnvBase(
 
   // define input and output dimension for the environment
   // obs_dim_ = trackerquadenv::kNObs;
-  obs_dim_ = 10;
+  obs_dim_ = 17;
   act_dim_ = trackerquadenv::kNAct;
 }
 
@@ -97,6 +99,14 @@ bool TrackerQuadrotorEnv::reset(Ref<Vector<>> obs, const bool random)
   cmd_.t = 0.0;
   cmd_.velocity.setZero();
 
+
+
+
+  gt_target_point_ = Vector<3>(0, 8, 5);
+
+  maf_.reset();
+
+
   // obtain observations
   getObs(obs);
   return true;
@@ -141,8 +151,22 @@ bool TrackerQuadrotorEnv::getObs(Ref<Vector<>> obs)
   Vector<3> target_p = kf_->computeEstimatedPositionWrtWorld(T_LC_W);
   Scalar target_r = kf_->computeRangeWrtBody(quad_state_.p, T_LC_B);
 
-  quad_obs_ << quad_state_.p, quad_state_.v, target_r, target_p;
-  obs.segment<10>(0) = quad_obs_;
+
+  Scalar gt_r =  sqrt(pow(quad_state_.x(QS::POSX) - gt_target_point_[0], 2)
+                        + pow(quad_state_.x(QS::POSY) - gt_target_point_[1], 2)
+                        + pow(quad_state_.x(QS::POSZ) - gt_target_point_[2], 2));
+
+
+
+
+  // quad_obs_ << quad_state_.p, quad_state_.v, target_r, target_p;
+  // quad_obs_ << quad_state_.p, quad_state_.v,
+  //              quad_state_.x(QS::ATTW), quad_state_.x(QS::ATTX), quad_state_.x(QS::ATTY), quad_state_.x(QS::ATTZ),
+  //              gt_r, gt_target_point_;
+
+  quad_obs_ << quad_state_.p, quad_state_.v, quad_state_.qx, quad_state_.w,
+               gt_r, gt_target_point_;
+  obs.segment<17>(0) = quad_obs_;
 
   return true;
 }
@@ -156,12 +180,41 @@ Scalar TrackerQuadrotorEnv::step(const Ref<Vector<>> act, Ref<Vector<>> obs)
 
 Scalar TrackerQuadrotorEnv::rewardFunction(const Scalar range)
 {
+  // // Heading reward
+  // Vector<3> h = quad_state_.q().toRotationMatrix() * Vector<3>(1, 0, 0);
+  // Vector<3> d(gt_target_point_[0] - quad_state_.x(QS::POSX), gt_target_point_[1] - quad_state_.x(QS::POSY), gt_target_point_[2] - quad_state_.x(QS::POSZ));
+
+  // h = h / h.norm();
+  // d = d / d.norm();
+
+  // Scalar heading_reward = h.dot(d);
+
+  // return heading_reward;
+
+
+  // Range reward
   Scalar d_U2T = 1.0; // (m)
 
   if (range < d_U2T)
     return -1.0;
   else
-    return exp(1 - range / d_U2T);
+    return -1.0 / 7.0 * range + 8.0 / 7.0;
+
+  // std::cout << ">>> heading reward: " << heading_reward << " range reward: " << range_reward << std::endl;
+  // return range_reward;
+
+
+  // Scalar moving_average = maf_.add(range);
+  // std::cout << ">>> moving_average: " << moving_average << std::endl;
+
+
+  // if (range <= 1.5)
+  //   return 1.0;
+
+  // if (range <= moving_average)
+  //   return 1.0;
+  // else
+  //   return -1.0;
 }
 
 Scalar TrackerQuadrotorEnv::trackerStep(const Ref<Vector<>> act, Ref<Vector<>> obs, Vector<3> target_point)
@@ -176,6 +229,11 @@ Scalar TrackerQuadrotorEnv::trackerStep(const Ref<Vector<>> act, Ref<Vector<>> o
   // get target
   Matrix<4, 4> T_B_W = getBodyToWorld();
   Matrix<4, 4> T_W_B = T_B_W.inverse();
+
+
+
+  gt_target_point_ = target_point;
+
 
   kf_->predict();
   if (stereo_camera_->processImagePoint(target_point, T_W_B))
@@ -223,14 +281,17 @@ Scalar TrackerQuadrotorEnv::trackerStep(const Ref<Vector<>> act, Ref<Vector<>> o
   getObs(obs);
 
   // Reward function of tracker quadrotor
-  Scalar reward = rewardFunction(estimated_range);
+  // Scalar reward = rewardFunction(estimated_range);
+  Scalar reward = rewardFunction(gt_range);
+
+  // std::cout << ">>> reward: " << reward << std::endl;
 
   return reward;
 }
 
 bool TrackerQuadrotorEnv::isTerminalState(Scalar &reward) {
   if (quad_state_.x(QS::POSZ) <= 0.02) {
-    reward = -0.02;
+    reward = -1.0;
     return true;
   }
   reward = 0.0;
