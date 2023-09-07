@@ -12,26 +12,28 @@ from torch.utils.tensorboard import SummaryWriter
 
 
 class Actor(nn.Module):
-    def __init__(self, obs_dim=None, action_dim=None):
+    def __init__(self, obs_dim=None, action_dim=None, max_action=None):
         super(Actor, self).__init__()
-        self.fc1 = nn.Linear(obs_dim, 128)
-        self.fc2 = nn.Linear(128, 64)
-        self.fc_mu = nn.Linear(64, action_dim)
+        self.fc1 = nn.Linear(obs_dim, 256)
+        self.fc2 = nn.Linear(256, 256)
+        self.fc_mu = nn.Linear(256, action_dim)
+        
+        self.max_action = max_action
         
     def forward(self, x):
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
-        mu = torch.tanh(self.fc_mu(x)) * 3 # Velocity limitation
+        mu = self.max_action * torch.tanh(self.fc_mu(x))
         return mu
 
 # Action value network
 class Critic(nn.Module):
     def __init__(self, obs_dim=None, action_dim=None):
         super(Critic, self).__init__()
-        self.fc_s = nn.Linear(obs_dim, 64)
-        self.fc_a = nn.Linear(action_dim, 64)
-        self.fc = nn.Linear(128, 32)
-        self.fc_q = nn.Linear(32,1)
+        self.fc_s = nn.Linear(obs_dim, 128)
+        self.fc_a = nn.Linear(action_dim, 128)
+        self.fc = nn.Linear(256, 256)
+        self.fc_q = nn.Linear(256, 1)
 
     def forward(self, s, a):
         h1 = F.relu(self.fc_s(s))
@@ -54,7 +56,12 @@ class OrnsteinUhlenbeckNoise:
         return x
 
 class ReplayBuffer:
-    def __init__(self, obs_dim=None, action_dim=None, memory_capacity=None, batch_size=None):
+    def __init__(self,
+                 obs_dim=None,
+                 action_dim=None,
+                 memory_capacity=None,
+                 batch_size=None):
+        
         self.obs_dim = obs_dim
         self.action_dim = action_dim
         self.memory_capacity = memory_capacity
@@ -93,14 +100,22 @@ class ReplayBuffer:
         return self.size
 
 class DDPG:
-    def __init__(self, device=None, gamma=0.99, lr_actor=5e-4, lr_critic=0.001, tau=0.005, use_hard_update=False, target_update_period=None,
-                 obs_dim=12, action_dim=4):
+    def __init__(self,
+                 device=None,
+                 gamma=0.99,
+                 lr_actor=3e-4,
+                 lr_critic=3e-4,
+                 tau=0.005,
+                 obs_dim=12,
+                 action_dim=4,
+                 max_action=3.0):
+        
         self.device = device
         
-        self.actor = Actor(obs_dim, action_dim).to(device)
+        self.actor = Actor(obs_dim, action_dim, max_action).to(device)
         self.critic = Critic(obs_dim, action_dim).to(device)
         # Target network
-        self.target_actor = Actor(obs_dim, action_dim).to(device)
+        self.target_actor = Actor(obs_dim, action_dim, max_action).to(device)
         self.target_critic = Critic(obs_dim, action_dim).to(device)
         self.target_actor.load_state_dict(self.actor.state_dict())
         self.target_critic.load_state_dict(self.critic.state_dict())
@@ -114,8 +129,6 @@ class DDPG:
         
         self.tau = tau
         self.update = 0
-        self.use_hard_update = use_hard_update
-        self.target_update_period = target_update_period
         
     # Sample continuous action
     def choose_action(self, obs):
@@ -138,9 +151,9 @@ class DDPG:
             td_target = r + self.gamma * self.target_critic(obs_prime, self.target_actor(obs_prime)) * (1 - done)
 
         # Weights update of value network (gradient descent)
-        q_loss = F.smooth_l1_loss(self.critic(obs, a), td_target.detach())
+        critic_loss = F.smooth_l1_loss(self.critic(obs, a), td_target.detach())
         self.critic_optimizer.zero_grad()
-        q_loss.backward()
+        critic_loss.backward()
         self.critic_optimizer.step()
         
         # Weights update of policy network (gradient ascent)
@@ -150,30 +163,24 @@ class DDPG:
         self.actor_optimizer.step()
 
         # Target update
-        if self.use_hard_update:
-            if self.update % self.target_update_period == 0:
-                self.target_actor.load_state_dict(self.actor.state_dict())
-                self.target_critic.load_state_dict(self.critic.state_dict())
-        else:
-            for param, target_param in zip(self.actor.parameters(), self.target_actor.parameters()):
-                target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
-            for param, target_param in zip(self.critic.parameters(), self.target_critic.parameters()):
-                target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
+        for param, target_param in zip(self.actor.parameters(), self.target_actor.parameters()):
+            target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
+        for param, target_param in zip(self.critic.parameters(), self.target_critic.parameters()):
+            target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
 
+        return critic_loss.data.item(), actor_loss.data.item()
 
-        return (q_loss.data.item() + actor_loss.data.item()) / 2
-
-    def save_models(self, save_path, episode):
+    def save(self, save_path, episode):
         save_path = os.path.join(save_path, "saved")
-        filename_actor = os.path.join(save_path, "ddpg_actor_{}.pkl".format(episode))
-        filename_critic = os.path.join(save_path, "ddpg_critic_{}.pkl".format(episode))
+        filename_actor = os.path.join(save_path, "actor_{}.pkl".format(episode))
+        filename_critic = os.path.join(save_path, "critic_{}.pkl".format(episode))
         
         with open(filename_actor, 'wb') as f:
             torch.save(self.actor.state_dict(), f)
         with open(filename_critic, 'wb') as f:
             torch.save(self.critic.state_dict(), f)
             
-    def load_models(self, load_nn_actor, load_nn_critic):
+    def load(self, load_nn_actor, load_nn_critic):
         self.actor.load_state_dict(torch.load(load_nn_actor))
         self.critic.load_state_dict(torch.load(load_nn_critic))
 
@@ -189,10 +196,28 @@ class Trainer:
         self.replay_buffer = ReplayBuffer(obs_dim=obs_dim, action_dim=action_dim, memory_capacity=memory_capacity, batch_size=batch_size)
 
         # Tensorboard results
-        self.writer = SummaryWriter(log_dir="runs/DDPG/")
+        self.writer = SummaryWriter(log_dir="runs/ddpg/")
+
+    def evaluate_policy(self, env, policy, eval_episodes=10):
+        avg_reward = 0.0
+        
+        for _ in range(eval_episodes):
+            obs, done, epi_step = env.reset(), False, 0
+            while not (done or (epi_step >= self.max_episode_steps)):
+                epi_step += 1
+                
+                action = policy.choose_action(obs)
+                w_z = np.array([[0.0]])
+                action = np.concatenate((action, w_z), axis=1).astype(np.float32)
+                
+                obs, reward, done, _ = env.step(action)
+                avg_reward += reward[0]
+
+        avg_reward /= eval_episodes
+        return avg_reward
 
     def learn(self, render=False):
-        score = 0.0
+        time_step = 0 # Total training time step
         tqdm_bar = tqdm(initial=0, desc="Training", total=self.num_episodes, unit="episode")
         best_score = None
 
@@ -200,45 +225,42 @@ class Trainer:
             self.env.connectUnity()
 
         for episode in range(self.num_episodes):
-            # Initialize
-            tqdm_bar.update(1)
-            obs, done, epi_step = self.env.reset(), False, 0
-
+            tqdm_bar.update(1) # Initialize
+            obs, done, epi_step, score = self.env.reset(), False, 0, 0.0
+            
             while not (done or (epi_step >= self.max_episode_steps)):
+                time_step += 1
                 epi_step += 1
-                action = self.model.choose_action(obs)
                 
+                action = self.model.choose_action(obs)
                 w_z = np.array([[0.0]])
                 temp_action = np.concatenate((action, w_z), axis=1).astype(np.float32)
                 obs_prime, reward, done, _ = self.env.step(temp_action)
                 # obs_prime, reward, done, _ = self.env.step(action)
                 
+                # reward /= 10
+                
                 self.replay_buffer.store(obs, action, reward, obs_prime, done)
                 obs = obs_prime
-
-                # print(">>> reward:", reward[0])
 
                 score += reward[0] # Just for single agent
                 if done:
                     break
 
-                if len(self.replay_buffer) > self.training_start:
-                    loss = self.model.train(self.replay_buffer)
+                if time_step > self.training_start:
+                    critic_loss, actor_loss = self.model.train(self.replay_buffer)
+                    self.writer.add_scalar("critic_loss", critic_loss, global_step=time_step)
+                    self.writer.add_scalar("actor_loss", actor_loss, global_step=time_step)
 
-            if episode % 20 == 0 and episode != 0:
-                average_reward = round(score/20, 1)
-                print("train episode: {}, average reward: {:.1f}, buffer size: {}".format(episode, average_reward, len(self.replay_buffer)))
+            self.writer.add_scalar("score", score, global_step=episode)
+
+            if (episode + 1) % 20 == 0:
+                eval_score = self.evaluate_policy(self.env, self.model)
+                print(f">>> Evaluation reward at episode {episode + 1}: {eval_score:.3f}")
                 
-                if best_score == None:
-                    best_score = average_reward
-                    self.save(self.save_dir, episode)
-                elif average_reward > best_score:
-                    self.save(self.save_dir, episode)
-                    best_score = average_reward
-                    
-                self.writer.add_scalar("score", average_reward, global_step=episode)
-                self.writer.add_scalar("loss", loss, global_step=episode)
-                score = 0.0 # Initialize score every 100 episodes
+                if best_score == None or eval_score > best_score:
+                    self.save(self.save_dir, episode + 1)
+                    best_score = eval_score
 
         tqdm_bar.close()
         self.env.close()
@@ -249,4 +271,4 @@ class Trainer:
             self.env.disconnectUnity()
 
     def save(self, save_dir=None, episode=None):
-        self.model.save_models(save_dir, episode)
+        self.model.save(save_dir, episode)
