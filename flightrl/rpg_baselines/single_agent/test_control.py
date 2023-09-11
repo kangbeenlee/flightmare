@@ -18,7 +18,7 @@ def test_model(env, render=False):
         while not done:
 
             # # vx, vy, vz, wz (m/s, m/s, m/s, rad/s)
-            act = np.array([[0.0, 0.0, 0.0, 3.0]], dtype=np.float32)
+            act = np.array([[0.0, 0.2, 0.0, 0.5]], dtype=np.float32)
             
             # # Step input response test
             # vx = 0.0

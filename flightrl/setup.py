@@ -21,8 +21,5 @@ setup(
               'rpg_baselines.single_agent',
               'rpg_baselines.single_agent.ddpg',
               'rpg_baselines.single_agent.td3',
-              'rpg_baselines.single_agent.ppo',
-              'rpg_baselines.multi_agent.maddpg',
-              'rpg_baselines.multi_agent.matd3',
-              'rpg_baselines.multi_agent.mappo'],
+              'rpg_baselines.single_agent.ppo'],
 )
