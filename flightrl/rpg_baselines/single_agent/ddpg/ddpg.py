@@ -224,18 +224,27 @@ class Trainer:
         # Tensorboard results
         self.writer = SummaryWriter(log_dir="runs/ddpg/")
 
+    def evaluate_policy(env, policy, eval_episodes=10):
+        avg_reward = 0.
+        for _ in range(eval_episodes):
+            obs, done = env.reset(), False
+            while not done:
+                action = policy.select_action(np.array(obs))
+                obs, reward, done, _ = env.step(action)
+                avg_reward += reward
+        avg_reward = round(avg_reward / eval_episodes, 2)
+        return avg_reward
+
     def learn(self, render=False):
         time_step = 0 # Total training time step
         tqdm_bar = tqdm(initial=0, desc="Training", total=self.max_training_timesteps, unit="timestep")
-        accumulative_reward, n_episode, print_episode = 0.0, 0, 0
-        best_score = None
+        n_episode, best_score = 0, 0, None
 
         if render:
             self.env.connectUnity()
 
         while time_step < self.max_training_timesteps:
             n_episode += 1 # Start new episode
-            print_episode += 1
             obs, epi_step, score = self.env.reset(), 0, 0.0
             
             while not epi_step > self.max_episode_steps:
@@ -254,7 +263,6 @@ class Trainer:
                 self.replay_buffer.store(obs, action, reward, obs_prime, done)
                 obs = obs_prime
 
-                accumulative_reward += reward[0] # Just for single agent
                 score += reward[0] # Record episodic reward
                 if done:
                     break
@@ -265,8 +273,7 @@ class Trainer:
                     self.writer.add_scalar("actor_loss", -actor_loss, global_step=time_step)                    
 
                 if time_step % self.evaluation_time_steps == 0:
-                    avg_reward = round(accumulative_reward / print_episode, 2)
-                    accumulative_reward, print_episode = 0.0, 0
+                    avg_reward = self.evaluate_policy(self.env, self.model)
                     print("Episode : {} \t\t Timestep : {} \t\t Average Reward : {}".format(n_episode, time_step, avg_reward))
                     
                     if best_score == None or avg_reward > best_score:
