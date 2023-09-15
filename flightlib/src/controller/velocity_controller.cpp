@@ -106,8 +106,8 @@ Vector<4> VelocityController::control(const Scalar des_vx, const Scalar des_vy, 
     Scalar x_ddot = controlVx(des_vx, vx);
     Scalar y_ddot = controlVy(des_vy, vy);
 
-    theta_c = 1 / G_ * (x_ddot*cos(psi) + y_ddot*sin(psi));
-    phi_c =  1 / G_ * (x_ddot*sin(psi) - y_ddot*cos(psi));
+    theta_c = x_ddot;
+    phi_c = -y_ddot;
 
     limitControlAngle(theta_c);
     limitControlAngle(phi_c);

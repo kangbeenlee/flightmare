@@ -18,7 +18,7 @@ def test_model(env, render=False):
         while not done:
 
             # # vx, vy, vz, wz (m/s, m/s, m/s, rad/s)
-            act = np.array([[0.0, 0.2, 0.0, 0.5]], dtype=np.float32)
+            act = np.array([[1.0, 1.0, 0.0, 0.0]], dtype=np.float32)
             
             # # Step input response test
             # vx = 0.0
@@ -39,6 +39,7 @@ def test_model(env, render=False):
             
             
             obs, rew, done, infos = env.step(act)
+            print(obs[0,3:6])
             target_obs = env.get_target_state()
             #
             ep_len += 1

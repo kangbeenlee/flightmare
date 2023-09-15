@@ -17,7 +17,7 @@
 #include "flightlib/envs/env_base.hpp"
 #include "flightlib/objects/tracker_quadrotor.hpp"
 #include "flightlib/sensors/stereo_camera.hpp"
-#include "flightlib/tracking_algorithm/kalman_filter_v1.hpp"
+#include "flightlib/tracking_algorithm/kalman_filter.hpp"
 #include "flightlib/data/sensor_save_v1.hpp"
 #include "flightlib/data/sensor_save_v2.hpp"
 #include "flightlib/data/tracking_save_v1.hpp"
@@ -93,26 +93,29 @@ class TrackerQuadrotorEnv final : public EnvBase {
   bool sensor_flag_{true};
 
   // Kalman filter
-  std::shared_ptr<KalmanFilterV1> kf_;
+  std::shared_ptr<KalmanFilter> kf_;
   TrackingSaveV2 tracking_save_;
   Vector<3> gt_target_position_, target_position_;
   Vector<4> gt_pixels_, pixels_;
   bool tracking_flag_{true};
-  
 
   //
   Vector<3> gt_target_point_;
+  Vector<3> t_b_; // Target position w.r.t. body frame
 
   //
   MovingAverageFilter maf_;
 
-
-  // PID controller
+  // PID controller for linear velocity (LV) control policy tracker
   Scalar kp_vxy_, ki_vxy_, kd_vxy_, kp_vz_, ki_vz_, kd_vz_, kp_angle_, ki_angle_, kd_angle_, kp_wz_, ki_wz_, kd_wz_;
+
+  // RL reward
+  Vector<4> prev_act_{0.0, 0.0, 0.0, 0.0};
+
 
   // Observations and actions (for RL)
   // Vector<trackerquadenv::kNObs> quad_obs_;
-  Vector<17> quad_obs_;
+  Vector<22> quad_obs_;
   Vector<trackerquadenv::kNAct> quad_act_;
 
   YAML::Node cfg_;

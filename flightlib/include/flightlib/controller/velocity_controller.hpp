@@ -70,7 +70,7 @@ class VelocityController {
   Scalar mass_{1.0}, G_{9.81};
 
   // Quadrotor constraints
-  Scalar T_max_{44.8899}, T_min_{0.0};
+  Scalar T_max_{43.4}, T_min_{0.0};
   Scalar Mxy_max_{3.96774}, Mxy_min_{-3.96774};
   Scalar Mz_max_{0.15696}, Mz_min_{-0.15696};
 };

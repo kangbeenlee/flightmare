@@ -15,7 +15,7 @@ TrackerQuadrotorEnv::TrackerQuadrotorEnv(const std::string &cfg_path) : EnvBase(
   tracker_ptr_ = std::make_shared<TrackerQuadrotor>();
   stereo_camera_ = std::make_shared<StereoCamera>();
   sensor_save_ = SensorSaveV2();
-  kf_ = std::make_shared<KalmanFilterV1>();
+  kf_ = std::make_shared<KalmanFilter>();
   tracking_save_ = TrackingSaveV2();
 
   maf_ = MovingAverageFilter(20);
@@ -26,7 +26,7 @@ TrackerQuadrotorEnv::TrackerQuadrotorEnv(const std::string &cfg_path) : EnvBase(
   Scalar f = stereo_camera_->getFocalLength();
   Scalar c = stereo_camera_->getPrincipalPoint();
   Scalar b = stereo_camera_->getBaseline();
-  kf_->init(sim_dt_, x0, P0, 1.0, 20, f, c, b);
+  kf_->init(sim_dt_, x0, P0, 1.0, 20);
 
   // update dynamics
   QuadrotorDynamics dynamics;
@@ -35,7 +35,7 @@ TrackerQuadrotorEnv::TrackerQuadrotorEnv(const std::string &cfg_path) : EnvBase(
   tracker_ptr_->setVelocityPIDGain(kp_vxy_, ki_vxy_, kd_vxy_, kp_vz_, ki_vz_, kd_vz_, kp_angle_, ki_angle_, kd_angle_, kp_wz_, ki_wz_, kd_wz_);
 
   // define a bounding box
-  world_box_ << -20, 20, -20, 20, 0, 20;
+  world_box_ << -100, 100, -100, 100, 0, 100;
   if (!tracker_ptr_->setWorldBox(world_box_))
   {
     logger_.error("cannot set wolrd box");
@@ -43,7 +43,7 @@ TrackerQuadrotorEnv::TrackerQuadrotorEnv(const std::string &cfg_path) : EnvBase(
 
   // define input and output dimension for the environment
   // obs_dim_ = trackerquadenv::kNObs;
-  obs_dim_ = 17;
+  obs_dim_ = 22;
   act_dim_ = trackerquadenv::kNAct;
 }
 
@@ -75,8 +75,27 @@ bool TrackerQuadrotorEnv::reset(Ref<Vector<>> obs, const bool random)
   }
   else
   {
+    // quad_state_.x(QS::POSX) = uniform_dist_(random_gen_) * 8.0;
+    // quad_state_.x(QS::POSY) = uniform_dist_(random_gen_) * 8.0;
+    // quad_state_.x(QS::POSZ) = uniform_dist_(random_gen_) * 2.0 + 5.0;
+
+    // if (quad_state_.x(QS::POSX) < -8.0)
+    //   quad_state_.x(QS::POSX) = -8.0;
+    // else if (quad_state_.x(QS::POSX) > 8.0)
+    //   quad_state_.x(QS::POSX) = 8.0;
+
+    // if (quad_state_.x(QS::POSY) < -8.0)
+    //   quad_state_.x(QS::POSY) = -8.0;
+    // else if ((quad_state_.x(QS::POSY) > 8.0))
+    //   quad_state_.x(QS::POSY) = 8.0;
+
+    // if (quad_state_.x(QS::POSZ) < 1.0)
+    //   quad_state_.x(QS::POSZ) = 1.0;
+    // else if (quad_state_.x(QS::POSZ) > 10.0)
+    //   quad_state_.x(QS::POSZ) = 10.0;
+    
     quad_state_.x(QS::POSX) = 0.0;
-    quad_state_.x(QS::POSY) = 0.0;
+    quad_state_.x(QS::POSY) = -3.0;
     quad_state_.x(QS::POSZ) = 5.0;
 
 
@@ -95,14 +114,17 @@ bool TrackerQuadrotorEnv::reset(Ref<Vector<>> obs, const bool random)
   // Reset tracking algorithm
   kf_->reset();
 
-  // Reset control command
+  // Reset velocity control command
   cmd_.t = 0.0;
   cmd_.velocity.setZero();
 
+  // // Reset mass-normalized collective thrust & body rates control command
+  // cmd_.t = 0.0;
+  // cmd_.collective_thrust = 0.0;
+  // cmd_.omega.setZero();
 
-
-
-  gt_target_point_ = Vector<3>(0, 8, 5);
+  gt_target_point_ = Vector<3>(0, 0, 5);
+  t_b_ =  Vector<3>(5, 0, 0);
 
   maf_.reset();
 
@@ -151,22 +173,26 @@ bool TrackerQuadrotorEnv::getObs(Ref<Vector<>> obs)
   Vector<3> target_p = kf_->computeEstimatedPositionWrtWorld(T_LC_W);
   Scalar target_r = kf_->computeRangeWrtBody(quad_state_.p, T_LC_B);
 
-
   Scalar gt_r =  sqrt(pow(quad_state_.x(QS::POSX) - gt_target_point_[0], 2)
                         + pow(quad_state_.x(QS::POSY) - gt_target_point_[1], 2)
                         + pow(quad_state_.x(QS::POSZ) - gt_target_point_[2], 2));
 
+  Scalar test_r =  sqrt(pow(t_b_[0], 2) + pow(t_b_[1], 2) + pow(t_b_[2], 2));
 
+  // std::cout << "Check: " << gt_r << ", " << test_r << std::endl;
 
+  Matrix<3, 3> rotation = quad_state_.q().toRotationMatrix();
 
-  // quad_obs_ << quad_state_.p, quad_state_.v, target_r, target_p;
-  // quad_obs_ << quad_state_.p, quad_state_.v,
-  //              quad_state_.x(QS::ATTW), quad_state_.x(QS::ATTX), quad_state_.x(QS::ATTY), quad_state_.x(QS::ATTZ),
-  //              gt_r, gt_target_point_;
+  quad_obs_ << quad_state_.p, // tracker state (15 dim)
+               quad_state_.v,
+               rotation(0,0), rotation(0,1), rotation(0,2),
+               rotation(1,0), rotation(1,1), rotation(1,2),
+               rotation(2,0), rotation(2,1), rotation(2,2),
+               quad_state_.w,
+               t_b_, // target information
+               gt_r; 
 
-  quad_obs_ << quad_state_.p, quad_state_.v, quad_state_.qx, quad_state_.w,
-               gt_r, gt_target_point_;
-  obs.segment<17>(0) = quad_obs_;
+  obs.segment<22>(0) = quad_obs_;
 
   return true;
 }
@@ -180,33 +206,51 @@ Scalar TrackerQuadrotorEnv::step(const Ref<Vector<>> act, Ref<Vector<>> obs)
 
 Scalar TrackerQuadrotorEnv::rewardFunction(const Scalar range)
 {
-  // // Heading reward
-  // Vector<3> h = quad_state_.q().toRotationMatrix() * Vector<3>(1, 0, 0);
-  // Vector<3> d(gt_target_point_[0] - quad_state_.x(QS::POSX), gt_target_point_[1] - quad_state_.x(QS::POSY), gt_target_point_[2] - quad_state_.x(QS::POSZ));
+  // // Test reward
+  // if (range < 1.0)
+  //   return -1.0;
+  // else
+  //   return 10.0 * exp(-range + 1);
 
-  // h = h / h.norm();
-  // d = d / d.norm();
+  // Coefficient
+  Scalar c1 = 2.0;
+  Scalar c2 = 0.5;
+  Scalar c3 = -5.0;
+  Scalar c4 = -1e-4;
 
-  // Scalar heading_reward = h.dot(d);
-
-  // return heading_reward;
-
-
-  // Range reward
-  Scalar d_U2T = 1.0; // (m)
-
-  if (range < d_U2T)
-    return -1.0;
+  // Progress reward
+  Scalar progress_reward;
+  if (range < 1.0)
+    progress_reward = -1.0;
   else
-    return -1.0 / 7.0 * range + 8.0 / 7.0;
+    progress_reward = exp(-range + 1);
 
-  // std::cout << ">>> heading reward: " << heading_reward << " range reward: " << range_reward << std::endl;
-  // return range_reward;
+  // Perception reward
+  Vector<3> h = quad_state_.q().toRotationMatrix() * Vector<3>(1, 0, 0);
+  Vector<3> d(gt_target_point_[0] - quad_state_.x(QS::POSX), gt_target_point_[1] - quad_state_.x(QS::POSY), gt_target_point_[2] - quad_state_.x(QS::POSZ));
+  h = h / h.norm();
+  d = d / d.norm();
+
+  Scalar theta = acos(h.dot(d));
+  // Scalar perception_reward = exp(c3 * theta);
+  Scalar perception_reward = exp(c3 * pow(theta, 4));
+ 
+  // command reward
+  Scalar command_reward = pow((quad_act_ - prev_act_).norm(), 2);
+
+  // std::cout << ">>> progress: " << progress_reward << std::endl;
+  // std::cout << ">>> perception: " << perception_reward << std::endl;
+  // std::cout << ">>> command: " << command_reward << std::endl;
+
+  prev_act_ = quad_act_;
+
+  Scalar total_reward = c1 * progress_reward + c2 * perception_reward + c4 * command_reward;
+  // std::cout << ">>> Total reward: " << total_reward << std::endl;
+  return total_reward;
 
 
   // Scalar moving_average = maf_.add(range);
   // std::cout << ">>> moving_average: " << moving_average << std::endl;
-
 
   // if (range <= 1.5)
   //   return 1.0;
@@ -221,18 +265,30 @@ Scalar TrackerQuadrotorEnv::trackerStep(const Ref<Vector<>> act, Ref<Vector<>> o
 {
   quad_act_ = act;
   cmd_.t += sim_dt_;
+  
   cmd_.velocity = quad_act_;
+
+  // cmd_.collective_thrust = act[0];
+  // cmd_.omega = act.segment<3>(1);;
+
 
   // Simulate quadrotor (apply rungekutta4th 8 times during 0.02s)
   tracker_ptr_->run(cmd_, sim_dt_);
 
   // get target
   Matrix<4, 4> T_B_W = getBodyToWorld();
-  Matrix<4, 4> T_W_B = T_B_W.inverse();
+  Matrix<4, 4> T_W_B = T_B_W.inverse(); // World to body
+
 
 
 
   gt_target_point_ = target_point;
+  // Transform target position from world to body
+  Vector<4> T_W(target_point[0], target_point[1], target_point[2], 1);
+  Vector<3> t_b = T_W_B.topRows<3>() * T_W;
+  t_b_ = t_b;
+
+
 
 
   kf_->predict();
@@ -243,7 +299,7 @@ Scalar TrackerQuadrotorEnv::trackerStep(const Ref<Vector<>> act, Ref<Vector<>> o
     pixels_ = stereo_camera_->getPixels();
     target_position_ = stereo_camera_->getTargetPosition();
 
-    kf_->update(target_position_, pixels_);
+    kf_->update(target_position_);
   }
   // else
   // {
@@ -290,8 +346,10 @@ Scalar TrackerQuadrotorEnv::trackerStep(const Ref<Vector<>> act, Ref<Vector<>> o
 }
 
 bool TrackerQuadrotorEnv::isTerminalState(Scalar &reward) {
-  if (quad_state_.x(QS::POSZ) <= 0.02) {
-    reward = -1.0;
+  if (quad_state_.x(QS::POSZ) <= 0.02  || quad_state_.x(QS::POSZ) >= 30.0 ||
+      quad_state_.x(QS::POSX) <= -30.0 || quad_state_.x(QS::POSX) >= 30.0 ||
+      quad_state_.x(QS::POSY) <= -30.0 || quad_state_.x(QS::POSY) >= 30.0) {
+    reward = -0.02;
     return true;
   }
   reward = 0.0;

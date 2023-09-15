@@ -2,6 +2,7 @@
 from ruamel.yaml import YAML, dump, RoundTripDumper
 
 import os
+import sys
 import math
 import argparse
 import numpy as np
@@ -18,8 +19,8 @@ from rpg_baselines.single_agent.td3.td3 import TD3
 from rpg_baselines.single_agent.td3.td3 import Trainer as TD3Trainer
 from rpg_baselines.single_agent.ppo.ppo import PPO
 from rpg_baselines.single_agent.ppo.ppo import Trainer as PPOTrainer
-from rpg_baselines.single_agent.test import test_model
-# from rpg_baselines.single_agent.test_control import test_model
+# from rpg_baselines.single_agent.test import test_model
+from rpg_baselines.single_agent.test_control import test_model
 
 
 
@@ -32,7 +33,7 @@ def configure_random_seed(seed, env=None):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--train', type=int, default=0, help="To train new model or simply test pre-trained model")
+    parser.add_argument('--train', action="store_true", help="To train new model or simply test pre-trained model")
     parser.add_argument('--render', type=int, default=1, help="Enable Unity Render")
     parser.add_argument('--save_dir', type=str, default=os.path.dirname(os.path.realpath(__file__)), help="Directory where to save the checkpoints and training metrics")
     parser.add_argument('--seed', type=int, default=0, help="Random seed")
@@ -44,8 +45,8 @@ def main():
     parser.add_argument("--policy", type=str, default="ddpg", help='Policy based reinforcement learning model')
 
     # Learning parameters
-    parser.add_argument('--max_training_timesteps', default=1000000, type=int, help='Number of training timesteps')
-    parser.add_argument('--max_episode_steps', default=300, type=int, help='Number of steps per episode')
+    parser.add_argument('--max_training_timesteps', default=2000000, type=int, help='Number of training timesteps')
+    parser.add_argument('--max_episode_steps', default=1000, type=int, help='Number of steps per episode')
     parser.add_argument('--evaluation_time_steps', default=5000, type=int, help='Number of steps for evaluation')
     parser.add_argument('--memory_capacity', default=100000, type=int, help='Replay memory capacity')
     parser.add_argument('--batch_size', default=256, type=int, help='Batch size')
@@ -81,11 +82,11 @@ def main():
         hyperparameters.add_argument("--action_std_init", default=0.6, type=float, help="Starting std for action distribution (Multivariate Normal)")
         hyperparameters.add_argument("--action_std_decay_rate", default=0.05, type=float, help="Linearly decay action_std (action_std = action_std - action_std_decay_rate)")
         hyperparameters.add_argument("--min_action_std", default=0.1, type=float, help="Minimum action_std (stop decay after action_std <= min_action_std)")
-        hyperparameters.add_argument('--action_std_decay_freq', default=100000, type=int, help="Action_std decay frequency (in num timesteps)")
+        hyperparameters.add_argument('--action_std_decay_freq', default=2.5e5, type=int, help="Action_std decay frequency (in num timesteps)")
         hyperparameters.add_argument('--update_timestep', default=2000, type=int, help="Update policy every n timesteps")
     else:
         print(f"{args.policy} is unsupported policy")
-        os.exit()
+        sys.exit()
     
     args = parser.parse_args()
 
@@ -209,7 +210,7 @@ def main():
                                  save_dir=args.save_dir)
         else:
             print(f"{args.policy} is unsupported policy")
-            os.exit()
+            sys.exit()
         
         ########################### Training section ###########################
         start_time = datetime.now().replace(microsecond=0)
@@ -232,9 +233,9 @@ def main():
             model = DDPG(device=args.device,
                          obs_dim=env.num_obs,
                          action_dim=env.num_acts)
-            model.load(args.load_nn_actor, args.load_nn_critic)
-            test_model(env, model=model, render=args.render, max_episode_steps=args.max_episode_steps)
-            # test_model(env, render=args.render)
+            # model.load(args.load_nn_actor, args.load_nn_critic)
+            # test_model(env, model=model, render=args.render, max_episode_steps=args.max_episode_steps)
+            test_model(env, render=args.render)
         elif args.policy == "td3":
             model = TD3(device=args.device,
                         obs_dim=env.num_obs,
@@ -251,7 +252,7 @@ def main():
             # test_model(env, render=args.render)
         else:
             print(f"{args.policy} is unsupported policy")
-            os.exit()
+            sys.exit()
         
 if __name__ == "__main__":
     main()

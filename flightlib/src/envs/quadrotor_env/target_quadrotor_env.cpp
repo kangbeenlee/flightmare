@@ -20,7 +20,7 @@ TargetQuadrotorEnv::TargetQuadrotorEnv(const std::string &cfg_path) : EnvBase()
   trajectory_ = MinimumSnapTrajectory();
 
   // define a bounding box
-  world_box_ << -20, 20, -20, 20, 0, 20;
+  world_box_ << -100, 100, -100, 100, 0, 100;
   if (!target_ptr_->setWorldBox(world_box_))
   {
     logger_.error("cannot set wolrd box");
@@ -85,6 +85,24 @@ bool TargetQuadrotorEnv::reset(Ref<Vector<>> obs, const bool random)
   //
   Eigen::VectorXf segment_times(6); // Should be n-1
   segment_times << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
+
+  // Eigen::MatrixXf way_points(13, 3); // Should be n
+  // way_points << 0, 0, 5,
+  //               5, -5, 7,
+  //               10, -5, 3,
+  //               15, 0, 5,
+  //               10, 5, 7,
+  //               5, 5, 3,
+  //               0, 0, 5,
+  //               -5, -5, 7,
+  //               -10, -5, 3,
+  //               -15, 0, 5,
+  //               -10, 5, 7,
+  //               -5, 5, 3,
+  //               0, 0, 5;
+  // //
+  // Eigen::VectorXf segment_times(12); // Should be n-1
+  // segment_times << 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5;
 
   // Set minimum snap trajectory (The number of way points must be less than the number of segment times by 1 !!!)
   trajectory_.setMinimumSnapTrajectory(way_points, segment_times);

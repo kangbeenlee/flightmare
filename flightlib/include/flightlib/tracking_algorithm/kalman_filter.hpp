@@ -9,21 +9,18 @@
 namespace flightlib {
 
 /** @brief Extended Kalman filter with stereo camera sensor */
-class KalmanFilterV1 {
+class KalmanFilter {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-  KalmanFilterV1();
-  ~KalmanFilterV1();
+  KalmanFilter();
+  ~KalmanFilter();
 
   void reset(void);
-  void init(const Scalar Ts, Ref<Vector<9>> x0, Ref<Matrix<9, 9>> P0, const Scalar sigma_w, const Scalar sigma_v,
-            const Scalar f, const Scalar c, const Scalar b);
+  void init(const Scalar Ts, Ref<Vector<9>> x0, Ref<Matrix<9, 9>> P0, const Scalar sigma_w, const Scalar sigma_v);
 
   // Prediction and correction
   void predict(void);
-  // void update(const Ref<Vector<4>> pixel, const Scalar depth);
-  void update(const Ref<Vector<3>> y, const Ref<Vector<4>> pixel);
-  // void update(const Ref<Vector<3>> y);
+  void update(const Ref<Vector<3>> z);
 
   // Public get functions
   inline Vector<3> getEstimatedPositionWrtCamera(void) const { return Vector<3>(x_[0], x_[3], x_[6]); }; // w.r.t left camera
@@ -37,12 +34,8 @@ class KalmanFilterV1 {
   Scalar computeRangeWrtBody(Ref<Vector<3>> from, Ref<Matrix<4, 4>> T_LC_B); // compute range from tracker to target
 
  private:
-  void setSystemNoise(const Scalar sigma_w);
-  void setSensorNoise(const Scalar sigma_v);
-  void setCameraParameters(const Scalar f, const Scalar c, const Scalar b);
-  void useConstantAccModel(void);
-  Vector<3> computeNonlinearFunch(const Scalar x, const Scalar y, const Scalar z) const;
-  Matrix<3, 9> computeJocobianH() const;
+  //
+  bool initialized_;
 
   // Sampling time;
   Scalar Ts_;
@@ -66,9 +59,6 @@ class KalmanFilterV1 {
 
   // Identity matrix
   Matrix<9, 9> I_ = Matrix<9, 9>::Identity();
-
-  // Intrinsic parameters of stereo camera
-  Scalar f_, c_, b_;
 };
 
 }  // namespace flightlib

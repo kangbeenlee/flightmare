@@ -102,7 +102,7 @@ class ControllerSave {
   Scalar t = 0.0;
   unsigned int control_input_size_ = 6; // vx, vy, vz, wz
   unsigned int output_size_ = 7; // vx, vy, vz, wz
-  unsigned int buffer_ = 60000; // time buffer
+  unsigned int buffer_ = 6000; // time buffer
   arma::mat input_des_ = arma::zeros(control_input_size_, buffer_);
   arma::mat input_c_ = arma::zeros(control_input_size_, buffer_);
   arma::mat output_ = arma::zeros(output_size_, buffer_);

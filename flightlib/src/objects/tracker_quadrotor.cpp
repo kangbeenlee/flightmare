@@ -58,14 +58,17 @@ bool TrackerQuadrotor::run(const Scalar ctl_dt) {
     const Vector<4> velocity_des = cmd_.velocity;
 
     Vector<3> euler = quaternionToEuler(state_);
-    Scalar system_phi = euler[0];
-    Scalar system_theta = euler[1];
-    Scalar system_psi = euler[2];
+    Scalar phi = euler[0];
+    Scalar theta = euler[1];
+    Scalar psi = euler[2];
+
+    Matrix<3, 3> R_z = (Matrix<3, 3>() << cos(psi), sin(psi), 0, -sin(psi), cos(psi), 0, 0, 0, 1).finished();
+    Vector<3> velocity_v1 = R_z * state_.v;
 
     // T, Mx, My, Mz
     const Vector<4> control_input = velocity_controller_.control(velocity_des[0], velocity_des[1], velocity_des[2], velocity_des[3],
-                                                            state_.v[0], state_.v[1], state_.v[2], state_.x(QS::OMEZ),
-                                                            system_phi, system_theta, system_psi);
+                                                            velocity_v1[0], velocity_v1[1], velocity_v1[2], state_.x(QS::OMEZ),
+                                                            phi, theta, psi);
 
     const Vector<4> motor_thrusts_des = B_allocation_inv_ * control_input;
 
@@ -81,8 +84,8 @@ bool TrackerQuadrotor::run(const Scalar ctl_dt) {
     if (save_flag_)
       controller_save_.store(velocity_des[0], velocity_des[1], velocity_des[2], velocity_des[3], velocity_controller_.getControlPhi(), velocity_controller_.getControlTheta(),
                              force_torques[0], force_torques[1], force_torques[2], force_torques[3],
-                             state_.v[0], state_.v[1], state_.v[2], state_.x(QS::OMEZ),
-                             system_phi, system_theta, system_psi,
+                             velocity_v1[0], velocity_v1[1], velocity_v1[2], state_.x(QS::OMEZ),
+                             phi, theta, psi,
                              sim_dt);
     if (save_flag_ && controller_save_.isFull()) {
       controller_save_.save();

@@ -37,6 +37,27 @@ class Actor(nn.Module):
         x = F.relu(self.l2(x))
         return self.max_action * torch.tanh(self.l3(x))
 
+# # For collective thrust & body-rates action
+# class Actor(nn.Module):
+#     def __init__(self, obs_dim, action_dim, max_action):
+#         super(Actor, self).__init__()
+        
+#         self.l1 = nn.Linear(obs_dim, 256)
+#         self.l2 = nn.Linear(256, 256)
+#         self.l3 = nn.Linear(256, 1)
+#         self.l4 = nn.Linear(256, 3)
+        
+#         self.max_action = max_action
+        
+#     def forward(self, x):
+#         x = z_score_normalize(x)
+#         x = F.relu(self.l1(x))
+#         x = F.relu(self.l2(x))
+        
+#         c = torch.sigmoid(self.l3(x)) * 22.0 # Thrust
+#         w = torch.tanh(self.l4(x)) * 3.0 # Omega
+#         return torch.cat([c, w], dim=1)
+
 class Critic(nn.Module):
     def __init__(self, obs_dim, action_dim):
         super(Critic, self).__init__()
