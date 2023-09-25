@@ -61,12 +61,13 @@ bool TargetQuadrotorEnv::reset(Ref<Vector<>> obs, const bool random)
   }
   else
   {
-    // quad_state_.x(QS::POSX) = 0.0;
-    // quad_state_.x(QS::POSY) = 2.0;
-    // quad_state_.x(QS::POSZ) = 5.0;
     quad_state_.x(QS::POSX) = 0.0;
-    quad_state_.x(QS::POSY) = 8.0;
+    quad_state_.x(QS::POSY) = 0.0;
     quad_state_.x(QS::POSZ) = 5.0;
+
+    // quad_state_.x(QS::POSX) = uniform_dist_(random_gen_) * 5.0; // -5 ~ 5
+    // quad_state_.x(QS::POSY) = 0.0;
+    // quad_state_.x(QS::POSZ) = 5.0;
   }
   // Reset quadrotor with random states
   target_ptr_->reset(quad_state_);

@@ -311,7 +311,7 @@ void MotionPlanner::executePath(image_transport::Publisher rgb_pub) {
   }
 
   // Flightmare
-  std::shared_ptr<Quadrotor> quad_ptr_ = std::make_shared<Quadrotor>();
+  std::shared_ptr<TrackerQuadrotor> quad_ptr_ = std::make_shared<TrackerQuadrotor>();
   Vector<3> quad_size(0.5, 0.5, 0.5);
   quad_ptr_->setSize(quad_size);
   std::shared_ptr<RGBCamera> rgb_camera_ = std::make_shared<RGBCamera>();

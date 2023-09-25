@@ -15,13 +15,7 @@ def test_model(env, model=None, render=False, max_episode_steps=500):
             epi_step += 1
             action = model.select_action(obs)
   
-            # v_xyz = np.array([[0.0]])
-            # temp_action = np.concatenate((action, v_xyz), axis=1).astype(np.float32)
-            # print(action)
-            # obs, reward, done, infos = env.step(temp_action)
-            
             obs, reward, done, infos = env.step(action)
-
             score += reward[0]
 
         print(">>> Evaluation episode {}, reward: {:.1f}".format(n_roll, score))

@@ -19,7 +19,7 @@ FlightPilot::FlightPilot(const ros::NodeHandle &nh, const ros::NodeHandle &pnh)
   }
 
   // quad initialization
-  quad_ptr_ = std::make_shared<Quadrotor>();
+  quad_ptr_ = std::make_shared<TrackerQuadrotor>();
 
   // add mono camera
   rgb_camera_ = std::make_shared<RGBCamera>();

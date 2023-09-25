@@ -36,27 +36,27 @@ add_compile_options(-O3)
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} ${CMAKE_CXX_ARCH_FLAGS} -Wall -DNDEBUG -fPIC")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} -Wall -g")
 
-#pilot
+# #pilot
 
-cs_add_library(flight_pilot
-    src/pilot/flight_pilot.cpp
-)
+# cs_add_library(flight_pilot
+#     src/pilot/flight_pilot.cpp
+# )
 
-target_link_libraries(flight_pilot
-  ${catkin_LIBRARIES}
-  ${OpenCV_LIBRARIES}
-  stdc++fs
-)
+# target_link_libraries(flight_pilot
+#   ${catkin_LIBRARIES}
+#   ${OpenCV_LIBRARIES}
+#   stdc++fs
+# )
 
-cs_add_executable(flight_pilot_node
-   src/pilot/flight_pilot_node.cpp
-)
+# cs_add_executable(flight_pilot_node
+#    src/pilot/flight_pilot_node.cpp
+# )
 
-target_link_libraries(flight_pilot_node
-  flight_pilot
-  ${OpenCV_LIBRARIES}
-  stdc++fs
-)
+# target_link_libraries(flight_pilot_node
+#   flight_pilot
+#   ${OpenCV_LIBRARIES}
+#   stdc++fs
+# )
 
 if(BUILD_MP)
 

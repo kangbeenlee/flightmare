@@ -9,7 +9,8 @@
 #include "flightlib/bridges/unity_message_types.hpp"
 #include "flightlib/common/quad_state.hpp"
 #include "flightlib/common/types.hpp"
-#include "flightlib/objects/quadrotor.hpp"
+// #include "flightlib/objects/quadrotor.hpp"
+#include "flightlib/objects/tracker_quadrotor.hpp"
 #include "flightlib/objects/static_gate.hpp"
 #include "flightlib/sensors/rgb_camera.hpp"
 
@@ -35,7 +36,7 @@ int main(int argc, char *argv[]) {
   bool unity_ready{false};
 
   // unity quadrotor
-  std::shared_ptr<Quadrotor> quad_ptr = std::make_shared<Quadrotor>();
+  std::shared_ptr<TrackerQuadrotor> quad_ptr = std::make_shared<TrackerQuadrotor>();
   QuadState quad_state;
   quad_state.setZero();
   quad_ptr->reset(quad_state);

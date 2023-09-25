@@ -6,6 +6,7 @@
 
 // flightlib
 #include "flightlib/envs/env_base.hpp"
+#include "flightlib/envs/test_env.hpp"
 #include "flightlib/envs/target_tracking_env.hpp"
 
 namespace py = pybind11;
@@ -30,4 +31,9 @@ PYBIND11_MODULE(flightgym, m) {
     .def("getActDim", &TargetTrackingEnv<TrackerQuadrotorEnv>::getActDim)
     .def("getExtraInfoNames", &TargetTrackingEnv<TrackerQuadrotorEnv>::getExtraInfoNames)
     .def("__repr__", [](const TargetTrackingEnv<TrackerQuadrotorEnv>& a) { return "Target Tracking Environment"; });
+
+  py::class_<TestEnv<QuadrotorEnv>>(m, "TestEnv_v0")
+    .def(py::init<>())
+    .def("reset", &TestEnv<QuadrotorEnv>::reset)
+    .def("__repr__", [](const TestEnv<QuadrotorEnv>& a) { return "Test Env"; });
 }

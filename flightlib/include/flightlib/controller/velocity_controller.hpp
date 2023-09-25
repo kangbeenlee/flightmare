@@ -59,6 +59,7 @@ class VelocityController {
 
   // Control angle
   Scalar theta_c{0.0}, phi_c{0.0};
+  Scalar prev_theta{0.0}, prev_phi{0.0};
 
   // PID controller error
   Scalar prev_error_vx_{0.0}, prev_error_vy_{0.0}, prev_error_vz_{0.0}, prev_error_theta_{0.0}, prev_error_phi_{0.0}, prev_error_wz_{0.0};

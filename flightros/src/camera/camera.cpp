@@ -10,6 +10,7 @@
 #include "flightlib/common/quad_state.hpp"
 #include "flightlib/common/types.hpp"
 #include "flightlib/objects/quadrotor.hpp"
+#include "flightlib/objects/tracker_quadrotor.hpp"
 #include "flightlib/sensors/rgb_camera.hpp"
 
 using namespace flightlib;
@@ -28,8 +29,8 @@ int main(int argc, char *argv[]) {
   image_transport::Publisher opticalflow_pub;
 
   // unity quadrotor
-  std::shared_ptr<Quadrotor> quad_ptr = std::make_shared<Quadrotor>();
-  std::shared_ptr<Quadrotor> target = std::make_shared<Quadrotor>();
+  std::shared_ptr<TrackerQuadrotor> quad_ptr = std::make_shared<TrackerQuadrotor>();
+  std::shared_ptr<TrackerQuadrotor> target = std::make_shared<TrackerQuadrotor>();
   // define quadsize scale (for unity visualization only)
   Vector<3> quad_size(0.5, 0.5, 0.5);
   quad_ptr->setSize(quad_size);
