@@ -10,6 +10,8 @@
 #include "flightlib/common/quad_state.hpp"
 #include "flightlib/common/types.hpp"
 #include "flightlib/objects/quadrotor.hpp"
+#include "flightlib/objects/tracker_quadrotor.hpp"
+#include "flightlib/objects/target_quadrotor.hpp"
 #include "flightlib/sensors/rgb_camera.hpp"
 
 // trajectory
@@ -175,22 +177,22 @@ int main(int argc, char *argv[]) {
   image_transport::Publisher depth_pub2;
 
   // unity quadrotor
-  std::shared_ptr<Quadrotor> quad_ptr1 = std::make_shared<Quadrotor>();
+  std::shared_ptr<TrackerQuadrotor> quad_ptr1 = std::make_shared<TrackerQuadrotor>();
   Vector<3> quad_size1(0.5, 0.5, 0.5);
   quad_ptr1->setSize(quad_size1);
   QuadState quad_state1;
 
-  std::shared_ptr<Quadrotor> quad_ptr2 = std::make_shared<Quadrotor>();
+  std::shared_ptr<TrackerQuadrotor> quad_ptr2 = std::make_shared<TrackerQuadrotor>();
   Vector<3> quad_size2(0.5, 0.5, 0.5);
   quad_ptr2->setSize(quad_size2);
   QuadState quad_state2;
 
-  std::shared_ptr<Quadrotor> tracker_ptr = std::make_shared<Quadrotor>();
+  std::shared_ptr<TrackerQuadrotor> tracker_ptr = std::make_shared<TrackerQuadrotor>();
   Vector<3> quad_size3(0.5, 0.5, 0.5);
   tracker_ptr->setSize(quad_size3);
   QuadState tracker_state;
 
-  std::shared_ptr<Quadrotor> target_ptr = std::make_shared<Quadrotor>();
+  std::shared_ptr<TargetQuadrotor> target_ptr = std::make_shared<TargetQuadrotor>();
   Vector<3> quad_size4(0.5, 0.5, 0.5);
   target_ptr->setSize(quad_size4);
   QuadState target_state;
