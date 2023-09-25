@@ -1,0 +1,71 @@
+Scalar TrackerQuadrotorEnv::rewardFunction(const Scalar range)
+{
+  // // Test reward
+  // if (range < 1.0)
+  //   return -1.0;
+  // else
+  //   return 10.0 * exp(-range + 1);
+
+  // Coefficient
+  Scalar c1 = 3.0;
+  Scalar c2 = 0.5;
+  Scalar c3 = -10.0;
+  Scalar c4 = -1e-4;
+
+  // Progress reward
+  Scalar progress_reward;
+  if (range < 1.5)
+    progress_reward = exp(range - 1.5);
+  else
+    progress_reward = exp(-range + 1.5);
+
+  // // Progress reward
+  // Scalar progress_reward;
+  // if (range >= 2.0)
+  //   progress_reward = 5 * (prev_range_ - range);
+  // else if (1.5 <= range && range < 2.0)
+  //   progress_reward = 1.0;
+  // else
+  //   progress_reward = -1.0;
+
+  // Perception reward
+  Vector<3> h = quad_state_.q().toRotationMatrix() * Vector<3>(1, 0, 0);
+  Vector<3> d(gt_target_point_[0] - quad_state_.x(QS::POSX), gt_target_point_[1] - quad_state_.x(QS::POSY), gt_target_point_[2] - quad_state_.x(QS::POSZ));
+  h = h / h.norm();
+  d = d / d.norm();
+
+  Scalar theta = acos(h.dot(d));
+  // Scalar perception_reward = exp(c3 * theta);
+  Scalar perception_reward = exp(c3 * pow(theta, 4));
+ 
+  // command reward
+  Scalar command_reward = pow((quad_act_ - prev_act_).norm(), 2);
+
+
+  prev_act_ = quad_act_;
+  prev_range_ = range;
+
+  Scalar total_reward;
+  if (first_)
+  {
+    first_ = false;
+    total_reward = c2 * perception_reward + c4 * command_reward;
+  }
+  else
+    total_reward = c1 * progress_reward + c2 * perception_reward + c4 * command_reward;
+
+  // std::cout << ">>> Total reward: " << total_reward << std::endl;
+  return total_reward;
+
+
+  // Scalar moving_average = maf_.add(range);
+  // std::cout << ">>> moving_average: " << moving_average << std::endl;
+
+  // if (range <= 1.5)
+  //   return 1.0;
+
+  // if (range <= moving_average)
+  //   return 1.0;
+  // else
+  //   return -1.0;
+}

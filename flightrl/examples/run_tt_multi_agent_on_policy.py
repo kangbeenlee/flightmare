@@ -13,14 +13,12 @@ from datetime import datetime
 from rpg_baselines.envs import target_tracking_env_wrapper as wrapper
 from flightgym import TargetTrackingEnv_v0
 
-from rpg_baselines.single_agent.ddpg.ddpg import DDPG
-from rpg_baselines.single_agent.ddpg.ddpg import Trainer as DDPGTrainer
-from rpg_baselines.single_agent.td3.td3 import TD3
-from rpg_baselines.single_agent.td3.td3 import Trainer as TD3Trainer
-from rpg_baselines.single_agent.ppo.ppo import PPO
-from rpg_baselines.single_agent.ppo.ppo import Trainer as PPOTrainer
+
+# from rpg_baselines.multi_agent.mappo import MAPPO
+
+
 # from rpg_baselines.single_agent.test import test_model
-from rpg_baselines.single_agent.test_control import test_model
+# from rpg_baselines.single_agent.test_control import test_model
 
 
 
@@ -45,8 +43,8 @@ def main():
     parser.add_argument("--policy", type=str, default="ddpg", help='Policy based reinforcement learning model')
 
     # Learning parameters
-    parser.add_argument('--max_training_timesteps', default=2000000, type=int, help='Number of training timesteps')
-    parser.add_argument('--max_episode_steps', default=1000, type=int, help='Number of steps per episode')
+    parser.add_argument('--max_training_timesteps', default=1000000, type=int, help='Number of training timesteps')
+    parser.add_argument('--max_episode_steps', default=300, type=int, help='Number of steps per episode')
     parser.add_argument('--evaluation_time_steps', default=5000, type=int, help='Number of steps for evaluation')
     parser.add_argument('--memory_capacity', default=100000, type=int, help='Replay memory capacity')
     parser.add_argument('--batch_size', default=256, type=int, help='Batch size')
@@ -233,9 +231,9 @@ def main():
             model = DDPG(device=args.device,
                          obs_dim=env.num_obs,
                          action_dim=env.num_acts)
-            # model.load(args.load_nn_actor, args.load_nn_critic)
-            # test_model(env, model=model, render=args.render, max_episode_steps=args.max_episode_steps)
-            test_model(env, render=args.render)
+            model.load(args.load_nn_actor, args.load_nn_critic)
+            test_model(env, model=model, render=args.render, max_episode_steps=args.max_episode_steps)
+            # test_model(env, render=args.render)
         elif args.policy == "td3":
             model = TD3(device=args.device,
                         obs_dim=env.num_obs,

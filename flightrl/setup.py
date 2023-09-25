@@ -19,7 +19,7 @@ setup(
     packages=['rpg_baselines',
               'rpg_baselines.envs',
               'rpg_baselines.single_agent',
-              'rpg_baselines.single_agent.ddpg',
-              'rpg_baselines.single_agent.td3',
-              'rpg_baselines.single_agent.ppo'],
+              'rpg_baselines.multi_agent',
+              'rpg_baselines.multi_agent.off_policy',
+              'rpg_baselines.multi_agent.on_policy'],
 )

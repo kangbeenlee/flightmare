@@ -19,7 +19,8 @@
 #include "flightlib/common/math.hpp"
 #include "flightlib/common/quad_state.hpp"
 #include "flightlib/common/types.hpp"
-#include "flightlib/objects/quadrotor.hpp"
+// #include "flightlib/objects/quadrotor.hpp"
+#include "flightlib/objects/tracker_quadrotor.hpp"
 #include "flightlib/objects/static_object.hpp"
 #include "flightlib/objects/unity_camera.hpp"
 #include "flightlib/sensors/rgb_camera.hpp"
@@ -48,7 +49,7 @@ class UnityBridge {
   bool setScene(const SceneID &scene_id);
 
   // add object
-  bool addTracker(std::shared_ptr<Quadrotor> quad);
+  bool addTracker(std::shared_ptr<TrackerQuadrotor> quad);
   bool addCamera(std::shared_ptr<UnityCamera> unity_camera);
   bool addStaticObject(std::shared_ptr<StaticObject> static_object);
 
@@ -70,7 +71,7 @@ class UnityBridge {
   PubMessage_t pub_msg_;
   Logger logger_{"UnityBridge"};
 
-  std::vector<std::shared_ptr<Quadrotor>> unity_quadrotors_;
+  std::vector<std::shared_ptr<TrackerQuadrotor>> unity_quadrotors_;
   std::vector<std::shared_ptr<RGBCamera>> rgb_cameras_;
   std::vector<std::shared_ptr<StaticObject>> static_objects_;
 
@@ -100,7 +101,7 @@ int main() {
 
   // Add a quad to connect to Flightmare
   QuadrotorDynamics dyn = QuadrotorDynamics(1.0, 0.2);
-  std::shared_ptr<Quadrotor> quad = std::make_shared<Quadrotor>(dyn);
+  std::shared_ptr<TrackerQuadrotor> quad = std::make_shared<TrackerQuadrotor>(dyn);
   unity_bridge.addTracker(quad);
 
   if (unity_bridge.connectUnity(UnityScene::WAREHOUSE)) {

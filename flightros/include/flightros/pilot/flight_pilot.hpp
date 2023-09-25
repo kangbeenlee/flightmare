@@ -17,7 +17,8 @@
 #include "flightlib/bridges/unity_bridge.hpp"
 #include "flightlib/common/quad_state.hpp"
 #include "flightlib/common/types.hpp"
-#include "flightlib/objects/quadrotor.hpp"
+// #include "flightlib/objects/quadrotor.hpp"
+#include "flightlib/objects/tracker_quadrotor.hpp"
 #include "flightlib/sensors/rgb_camera.hpp"
 
 using namespace flightlib;
@@ -52,7 +53,7 @@ class FlightPilot {
   ros::Timer timer_main_loop_;
 
   // unity quadrotor
-  std::shared_ptr<Quadrotor> quad_ptr_;
+  std::shared_ptr<TrackerQuadrotor> quad_ptr_;
   std::shared_ptr<RGBCamera> rgb_camera_;
   QuadState quad_state_;
 

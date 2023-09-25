@@ -35,7 +35,8 @@
 #include "flightlib/bridges/unity_message_types.hpp"
 #include "flightlib/common/quad_state.hpp"
 #include "flightlib/common/types.hpp"
-#include "flightlib/objects/quadrotor.hpp"
+// #include "flightlib/objects/quadrotor.hpp"
+#include "flightlib/objects/tracker_quadrotor.hpp"
 #include "flightlib/sensors/rgb_camera.hpp"
 
 namespace ob = ompl::base;

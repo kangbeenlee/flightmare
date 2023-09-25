@@ -96,16 +96,15 @@ TargetTrackingEnv<EnvBase>::~TargetTrackingEnv() {}
 template<typename EnvBase>
 bool TargetTrackingEnv<EnvBase>::reset(Ref<MatrixRowMajor<>> obs, Ref<Vector<>> target_obs)
 {
-  if (obs.rows() != num_envs_ || obs.cols() != obs_dim_) 
-  {
+  if (obs.rows() != num_envs_ || obs.cols() != obs_dim_) {
     logger_.error("Input matrix dimensions do not match with that of the environment.");
     return false;
   }
 
   receive_id_ = 0;
-  for (int i = 0; i < num_envs_; i++)
-  {
+  for (int i = 0; i < num_envs_; i++) {
     envs_[i]->reset(obs.row(i));
+    // envs_[i]->reset(obs.row(i), tracker_poses_[i]);
   }
 
   // Initialize target quadrotor
@@ -207,6 +206,7 @@ void TargetTrackingEnv<EnvBase>::perTrackerStep(int agent_id, Ref<MatrixRowMajor
   if (done[agent_id])
   {
     envs_[agent_id]->reset(obs.row(agent_id));
+    // envs_[agent_id]->reset(obs.row(agent_id), tracker_poses_[agent_id]);
     reward(agent_id) += terminal_reward;
   }
 }

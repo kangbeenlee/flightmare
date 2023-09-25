@@ -233,9 +233,9 @@ class TD3(object):
         torch.save(self.actor.state_dict(), filename_actor)
         torch.save(self.critic.state_dict(), filename_critic)
 
-    def load(self, load_nn_actor, load_nn_critic):
-        self.critic.load_state_dict(torch.load(load_nn_critic))
-        self.actor.load_state_dict(torch.load(load_nn_actor))
+    def load(self, load_nn):
+        self.actor.load_state_dict(torch.load(load_nn))
+        # self.critic.load_state_dict(torch.load(load_nn_critic))
 
 class Trainer:
     def __init__(
@@ -245,6 +245,7 @@ class Trainer:
             max_training_timesteps=None,
             max_episode_steps=None,
             evaluation_time_steps=None,
+            evaluation_times=None,
             obs_dim=None,
             action_dim=None,
             max_action=None,
@@ -260,39 +261,40 @@ class Trainer:
         self.max_training_timesteps = max_training_timesteps
         self.max_episode_steps = max_episode_steps
         self.evaluation_time_steps = evaluation_time_steps
+        self.evaluation_times = evaluation_times
         self.obs_dim = obs_dim
         self.action_dim = action_dim
         self.max_action = max_action
         self.expl_noise = expl_noise
         self.training_start = training_start
-        self.save_dir = os.path.join(save_dir, "saved", "td3")
+        self.save_dir = os.path.join(save_dir, "model_single", "td3")
         self.replay_buffer = ReplayBuffer(obs_dim=obs_dim, action_dim=action_dim, memory_capacity=memory_capacity, batch_size=batch_size)
 
         # Tensorboard results
         self.writer = SummaryWriter(log_dir="runs/td3/")
 
-    def evaluate_policy(env, policy, eval_episodes=10):
+    def evaluate_policy(self, env, policy, max_episode_steps, eval_episodes=10):
         avg_reward = 0.
         for _ in range(eval_episodes):
-            obs, done = env.reset(), False
-            while not done:
+            obs, done, epi_step = env.reset(), False, 0
+            while not (done or (epi_step > max_episode_steps)):
+                epi_step += 1
                 action = policy.select_action(np.array(obs))
                 obs, reward, done, _ = env.step(action)
-                avg_reward += reward
+                avg_reward += reward[0]
         avg_reward = round(avg_reward / eval_episodes, 2)
         return avg_reward
 
     def learn(self, render=False):
         time_step = 0 # Total training time step
         tqdm_bar = tqdm(initial=0, desc="Training", total=self.max_training_timesteps, unit="timestep")
-        n_episode, best_score = 0, 0, None
+        n_episode, best_score = 0, None
 
         if render:
             self.env.connectUnity()
 
         while time_step < self.max_training_timesteps:
             n_episode += 1 # Start new episode
-            print_episode += 1
             obs, epi_step, score = self.env.reset(), 0, 0.0
             
             while not epi_step > self.max_episode_steps:
@@ -322,7 +324,7 @@ class Trainer:
                         self.writer.add_scalar("actor_loss", -actor_loss, global_step=time_step)
 
                 if time_step % self.evaluation_time_steps == 0:
-                    avg_reward = self.evaluate_policy(self.env, self.model)
+                    avg_reward = self.evaluate_policy(self.env, self.model, self.max_episode_steps, self.evaluation_times)
                     print("Episode : {} \t\t Timestep : {} \t\t Average Reward : {}".format(n_episode, time_step, avg_reward))
                     
                     if best_score == None or avg_reward > best_score:

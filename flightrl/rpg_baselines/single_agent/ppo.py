@@ -231,7 +231,7 @@ class Trainer:
         self.action_std_decay_freq = action_std_decay_freq
         self.action_std_decay_rate = action_std_decay_rate
         self.min_action_std = min_action_std
-        self.save_dir = os.path.join(save_dir, "saved", "ppo")
+        self.save_dir = os.path.join(save_dir, "model_single", "ppo")
         # Tensorboard results
         self.writer = SummaryWriter(log_dir="runs/ppo/")
 

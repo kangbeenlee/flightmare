@@ -352,6 +352,7 @@ int main(int argc, char *argv[]) {
         cv::circle(img, cv::Point(u_c_target, v_c_target), 1, cv::Scalar(255, 0, 0), 2);
         //
         image_with_box = dir + "/quadrotor_image_with_box/quadrotor_45_" + std::to_string(save_45) + ".png";
+        cv::imshow(image_with_box, img);
         cv::imwrite(image_with_box, img);
         //
         coordinates = dir + "/quadrotor_label/quadrotor_45_" + std::to_string(save_45) + ".txt";

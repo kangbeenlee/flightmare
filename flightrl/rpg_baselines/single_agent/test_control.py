@@ -4,7 +4,7 @@ import matplotlib.gridspec as gridspec
 
 
 def test_model(env, render=False):
-    num_rollouts = 5
+    num_rollouts = 20
     
     if render:
         env.connectUnity()
@@ -17,14 +17,14 @@ def test_model(env, render=False):
 
         while not done:
 
-            # # vx, vy, vz, wz (m/s, m/s, m/s, rad/s)
-            act = np.array([[1.0, 1.0, 0.0, 0.0]], dtype=np.float32)
+            # vx, vy, vz, wz (m/s, m/s, m/s, rad/s)
+            act = np.array([[0.0, 0.0, 0.0, 0.0]], dtype=np.float32)
             
             # # Step input response test
-            # vx = 0.0
-            # vy = 1.0
+            # vx = 3.0
+            # vy = -3.0
             # vz = 0.0
-            # wz = 0.0
+            # wz = 1.0
             
             # if ep_len < 150:
             #     act = np.array([[vx, vy, vz, wz]], dtype=np.float32)
@@ -39,7 +39,6 @@ def test_model(env, render=False):
             
             
             obs, rew, done, infos = env.step(act)
-            print(obs[0,3:6])
             target_obs = env.get_target_state()
             #
             ep_len += 1

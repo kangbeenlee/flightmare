@@ -70,6 +70,12 @@ class TargetTrackingEnv {
   void perTrackerStep(int agent_id, Ref<MatrixRowMajor<>> act, Ref<MatrixRowMajor<>> obs, Ref<Vector<>> reward,
                       Ref<BoolVector<>> done, Ref<MatrixRowMajor<>> extra_info); // for multi-tracking quadrotors
 
+  // Initial tracker position (four trackers)
+  std::vector<Vector<3>> tracker_poses_{Vector<3>{0.0, -7.0, 5.0},
+                                        Vector<3>{-3.0, -1.0, 5.0},
+                                        Vector<3>{0.0, -1.0, 5.0},
+                                        Vector<3>{3.0, -1.0, 5.0}};
+
   // create objects
   Logger logger_{"TargetTrackingEnv"};
   std::vector<std::unique_ptr<EnvBase>> envs_;

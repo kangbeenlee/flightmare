@@ -14,16 +14,32 @@ quadrotor_dynamics:
   kappa: 0.016 # rotor coeff relating the drag torque and the thrust
   omega_max: [6.0, 6.0, 6.0]  # body rate constraint (x, y, z)
 
+# Action based on vehicle1 frame
 quadrotor_pid_controller_gain:
-  kp_vxy: 5.0
-  ki_vxy: 0.0
-  kd_vxy: 0.0
+  kp_vxy: 0.25
+  ki_vxy: 0.05
+  kd_vxy: 0.0 # 0.0
   kp_vz: 4.0
   ki_vz: 0.0
   kd_vz: 0.3
-  kp_angle: 5.0
+  kp_angle: 10.0 # 2.0 3.0 5.0
   ki_angle: 0.0
-  kd_angle: 1.5
+  kd_angle: 1.0
   kp_wz: 4.0
   ki_wz: 0.0
   kd_wz: 0.0
+
+# # Action based on world frame
+# quadrotor_pid_controller_gain:
+#   kp_vxy: 5.0
+#   ki_vxy: 0.0
+#   kd_vxy: 0.0
+#   kp_vz: 4.0
+#   ki_vz: 0.0
+#   kd_vz: 0.3
+#   kp_angle: 5.0
+#   ki_angle: 0.0
+#   kd_angle: 1.5
+#   kp_wz: 4.0
+#   ki_wz: 0.0
+#   kd_wz: 0.0

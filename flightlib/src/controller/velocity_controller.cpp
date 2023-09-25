@@ -103,11 +103,8 @@ Vector<4> VelocityController::control(const Scalar des_vx, const Scalar des_vy, 
                                  const Scalar vx, const Scalar vy, const Scalar vz, const Scalar wz,
                                  const Scalar phi, const Scalar theta, const Scalar psi) {
     // Controller 1: outter loop
-    Scalar x_ddot = controlVx(des_vx, vx);
-    Scalar y_ddot = controlVy(des_vy, vy);
-
-    theta_c = x_ddot;
-    phi_c = -y_ddot;
+    theta_c = controlVx(des_vx, vx);
+    phi_c = -controlVy(des_vy, vy);
 
     limitControlAngle(theta_c);
     limitControlAngle(phi_c);

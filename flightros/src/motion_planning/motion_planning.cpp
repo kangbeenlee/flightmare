@@ -299,7 +299,7 @@ void MotionPlanner::executePath() {
   }
 
   // Flightmare
-  std::shared_ptr<Quadrotor> quad_ptr_ = std::make_shared<Quadrotor>();
+  std::shared_ptr<TrackerQuadrotor> quad_ptr_ = std::make_shared<TrackerQuadrotor>();
   std::shared_ptr<RGBCamera> rgb_camera_ = std::make_shared<RGBCamera>();
 
   Vector<3> B_r_BC(0.0, 0.0, 0.3);

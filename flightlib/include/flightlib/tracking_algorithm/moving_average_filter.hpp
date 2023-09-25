@@ -24,7 +24,7 @@ class MovingAverageFilter {
   
   Scalar add(Scalar val)
   {
-    if (window.size() >= size)
+    if ((int)window.size() >= size)
     {
         sum -= window.front();
         window.pop_front();

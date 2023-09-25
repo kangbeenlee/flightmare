@@ -7,22 +7,19 @@ KalmanFilter::~KalmanFilter() {}
 
 void KalmanFilter::reset()
 {
-    x_ = x0_;
-    P_ = P0_;
+    x_ = (Vector<9>() << 0, 0, 0, 0, 0, 0, 0, 0, 0).finished(); // w.r.t. camera frame
+    P_ = Matrix<9, 9>::Identity() * 10.0;
+    initialized_ = false;
 }
 
-void KalmanFilter::init(const Scalar Ts, Ref<Vector<9>> x0, Ref<Matrix<9, 9>> P0, const Scalar sigma_w, const Scalar sigma_v)
+void KalmanFilter::init(const Scalar Ts, Ref<Vector<9>> x0, const Scalar sigma_w, const Scalar sigma_v)
 {
     // Kalman filter sampling time
     Ts_ = Ts;
 
     // Initial guess
     x_ = x0;
-    P_ = P0;
-
-    // Store initial setting
-    x0_ = x0;
-    P0_ = P0;
+    P_ = Matrix<9, 9>::Identity() * 10.0;
 
     // System matrix for constant acceleration model
     F_.setZero();

@@ -16,13 +16,17 @@
 #include "flightlib/common/types.hpp"
 #include "flightlib/envs/env_base.hpp"
 #include "flightlib/objects/tracker_quadrotor.hpp"
+#include "flightlib/sensors/rgb_camera.hpp"
+
+#include <opencv2/opencv.hpp>
+
+// Header files for target tracking
 #include "flightlib/sensors/stereo_camera.hpp"
 #include "flightlib/tracking_algorithm/kalman_filter.hpp"
 #include "flightlib/data/sensor_save_v1.hpp"
 #include "flightlib/data/sensor_save_v2.hpp"
 #include "flightlib/data/tracking_save_v1.hpp"
 #include "flightlib/data/tracking_save_v2.hpp"
-
 #include "flightlib/tracking_algorithm/moving_average_filter.hpp"
 
 namespace flightlib {
@@ -57,12 +61,13 @@ class TrackerQuadrotorEnv final : public EnvBase {
 
   // - public OpenAI-gym-style functions
   bool reset(Ref<Vector<>> obs, const bool random = true) override;
+  bool reset(Ref<Vector<>> obs, Ref<Vector<>> position);
   // Test for only tracker without target tracking
   Scalar step(const Ref<Vector<>> act, Ref<Vector<>> obs) override;  // Not used
   Scalar trackerStep(const Ref<Vector<>> act, Ref<Vector<>> obs, Vector<3> target_point);
 
   // Reward function for RL
-  Scalar rewardFunction(const Scalar range);
+  Scalar rewardFunction(Vector<3> target_point);
 
   //
   Vector<4> eulerToQuaternion(const Ref<Vector<3>> euler_zyx) const;
@@ -87,6 +92,9 @@ class TrackerQuadrotorEnv final : public EnvBase {
   Command cmd_;
   Logger logger_{"TrackerQaudrotorEnv"};
 
+  // RGB camera
+  std::shared_ptr<RGBCamera> rgb_camera_;
+
   // Stereo camera
   std::shared_ptr<StereoCamera> stereo_camera_;
   SensorSaveV2 sensor_save_;
@@ -102,6 +110,8 @@ class TrackerQuadrotorEnv final : public EnvBase {
   //
   Vector<3> gt_target_point_;
   Vector<3> t_b_; // Target position w.r.t. body frame
+  bool first_{true};
+  Scalar prev_range_;
 
   //
   MovingAverageFilter maf_;
