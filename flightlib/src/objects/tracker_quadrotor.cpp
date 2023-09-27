@@ -122,6 +122,7 @@ void TrackerQuadrotor::init(void) {
   velocity_controller_.setQuadrotorMass(dynamics_.getMass());
   velocity_controller_.setGravity(-Gz);
   controller_save_ = ControllerSave();
+
 }
 
 bool TrackerQuadrotor::reset(void) {

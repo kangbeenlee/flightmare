@@ -74,6 +74,12 @@ void TargetTrackingEnv<EnvBase>::init(void)
   // Define target drone
   target_ = std::make_unique<TargetQuadrotorEnv>();
 
+  // Set initial start position
+  tracker_positions_.push_back(Vector<3>{0.0, 0.0, 5.0});
+  tracker_positions_.push_back(Vector<3>{-3.0, 0.0, 5.0});
+  tracker_positions_.push_back(Vector<3>{3.0, 0.0, 5.0});
+  tracker_positions_.push_back(Vector<3>{0.0, -3.0, 5.0});
+
   // Set Unity
   setUnity(unity_render_);
 
@@ -103,8 +109,8 @@ bool TargetTrackingEnv<EnvBase>::reset(Ref<MatrixRowMajor<>> obs, Ref<Vector<>> 
 
   receive_id_ = 0;
   for (int i = 0; i < num_envs_; i++) {
-    envs_[i]->reset(obs.row(i));
-    // envs_[i]->reset(obs.row(i), tracker_poses_[i]);
+    // envs_[i]->reset(obs.row(i));
+    envs_[i]->reset(obs.row(i), tracker_positions_[i]);
   }
 
   // Initialize target quadrotor
@@ -192,7 +198,15 @@ template<typename EnvBase>
 void TargetTrackingEnv<EnvBase>::perTrackerStep(int agent_id, Ref<MatrixRowMajor<>> act, Ref<MatrixRowMajor<>> obs, Ref<Vector<>> reward,
                                                 Ref<BoolVector<>> done, Ref<MatrixRowMajor<>> extra_info)
 {
-  reward(agent_id) = envs_[agent_id]->trackerStep(act.row(agent_id), obs.row(agent_id), target_->getPosition());
+  std::vector<Vector<3>> other_tracker_positions;
+  for (int i = 0; i < num_envs_; i++)
+  {
+    if (i != agent_id)
+      other_tracker_positions.push_back(envs_[i]->getPosition());
+  }
+
+  std::cout << "Tracker " << agent_id << " =========================================" << std::endl;
+  reward(agent_id) = envs_[agent_id]->trackerStep(act.row(agent_id), obs.row(agent_id), target_->getPosition(), other_tracker_positions);
 
   Scalar terminal_reward = 0;
   done(agent_id) = envs_[agent_id]->isTerminalState(terminal_reward);
@@ -205,8 +219,8 @@ void TargetTrackingEnv<EnvBase>::perTrackerStep(int agent_id, Ref<MatrixRowMajor
 
   if (done[agent_id])
   {
-    envs_[agent_id]->reset(obs.row(agent_id));
-    // envs_[agent_id]->reset(obs.row(agent_id), tracker_poses_[agent_id]);
+    // envs_[agent_id]->reset(obs.row(agent_id));
+    envs_[agent_id]->reset(obs.row(agent_id), tracker_positions_[agent_id]);
     reward(agent_id) += terminal_reward;
   }
 }

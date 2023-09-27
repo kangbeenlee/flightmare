@@ -43,7 +43,6 @@ void KalmanFilter::init(const Scalar Ts, Ref<Vector<9>> x0, const Scalar sigma_w
     H_(1, 3) = 1;
     H_(2, 6) = 1;
 
-
     // Define system noise matrix
     Q_ = Matrix<3, 3>::Identity() * pow(sigma_w, 2);
     // Define sensor noise matrix
@@ -54,7 +53,7 @@ void KalmanFilter::init(const Scalar Ts, Ref<Vector<9>> x0, const Scalar sigma_w
 
 void KalmanFilter::predict()
 {
-    if (!initialized_) throw std::runtime_error("Filter is not initialized!");
+    if (!initialized_) throw std::runtime_error("Kalman filter is not initialized!");
 
     x_ = F_ * x_;
     P_ = F_ * P_ * F_.transpose() + Gamma_ * Q_ * Gamma_.transpose();
@@ -62,7 +61,7 @@ void KalmanFilter::predict()
 
 void KalmanFilter::update(const Ref<Vector<3>> z)
 {
-    if (!initialized_) throw std::runtime_error("Filter is not initialized!");
+    if (!initialized_) throw std::runtime_error("Kalman filter is not initialized!");
 
     // Innovation
     Matrix<3, 3> S = H_ * P_ * H_.transpose() + R_;
