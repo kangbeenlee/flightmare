@@ -8,10 +8,10 @@
 
 namespace flightlib {
 
-class SensorSaveV2 {
+class SensorSave {
  public:
-  SensorSaveV2() {};
-  ~SensorSaveV2() {};
+  SensorSave() {};
+  ~SensorSave() {};
 
   void store(Ref<Vector<4>> gt_pixel, Ref<Vector<4>> pixel, Ref<Vector<3>> gt_measurement, Ref<Vector<3>> measurement, const Scalar sim_dt)
   {
