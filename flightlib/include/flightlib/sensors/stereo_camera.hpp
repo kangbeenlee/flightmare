@@ -13,19 +13,18 @@ class StereoCamera {
   StereoCamera();
   ~StereoCamera();
   
+  void init(const Ref<Vector<3>> B_r_LC, const Ref<Vector<3>> B_r_RC, const Ref<Matrix<3, 3>> R_B_C);
+
   // Public sensor data processing code
-  bool processImagePoint(const Ref<Vector<3>> target_point, const Ref<Matrix<4, 4>> T_W_B);
+  bool computePixelPoint(const Ref<Vector<3>> position, const Ref<Matrix<4, 4>> T_W_B);
 
   //
   void reset(void);
 
   // Public get functions (sensor measurement)
-  inline Vector<4> getGroundTruthPixels(void) const { return gt_pixels_; };
+  inline Vector<4> getGtPixels(void) const { return gt_pixels_; };
   inline Vector<4> getPixels(void) const { return pixels_; };
-  inline Scalar getGroundTruthDepth(void) const { return gt_depth_; };
-  inline Scalar getDepth(void) const { return depth_; };
-  inline Vector<3> getGroundTruthPosition(void) const { return gt_p_c_; };
-  inline Vector<3> getTargetPosition(void) const { return p_c_; };
+  inline Vector<3> getObjectPosition(void) const { return p_w_; };
 
   // Public get functions
   inline Scalar getFOV(void) const { return fov_; };
@@ -38,15 +37,12 @@ class StereoCamera {
   inline Matrix<4, 4> getFromLeftCameraToBody(void) const { return T_LC_B_; };
 
  private:
-  // From body to left camera
-  Matrix<3, 3> R_B_LC_; // Rotation
-  Vector<3> B_r_LC_; // Translation
-  Matrix<4, 4> T_B_LC_; // Transformation
-  // From body to right camera
-  Matrix<3, 3> R_B_RC_;
-  Vector<3> B_r_RC_;
-  Matrix<4, 4> T_B_RC_;
+  bool initialized_{false};
 
+  // From body to left camera
+  Matrix<4, 4> T_B_LC_;
+  // From body to right camera
+  Matrix<4, 4> T_B_RC_;
   // From left camera to body
   Matrix<4, 4> T_LC_B_;
 
@@ -64,12 +60,10 @@ class StereoCamera {
   // Stereo camera sensor measurement
   Vector<4> gt_pixels_;
   Vector<4> pixels_;
-  Scalar gt_depth_;
-  Scalar depth_;
-  Vector<3> gt_p_c_, p_c_;
+  Vector<3> p_w_; // object position based on world frame
 
   // Random variable generator for pixel noise
-  std::normal_distribution<Scalar> norm_dist_{0.0, 0.1};
+  std::normal_distribution<Scalar> norm_dist_{0.0, 0.2};
   std::random_device rd_;
   std::mt19937 random_gen_{rd_()};
 };
