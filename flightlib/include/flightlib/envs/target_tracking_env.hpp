@@ -71,10 +71,7 @@ class TargetTrackingEnv {
                       Ref<BoolVector<>> done, Ref<MatrixRowMajor<>> extra_info); // for multi-tracking quadrotors
 
   // Initial tracker position (four trackers)
-  std::vector<Vector<3>> tracker_poses_{Vector<3>{0.0, -7.0, 5.0},
-                                        Vector<3>{-3.0, -1.0, 5.0},
-                                        Vector<3>{0.0, -1.0, 5.0},
-                                        Vector<3>{3.0, -1.0, 5.0}};
+  std::vector<Vector<3>> tracker_positions_;
 
   // create objects
   Logger logger_{"TargetTrackingEnv"};

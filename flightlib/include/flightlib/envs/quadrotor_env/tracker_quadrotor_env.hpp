@@ -23,8 +23,7 @@
 // Header files for target tracking
 #include "flightlib/sensors/stereo_camera.hpp"
 #include "flightlib/tracking_algorithm/kalman_filter.hpp"
-#include "flightlib/data/sensor_save_v1.hpp"
-#include "flightlib/data/sensor_save_v2.hpp"
+#include "flightlib/data/sensor_save.hpp"
 #include "flightlib/data/tracking_save_v1.hpp"
 #include "flightlib/data/tracking_save_v2.hpp"
 #include "flightlib/tracking_algorithm/moving_average_filter.hpp"
@@ -62,16 +61,24 @@ class TrackerQuadrotorEnv final : public EnvBase {
   // - public OpenAI-gym-style functions
   bool reset(Ref<Vector<>> obs, const bool random = true) override;
   bool reset(Ref<Vector<>> obs, Ref<Vector<>> position);
-  // Test for only tracker without target tracking
-  Scalar step(const Ref<Vector<>> act, Ref<Vector<>> obs) override;  // Not used
-  Scalar trackerStep(const Ref<Vector<>> act, Ref<Vector<>> obs, Vector<3> target_point);
-
-  // Reward function for RL
-  Scalar rewardFunction(Vector<3> target_point);
 
   //
+  Matrix<3, 3> Rot_x(const Scalar angle) const;
+  Matrix<3, 3> Rot_y(const Scalar angle) const;
+  Matrix<3, 3> Rot_z(const Scalar angle) const;
+  Matrix<3, 3> eulerToRotation(const Ref<Vector<3>> euler_zyx) const;
   Vector<4> eulerToQuaternion(const Ref<Vector<3>> euler_zyx) const;
   Matrix<4, 4> getBodyToWorld() const;
+
+  //
+  Vector<3> getPosition(void) const;
+
+  // Test for only tracker without target tracking
+  Scalar step(const Ref<Vector<>> act, Ref<Vector<>> obs) override;  // Not used
+  Scalar trackerStep(const Ref<Vector<>> act, Ref<Vector<>> obs, Vector<3> target_position, const std::vector<Vector<3>>& other_tracker_positions);
+
+  // Reward function for RL
+  Scalar rewardFunction(Vector<3> target_position);
 
   // - public set functions
   bool loadParam(const YAML::Node &cfg);
@@ -92,24 +99,24 @@ class TrackerQuadrotorEnv final : public EnvBase {
   Command cmd_;
   Logger logger_{"TrackerQaudrotorEnv"};
 
-  // RGB camera
-  std::shared_ptr<RGBCamera> rgb_camera_;
-
   // Stereo camera
-  std::shared_ptr<StereoCamera> stereo_camera_;
-  SensorSaveV2 sensor_save_;
+  unsigned int n_cameras_{3};
+  std::vector<std::shared_ptr<StereoCamera>> multi_stereo_;
+  SensorSave sensor_save_;
   bool sensor_flag_{true};
 
   // Kalman filter
+  std::vector<std::shared_ptr<KalmanFilter>> multi_filter_;
+
   std::shared_ptr<KalmanFilter> kf_;
   TrackingSaveV2 tracking_save_;
-  Vector<3> gt_target_position_, target_position_;
+  Vector<3> gt_target_position_, estimated_position_;
   Vector<4> gt_pixels_, pixels_;
   bool tracking_flag_{true};
 
+
+
   //
-  Vector<3> gt_target_point_;
-  Vector<3> t_b_; // Target position w.r.t. body frame
   bool first_{true};
   Scalar prev_range_;
 
