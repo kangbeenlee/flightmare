@@ -23,16 +23,9 @@ class KalmanFilter {
   void update(const Ref<Vector<3>> z);
 
   // Public get functions
-  inline Vector<3> getEstimatedPositionWrtCamera(void) const { return Vector<3>(x_[0], x_[3], x_[6]); }; // w.r.t left camera
-  inline Vector<9> getEstimatedStateWrtCamera(void) const { return x_; }; // w.r.t left camera
-  inline Scalar getEsitmatedRangeWrtCamera(void) const { return pow(x_[0], 2) + pow(x_[1], 2) + pow(x_[2], 2); };
+  inline Vector<3> getEstimatedPosition(void) const { return Vector<3>(x_[0], x_[3], x_[6]); };  
   inline Matrix<9, 9> getErrorCovariance(void) const { return P_; };
   inline bool isInitialized(void) const { return initialized_; };
-
-  // Public compute functions
-  Vector<3> computeEstimatedPositionWrtWorld(Ref<Matrix<4, 4>> T_LC_W);
-  Vector<3> computeEstimatedVelocityWrtWorld(Ref<Matrix<4, 4>> T_LC_W);
-  Scalar computeRangeWrtBody(Ref<Vector<3>> from, Ref<Matrix<4, 4>> T_LC_B); // compute range from tracker to target
 
  private:
   //
