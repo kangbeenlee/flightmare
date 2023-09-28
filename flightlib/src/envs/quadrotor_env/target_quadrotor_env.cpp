@@ -36,23 +36,22 @@ TargetQuadrotorEnv::TargetQuadrotorEnv(const std::string &cfg_path) : EnvBase()
 
 TargetQuadrotorEnv::~TargetQuadrotorEnv() {}
 
-bool TargetQuadrotorEnv::reset(Ref<Vector<>> obs, const bool random)
-{
+bool TargetQuadrotorEnv::reset(Ref<Vector<>> obs, const bool random) {
   quad_state_.setZero();
 
   if (false) {
-    // Randomly reset the quadrotor state
-    // Reset position
+    // randomly reset the quadrotor state
+    // reset position
     quad_state_.x(QS::POSX) = uniform_dist_(random_gen_);
     quad_state_.x(QS::POSY) = uniform_dist_(random_gen_);
     quad_state_.x(QS::POSZ) = uniform_dist_(random_gen_) + 5;
     if (quad_state_.x(QS::POSZ) < -0.0)
       quad_state_.x(QS::POSZ) = -quad_state_.x(QS::POSZ);
-    // Reset linear velocity
+    // reset linear velocity
     quad_state_.x(QS::VELX) = uniform_dist_(random_gen_);
     quad_state_.x(QS::VELY) = uniform_dist_(random_gen_);
     quad_state_.x(QS::VELZ) = uniform_dist_(random_gen_);
-    // Reset orientation
+    // reset orientation
     quad_state_.x(QS::ATTW) = uniform_dist_(random_gen_);
     quad_state_.x(QS::ATTX) = uniform_dist_(random_gen_);
     quad_state_.x(QS::ATTY) = uniform_dist_(random_gen_);
@@ -62,13 +61,22 @@ bool TargetQuadrotorEnv::reset(Ref<Vector<>> obs, const bool random)
   else
   {
     quad_state_.x(QS::POSX) = 0.0;
-    quad_state_.x(QS::POSY) = 3.0;
+    quad_state_.x(QS::POSY) = -8.0;
     quad_state_.x(QS::POSZ) = 5.0;
-
-    // quad_state_.x(QS::POSX) = uniform_dist_(random_gen_) * 5.0; // -5 ~ 5
-    // quad_state_.x(QS::POSY) = 0.0;
-    // quad_state_.x(QS::POSZ) = 5.0;
   }
+  // obtain observations
+  getObs(obs);
+  return true;
+}
+
+bool TargetQuadrotorEnv::reset(Ref<Vector<>> obs, Ref<Vector<>> position)
+{
+  quad_state_.setZero();
+
+  quad_state_.x(QS::POSX) = position[0];
+  quad_state_.x(QS::POSY) = position[1];
+  quad_state_.x(QS::POSZ) = position[2];
+
   // Reset quadrotor with random states
   target_ptr_->reset(quad_state_);
 

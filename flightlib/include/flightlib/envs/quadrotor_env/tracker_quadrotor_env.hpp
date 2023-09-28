@@ -23,10 +23,10 @@
 // Header files for target tracking
 #include "flightlib/sensors/stereo_camera.hpp"
 #include "flightlib/tracking_algorithm/kalman_filter.hpp"
+#include "flightlib/tracking_algorithm/hungarian.hpp"
 #include "flightlib/data/sensor_save.hpp"
 #include "flightlib/data/tracking_save_v1.hpp"
 #include "flightlib/data/tracking_save_v2.hpp"
-#include "flightlib/tracking_algorithm/moving_average_filter.hpp"
 
 namespace flightlib {
 
@@ -60,7 +60,8 @@ class TrackerQuadrotorEnv final : public EnvBase {
 
   // - public OpenAI-gym-style functions
   bool reset(Ref<Vector<>> obs, const bool random = true) override;
-  bool reset(Ref<Vector<>> obs, Ref<Vector<>> position);
+  bool reset(Ref<Vector<>> obs, Ref<Vector<>> position,
+             const std::vector<Vector<3>>& target_positions, const std::vector<Vector<3>>& other_tracker_positions);
 
   //
   Matrix<3, 3> Rot_x(const Scalar angle) const;
@@ -75,7 +76,8 @@ class TrackerQuadrotorEnv final : public EnvBase {
 
   // Test for only tracker without target tracking
   Scalar step(const Ref<Vector<>> act, Ref<Vector<>> obs) override;  // Not used
-  Scalar trackerStep(const Ref<Vector<>> act, Ref<Vector<>> obs, Vector<3> target_position, const std::vector<Vector<3>>& other_tracker_positions);
+  Scalar trackerStep(const Ref<Vector<>> act, Ref<Vector<>> obs,
+                     const std::vector<Vector<3>>& target_positions, const std::vector<Vector<3>>& other_tracker_positions);
 
   // Reward function for RL
   Scalar rewardFunction(Vector<3> target_position);
@@ -100,28 +102,27 @@ class TrackerQuadrotorEnv final : public EnvBase {
   Logger logger_{"TrackerQaudrotorEnv"};
 
   // Stereo camera
-  unsigned int n_cameras_{3};
+  int num_cameras_{3};
   std::vector<std::shared_ptr<StereoCamera>> multi_stereo_;
   SensorSave sensor_save_;
   bool sensor_flag_{true};
 
   // Kalman filter
-  std::vector<std::shared_ptr<KalmanFilter>> multi_filter_;
+  std::vector<std::shared_ptr<KalmanFilter>> target_kalman_filters_, tracker_kalman_filters_;
+  int num_targets_, num_trackers_; // except tracker itself
+
 
   std::shared_ptr<KalmanFilter> kf_;
   TrackingSaveV2 tracking_save_;
-  Vector<3> gt_target_position_, estimated_position_;
+  std::vector<Vector<3>> gt_target_positions_, estimated_target_positions_;
+  std::vector<Vector<3>> gt_tracker_positions_, estimated_tracker_positions_;
   Vector<4> gt_pixels_, pixels_;
   bool tracking_flag_{true};
-
-
 
   //
   bool first_{true};
   Scalar prev_range_;
 
-  //
-  MovingAverageFilter maf_;
 
   // PID controller for linear velocity (LV) control policy tracker
   Scalar kp_vxy_, ki_vxy_, kd_vxy_, kp_vz_, ki_vz_, kd_vz_, kp_angle_, ki_angle_, kd_angle_, kp_wz_, ki_wz_, kd_wz_;

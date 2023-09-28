@@ -6,7 +6,6 @@ TrackerQuadrotorEnv::TrackerQuadrotorEnv() : TrackerQuadrotorEnv(getenv("FLIGHTM
 TrackerQuadrotorEnv::TrackerQuadrotorEnv(const std::string &cfg_path) : EnvBase() {
 
   // load configuration file
-  // YAML::Node cfg_ = YAML::LoadFile(cfg_path);
   YAML::Node cfg_ = YAML::LoadFile(cfg_path);
 
   // load parameters
@@ -15,9 +14,8 @@ TrackerQuadrotorEnv::TrackerQuadrotorEnv(const std::string &cfg_path) : EnvBase(
   //
   tracker_ptr_ = std::make_shared<TrackerQuadrotor>();
 
-  //
-  for (int i = 0; i < n_cameras_; i++)
-  {
+  // Mount front, left, right stereo cameras
+  for (int i = 0; i < num_cameras_; i++) {
     multi_stereo_.push_back(std::make_shared<StereoCamera>());
   }
 
@@ -26,17 +24,15 @@ TrackerQuadrotorEnv::TrackerQuadrotorEnv(const std::string &cfg_path) : EnvBase(
   Matrix<3, 3> R_front = Rot_x(-M_PI_2) * Rot_z(-M_PI_2);
   Matrix<3, 3> R_left  = Rot_y(-2.0/3.0 * M_PI) * Rot_x(-M_PI_2) * Rot_z(-M_PI_2);
   Matrix<3, 3> R_right = Rot_y(2.0/3.0 * M_PI) * Rot_x(-M_PI_2) * Rot_z(-M_PI_2);
-
-  std::cout << "check rotation matrix \n" << R_front << std::endl << R_left << std::endl << R_right << std::endl;
-
   multi_stereo_[0]->init(d_l, d_r, R_front); // front camera
   multi_stereo_[1]->init(d_l, d_r, R_left); // left back camera
   multi_stereo_[2]->init(d_l, d_r, R_right); // right back camera
 
+
+  // Data recoder
   sensor_save_ = SensorSave();
   kf_ = std::make_shared<KalmanFilter>();
   tracking_save_ = TrackingSaveV2();
-
 
   // Initialize kalman filter
   Vector<9> x0 = (Vector<9>() << 5, 0, 0, 0, 0, 0, 0, 0, 0).finished(); // w.r.t. camera frame
@@ -102,7 +98,8 @@ bool TrackerQuadrotorEnv::reset(Ref<Vector<>> obs, const bool random) {
   return true;
 }
 
-bool TrackerQuadrotorEnv::reset(Ref<Vector<>> obs, Ref<Vector<>> position) {
+bool TrackerQuadrotorEnv::reset(Ref<Vector<>> obs, Ref<Vector<>> position,
+                                const std::vector<Vector<3>>& target_positions, const std::vector<Vector<3>>& tracker_positions) {
   quad_state_.setZero();
   quad_act_.setZero();
 
@@ -124,14 +121,33 @@ bool TrackerQuadrotorEnv::reset(Ref<Vector<>> obs, Ref<Vector<>> position) {
   // Reset quadrotor with random states
   tracker_ptr_->reset(quad_state_);
 
-  // Reset tracking algorithm
-  kf_->reset();
+  //
+  num_targets_ = target_positions.size();
+  num_trackers_ = tracker_positions.size();
+
+  // Initialize multi kalman filter for target
+  for (int i = 0; i < num_targets_; ++i){
+    std::shared_ptr<KalmanFilter> target_kf = std::make_shared<KalmanFilter>();
+    Vector<9> x0 = (Vector<9>() << target_positions[0], 0, 0, target_positions[1], 0, 0, target_positions[2], 0, 0).finished();
+    target_kf->init(sim_dt_, x0, 1.0, 20);
+    target_kalman_filters_.push_back(target_kf);
+  }
+
+  // Initialize multi kalman filter for tracker
+  for (int i = 0; i < num_trackers_; ++i){
+    std::shared_ptr<KalmanFilter> tracker_kf = std::make_shared<KalmanFilter>();
+    Vector<9> x0 = (Vector<9>() << tracker_positions[0], 0, 0, tracker_positions[1], 0, 0, tracker_positions[2], 0, 0).finished();
+    tracker_kf->init(sim_dt_, x0, 1.0, 20);
+    tracker_kalman_filters_.push_back(tracker_kf);
+  }
 
   // Reset velocity control command
   cmd_.t = 0.0;
   cmd_.velocity.setZero();
 
-  gt_target_position_ = Vector<3>(0, 0, 5);
+  // Store ground truth
+  gt_target_positions_ = target_positions;
+  gt_tracker_positions_ = tracker_positions;
 
   // obtain observations
   getObs(obs);
@@ -211,8 +227,8 @@ Scalar TrackerQuadrotorEnv::step(const Ref<Vector<>> act, Ref<Vector<>> obs)
   return total_reward;
 }
 
-Scalar TrackerQuadrotorEnv::trackerStep(const Ref<Vector<>> act, Ref<Vector<>> obs, Vector<3> target_position, const std::vector<Vector<3>>& other_tracker_positions)
-{
+Scalar TrackerQuadrotorEnv::trackerStep(const Ref<Vector<>> act, Ref<Vector<>> obs,
+                                        const std::vector<Vector<3>>& target_positions, const std::vector<Vector<3>>& tracker_positions) {
   quad_act_ = act;
   cmd_.t += sim_dt_;
   cmd_.velocity = quad_act_;
@@ -220,78 +236,130 @@ Scalar TrackerQuadrotorEnv::trackerStep(const Ref<Vector<>> act, Ref<Vector<>> o
   Matrix<4, 4> T_B_W = getBodyToWorld();
   Matrix<4, 4> T_W_B = T_B_W.inverse(); // World to body
 
-  gt_target_position_ = target_position;
-  // Transform target position from world to body
-  Vector<4> T_W(target_position[0], target_position[1], target_position[2], 1);
-  Vector<3> t_b = T_W_B.topRows<3>() * T_W;
+  // Store ground truth target positions
+  gt_target_positions_ = target_positions;
 
-  // Target detector
+  // Try to detect the number of "n" targets
   bool detected = false;
-  for (int i = 0; i < n_cameras_; i++) {
-    detected = multi_stereo_[i]->computePixelPoint(target_position, T_W_B);
-    if (detected) {
-      std::cout << "Target is detected to camera " << i << std::endl;
-      gt_pixels_ = multi_stereo_[i]->getGtPixels();
-      pixels_ = multi_stereo_[i]->getPixels();
-      estimated_position_ = multi_stereo_[i]->getObjectPosition();
-      break;
+  std::vector<Vector<3>> target_measurements;
+
+  for (int i = 0; i < target_positions.size(); i++) {
+    detected = false;
+    Vector<3> tracker_position = target_positions[i];
+    for (int j = 0; j < num_cameras_; j++) {
+      detected = multi_stereo_[j]->computePixelPoint(tracker_position, T_W_B);
+      if (detected) {
+        Vector<3> target_measurement = multi_stereo_[j]->getObjectPosition();
+        target_measurements.push_back(target_measurement);
+        break;      
+      }
     }
   }
+  
+  // Try to detect the number of "m-1" trackers
+  std::vector<Vector<3>> tracker_measurements;
 
-  // Other tracker measurements
-  std::vector<Vector<3>> other_measurements;
-
-  // n개의 tracker estimation position
-  for (int i = 0; i < other_tracker_positions.size(); i++) {
+  for (int i = 0; i < tracker_positions.size(); i++) {
     detected = false;
-    Vector<3> other_tracker_position = other_tracker_positions[i];
-    for (int j = 0; j < n_cameras_; j++) {
-      detected = multi_stereo_[j]->computePixelPoint(other_tracker_position, T_W_B);
+    Vector<3> tracker_position = tracker_positions[i];
+    for (int j = 0; j < num_cameras_; j++) {
+      detected = multi_stereo_[j]->computePixelPoint(tracker_position, T_W_B);
       if (detected) {
-        Vector<3> measurement = multi_stereo_[j]->getObjectPosition();
-        other_measurements.push_back(measurement);
+        Vector<3> tracker_measurement = multi_stereo_[j]->getObjectPosition();
+        tracker_measurements.push_back(tracker_measurement);
         break;      
       }
     }
   }
 
   std::cout << "-------------------------------------" << std::endl;
-  std::cout << "Tracker has " << other_measurements.size() << " measurements" << std::endl;
-  for (int i = 0; i < other_measurements.size(); i++) {
-    std::cout << other_measurements[i][0] << ", " << other_measurements[i][1] << ", " << other_measurements[i][2] << std::endl;
+  std::cout << "Tracker has " << target_measurements.size() << " target measurements" << std::endl;
+  for (int i = 0; i < target_measurements.size(); i++) {
+    std::cout << target_measurements[i][0] << ", " << target_measurements[i][1] << ", " << target_measurements[i][2] << std::endl;
+  }
+  std::cout << "Tracker has " << tracker_measurements.size() << " tracker measurements" << std::endl;
+  for (int i = 0; i < tracker_measurements.size(); i++) {
+    std::cout << tracker_measurements[i][0] << ", " << tracker_measurements[i][1] << ", " << tracker_measurements[i][2] << std::endl;
   }
   std::cout << "-------------------------------------" << std::endl;
   
+  // Hungarian algorithm
+  // Matrix<> target_cost_matrix = Matrix<>::Ones(num_targets_, num_targets_) * 1000.0;
+  // Matrix<> tracker_cost_matrix = Matrix<>::Ones(num_trackers_, num_trackers_) * 1000.0;
 
+  std::vector<std::vector<Scalar>> target_cost_matrix;
+  std::vector<std::vector<Scalar>> tracker_cost_matrix;
+
+  for (int i = 0; i < num_targets_; ++i) {
+    std::vector<Scalar> place_holder(num_targets_, 1000.0);
+    target_cost_matrix.push_back(place_holder);
+  }
+
+  for (int i = 0; i < num_trackers_; ++i) {
+    std::vector<Scalar> place_holder(num_trackers_, 1000.0);
+    tracker_cost_matrix.push_back(place_holder);
+  }
+
+  for (int i = 0; i < num_targets_; ++i) {
+    for (int j = 0; j < target_measurements.size(); ++j) {
+      std::cout << "************************************" << std::endl;
+      std::cout << target_kalman_filters_[i]->getEstimatedPosition() << std::endl;
+      std::cout << target_measurements[j] << std::endl;
+      std::cout << target_kalman_filters_[i]->getEstimatedPosition() - target_measurements[j] << std::endl;
+      std::cout << "************************************" << std::endl;
+
+      Scalar target_cost = (target_kalman_filters_[i]->getEstimatedPosition() - target_measurements[j]).norm();
+      target_cost_matrix[i][j] = target_cost;
+    }
+  }
+
+  for (int i = 0; i < num_trackers_; ++i) {
+    for (int j = 0; j < tracker_measurements.size(); ++j) {
+      Scalar tracker_cost = (tracker_kalman_filters_[i]->getEstimatedPosition() - tracker_measurements[j]).norm();
+      tracker_cost_matrix[i][j] = tracker_cost;
+    }
+  }
+
+
+	HungarianAlgorithm target_hungarian, tracker_hungarian;
+	std::vector<int> target_assignment, tracker_assignment;
+	double cost = target_hungarian.Solve(target_cost_matrix, target_assignment);
+	double cost = tracker_hungarian.Solve(target_cost_matrix, tracker_assignment);
+
+  // 행,열 점검
+  // matrix cost가 1000.0일 경우 할당 x -> prediction만 진행
   // Parallel kalman filter
 
-  // Hungarian algorithm
+  // sensor saver
+  // kalman filter saver
 
-  if (!kf_->isInitialized()) {
-    // Initialize kalman filter with measurement input
-    Vector<9> x0 = (Vector<9>() << 5, 0, 0, 0, 0, 0, 0, 0, 0).finished(); // w.r.t. camera frame
-    kf_->init(sim_dt_, x0, 1.0, 20);
-  }
-  else {
-    // Kalman filter prediction
-    kf_->predict();
-    // Kalman filter measurement update
-    if (detected)
-      kf_->update(estimated_position_);
-  }
+
+
+  // if (!kf_->isInitialized()) {
+  //   // Initialize kalman filter with measurement input
+  //   Vector<9> x0 = (Vector<9>() << 5, 0, 0, 0, 0, 0, 0, 0, 0).finished(); // w.r.t. camera frame
+  //   kf_->init(sim_dt_, x0, 1.0, 20);
+  // }
+  // else {
+  //   // Kalman filter prediction
+  //   kf_->predict();
+  //   // Kalman filter measurement update
+  //   if (detected)
+  //     kf_->update(estimated_position_);
+  // }
 
 
   // Vector<3> estimated_position = kf_->computeEstimatedPositionWrtWorld(T_LC_W);
   // Scalar estimated_range = kf_->computeRangeWrtBody(quad_state_.p, T_LC_B);
   Matrix<9, 9> covariance = kf_->getErrorCovariance();
 
-  if (sensor_flag_)
-    sensor_save_.store(gt_pixels_, pixels_, gt_target_position_, estimated_position_, sim_dt_);
-  if (sensor_flag_ && sensor_save_.isFull()) {
-    sensor_save_.save();
-    sensor_flag_ = false;
-    std::cout << ">>> Sensor output save is done" << std::endl;
-  }
+  // if (sensor_flag_)
+  //   sensor_save_.store(gt_pixels_, pixels_, gt_target_position_, estimated_position_, sim_dt_);
+  // if (sensor_flag_ && sensor_save_.isFull()) {
+  //   sensor_save_.save();
+  //   sensor_flag_ = false;
+  //   std::cout << ">>> Sensor output save is done" << std::endl;
+  // }
 
   // // Kalman filter output
   // if (tracking_flag_)
@@ -309,7 +377,8 @@ Scalar TrackerQuadrotorEnv::trackerStep(const Ref<Vector<>> act, Ref<Vector<>> o
   getObs(obs);
 
   // Reward function of tracker
-  Scalar reward = rewardFunction(target_position);
+  // Scalar reward = rewardFunction(target_position);
+  Scalar reward = 0.0;
 
   return reward;
 }
@@ -328,9 +397,11 @@ bool TrackerQuadrotorEnv::getObs(Ref<Vector<>> obs)
   // Scalar target_r = kf_->computeRangeWrtBody(quad_state_.p, T_LC_B);
 
 
-  Vector<3> gt_relative_position(gt_target_position_[0] - quad_state_.x(QS::POSX),
-                                 gt_target_position_[1] - quad_state_.x(QS::POSY),
-                                 gt_target_position_[2] - quad_state_.x(QS::POSZ));
+  // Vector<3> gt_relative_position(gt_target_position_[0] - quad_state_.x(QS::POSX),
+  //                                gt_target_position_[1] - quad_state_.x(QS::POSY),
+  //                                gt_target_position_[2] - quad_state_.x(QS::POSZ));
+
+  Vector<3> gt_relative_position(1, 1, 1);
   Scalar gt_range = sqrt(pow(gt_relative_position[0], 2) + pow(gt_relative_position[1], 2) + pow(gt_relative_position[2], 2));
 
   // // observation dim : 3 + 9 + 3 = 15
@@ -359,8 +430,11 @@ Scalar TrackerQuadrotorEnv::rewardFunction(Vector<3> target_position)
   Scalar i2 = -0.01;
   Scalar i3 = -10.0;
 
-  Scalar range_xy = hypot(gt_target_position_[0] - quad_state_.x(QS::POSX), gt_target_position_[1] - quad_state_.x(QS::POSY));
-  Scalar range_z = abs(gt_target_position_[2] - quad_state_.x(QS::POSZ));
+  // Scalar range_xy = hypot(gt_target_position_[0] - quad_state_.x(QS::POSX), gt_target_position_[1] - quad_state_.x(QS::POSY));
+  // Scalar range_z = abs(gt_target_position_[2] - quad_state_.x(QS::POSZ));
+
+  Scalar range_xy = 0.0;
+  Scalar range_z = 0.0;
 
   // // xy range reward
   // Scalar range_xy_reward = exp(i1 * pow(range_xy, 3));
@@ -379,7 +453,8 @@ Scalar TrackerQuadrotorEnv::rewardFunction(Vector<3> target_position)
 
   // Perception reward
   Vector<3> h = quad_state_.q().toRotationMatrix() * Vector<3>(1, 0, 0);
-  Vector<3> d(gt_target_position_[0] - quad_state_.x(QS::POSX), gt_target_position_[1] - quad_state_.x(QS::POSY), gt_target_position_[2] - quad_state_.x(QS::POSZ));
+  // Vector<3> d(gt_target_position_[0] - quad_state_.x(QS::POSX), gt_target_position_[1] - quad_state_.x(QS::POSY), gt_target_position_[2] - quad_state_.x(QS::POSZ));
+  Vector<3> d(1, 1, 1);
   h = h / h.norm();
   d = d / d.norm();
 
@@ -415,14 +490,14 @@ bool TrackerQuadrotorEnv::isTerminalState(Scalar &reward) {
     return true;
   }
 
-  // Clashing target
-  Scalar gt_range =  sqrt(pow(quad_state_.x(QS::POSX) - gt_target_position_[0], 2)
-                        + pow(quad_state_.x(QS::POSY) - gt_target_position_[1], 2)
-                        + pow(quad_state_.x(QS::POSZ) - gt_target_position_[2], 2));
-  if (gt_range <= 0.5) {
-    reward = 2.0;
-    return true;
-  }
+  // // Clashing target
+  // Scalar gt_range =  sqrt(pow(quad_state_.x(QS::POSX) - gt_target_position_[0], 2)
+  //                       + pow(quad_state_.x(QS::POSY) - gt_target_position_[1], 2)
+  //                       + pow(quad_state_.x(QS::POSZ) - gt_target_position_[2], 2));
+  // if (gt_range <= 0.5) {
+  //   reward = 2.0;
+  //   return true;
+  // }
 
   reward = 0.0;
   return false;

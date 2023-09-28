@@ -32,26 +32,6 @@ TargetTrackingEnv<EnvBase>::TargetTrackingEnv(const std::string& cfgs, const boo
 }
 
 template<typename EnvBase>
-TargetTrackingEnv<EnvBase>::TargetTrackingEnv(const std::string& cfgs, const std::string& cfgs_target, const bool from_file)
-{
-  // Load environment configuration
-  if (from_file)
-  {
-    // Load directly from a yaml file
-    cfg_ = YAML::LoadFile(cfgs);
-    cfg_target_ = YAML::LoadFile(cfgs_target);
-  }
-  else
-  {
-    // Load from a string or dictionary
-    cfg_ = YAML::Load(cfgs);
-    cfg_target_ = YAML::Load(cfgs_target);
-  }
-  // Initialization
-  init();
-}
-
-template<typename EnvBase>
 void TargetTrackingEnv<EnvBase>::init(void)
 {
   std::cout << "Initialize Flightmare Target Tracking Environment" << std::endl;
@@ -59,6 +39,7 @@ void TargetTrackingEnv<EnvBase>::init(void)
   unity_render_ = cfg_["env"]["render"].as<bool>();
   seed_ = cfg_["env"]["seed"].as<int>();
   num_envs_ = cfg_["env"]["num_envs"].as<int>();
+  num_targets_ = cfg_["env"]["num_targets"].as<int>();
   scene_id_ = cfg_["env"]["scene_id"].as<SceneID>();
 
   // Set threads
@@ -70,9 +51,21 @@ void TargetTrackingEnv<EnvBase>::init(void)
   {
     envs_.push_back(std::make_unique<EnvBase>());
   }
+  for (int i = 0; i < num_targets_; i++)
+  {
+    targets_.push_back(std::make_unique<TargetQuadrotorEnv>());
+  }
+
+
 
   // Define target drone
   target_ = std::make_unique<TargetQuadrotorEnv>();
+
+
+  target_positions_.push_back(Vector<3>{0.0, 2.0, 5.0});
+  target_positions_.push_back(Vector<3>{2.0, 2.0, 5.0});
+  target_positions_.push_back(Vector<3>{-2.0, 2.0, 5.0});
+
 
   // Set initial start position
   tracker_positions_.push_back(Vector<3>{0.0, 0.0, 5.0});
@@ -84,7 +77,8 @@ void TargetTrackingEnv<EnvBase>::init(void)
   setUnity(unity_render_);
 
   obs_dim_ = envs_[0]->getObsDim();
-  target_obs_dim_ = target_->getObsDim();
+  // target_obs_dim_ = target_->getObsDim();
+  target_obs_dim_ = targets_[0]->getObsDim();
   act_dim_ = envs_[0]->getActDim();
 
   // Generate reward names
@@ -100,7 +94,7 @@ template<typename EnvBase>
 TargetTrackingEnv<EnvBase>::~TargetTrackingEnv() {}
 
 template<typename EnvBase>
-bool TargetTrackingEnv<EnvBase>::reset(Ref<MatrixRowMajor<>> obs, Ref<Vector<>> target_obs)
+bool TargetTrackingEnv<EnvBase>::reset(Ref<MatrixRowMajor<>> obs, Ref<MatrixRowMajor<>> target_obs)
 {
   if (obs.rows() != num_envs_ || obs.cols() != obs_dim_) {
     logger_.error("Input matrix dimensions do not match with that of the environment.");
@@ -108,19 +102,25 @@ bool TargetTrackingEnv<EnvBase>::reset(Ref<MatrixRowMajor<>> obs, Ref<Vector<>> 
   }
 
   receive_id_ = 0;
-  for (int i = 0; i < num_envs_; i++) {
-    // envs_[i]->reset(obs.row(i));
-    envs_[i]->reset(obs.row(i), tracker_positions_[i]);
+
+  for (int i = 0; i < num_targets_; i++) {
+    targets_[i]->reset(target_obs.row(i), target_positions_[i]);
   }
 
-  // Initialize target quadrotor
-  target_->reset(target_obs);
+  for (int i = 0; i < num_envs_; i++) {
+    std::vector<Vector<3>> other_tracker_positions;
+    for (int j = 0; j < num_envs_; j++) {
+      if (j != i)
+        other_tracker_positions.push_back(tracker_positions_[i]);
+    }
+    envs_[i]->reset(obs.row(i), tracker_positions_[i], target_positions_, other_tracker_positions);
+  }
 
   return true;
 }
 
 template<typename EnvBase>
-bool TargetTrackingEnv<EnvBase>::step(Ref<MatrixRowMajor<>> act, Ref<MatrixRowMajor<>> obs, Ref<Vector<>> target_obs, Ref<Vector<>> reward,
+bool TargetTrackingEnv<EnvBase>::step(Ref<MatrixRowMajor<>> act, Ref<MatrixRowMajor<>> obs, Ref<MatrixRowMajor<>> target_obs, Ref<Vector<>> reward,
                                       Ref<BoolVector<>> done, Ref<MatrixRowMajor<>> extra_info)
 {
     if (act.rows() != num_envs_ || act.cols() != act_dim_ || obs.rows() != num_envs_ || obs.cols() != obs_dim_ || reward.rows() != num_envs_ ||
@@ -138,7 +138,10 @@ bool TargetTrackingEnv<EnvBase>::step(Ref<MatrixRowMajor<>> act, Ref<MatrixRowMa
   }
 
   // For target quadrotor
-  targetStep(target_obs);
+  for (int i = 0; i < num_targets_; i++)
+  {
+    perTargetStep(i, target_obs.row(i));
+  }
 
   if (unity_render_ && unity_ready_)
   {
@@ -155,7 +158,10 @@ void TargetTrackingEnv<EnvBase>::close()
   {
     envs_[i]->close();
   }
-  target_->close();
+  for (int i = 0; i < num_envs_; i++)
+  {
+    targets_[i]->close();
+  }
 }
 
 template<typename EnvBase>
@@ -163,14 +169,14 @@ void TargetTrackingEnv<EnvBase>::setSeed(const int seed)
 {
   int seed_inc = seed;
   for (int i = 0; i < num_envs_; i++) envs_[i]->setSeed(seed_inc++);
-  target_->setSeed(seed_inc++);
+  for (int i = 0; i < num_targets_; i++) targets_[i]->setSeed(seed_inc++);
 }
 
 template<typename EnvBase>
-void TargetTrackingEnv<EnvBase>::getObs(Ref<MatrixRowMajor<>> obs, Ref<Vector<>> target_obs)
+void TargetTrackingEnv<EnvBase>::getObs(Ref<MatrixRowMajor<>> obs, Ref<MatrixRowMajor<>> target_obs)
 {
   for (int i = 0; i < num_envs_; i++) envs_[i]->getObs(obs.row(i));
-  target_->getObs(target_obs);
+  for (int i = 0; i < num_targets_; i++) targets_[i]->getObs(target_obs.row(i));
 }
 
 template<typename EnvBase>
@@ -187,11 +193,9 @@ size_t TargetTrackingEnv<EnvBase>::getEpisodeLength(void)
 }
 
 template<typename EnvBase>
-void TargetTrackingEnv<EnvBase>::targetStep(Ref<Vector<>> target_obs)
+void TargetTrackingEnv<EnvBase>::perTargetStep(int target_id, Ref<Vector<>> target_obs)
 {
-  // Target reward is useless
-  // target_->targetStep(trajectory_, target_obs);
-  target_->targetStep(target_obs);
+  targets_[target_id]->targetStep(target_obs);
 }
 
 template<typename EnvBase>
@@ -199,28 +203,28 @@ void TargetTrackingEnv<EnvBase>::perTrackerStep(int agent_id, Ref<MatrixRowMajor
                                                 Ref<BoolVector<>> done, Ref<MatrixRowMajor<>> extra_info)
 {
   std::vector<Vector<3>> other_tracker_positions;
-  for (int i = 0; i < num_envs_; i++)
-  {
+  for (int i = 0; i < num_envs_; i++) {
     if (i != agent_id)
       other_tracker_positions.push_back(envs_[i]->getPosition());
   }
+  std::vector<Vector<3>> target_positions;
+  for (int i = 0; i < num_targets_; i++) {
+    target_positions.push_back(targets_[i]->getPosition());
+  }
 
   std::cout << "Tracker " << agent_id << " =========================================" << std::endl;
-  reward(agent_id) = envs_[agent_id]->trackerStep(act.row(agent_id), obs.row(agent_id), target_->getPosition(), other_tracker_positions);
+  reward(agent_id) = envs_[agent_id]->trackerStep(act.row(agent_id), obs.row(agent_id), target_positions, other_tracker_positions);
 
   Scalar terminal_reward = 0;
   done(agent_id) = envs_[agent_id]->isTerminalState(terminal_reward);
 
   envs_[agent_id]->updateExtraInfo();
-  for (int j = 0; j < extra_info.cols(); j++)
-  {
+  for (int j = 0; j < extra_info.cols(); j++) {
     extra_info(agent_id, j) = envs_[agent_id]->extra_info_[extra_info_names_[j]];
   }
 
-  if (done[agent_id])
-  {
-    // envs_[agent_id]->reset(obs.row(agent_id));
-    envs_[agent_id]->reset(obs.row(agent_id), tracker_positions_[agent_id]);
+  if (done[agent_id]) {
+    envs_[agent_id]->reset(obs.row(agent_id), tracker_positions_[agent_id], target_positions);
     reward(agent_id) += terminal_reward;
   }
 }
@@ -233,13 +237,9 @@ bool TargetTrackingEnv<EnvBase>::setUnity(bool render)
   {
     // Create unity bridge
     unity_bridge_ptr_ = UnityBridge::getInstance();
-    // Add objects (tracking quadrotors) to Unity
-    for (int i = 0; i < num_envs_; i++)
-    {
-      envs_[i]->addObjectsToUnity(unity_bridge_ptr_);
-    }
-    // // Add target quadrotor to Unity
-    target_->addObjectsToUnity(unity_bridge_ptr_);
+    // Add objects to Unity
+    for (int i = 0; i < num_envs_; i++) envs_[i]->addObjectsToUnity(unity_bridge_ptr_);
+    for (int i = 0; i < num_targets_; i++) targets_[i]->addObjectsToUnity(unity_bridge_ptr_);
 
     logger_.info("Flightmare Bridge is created.");
   }

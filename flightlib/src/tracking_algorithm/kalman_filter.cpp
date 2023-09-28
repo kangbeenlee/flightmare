@@ -9,7 +9,6 @@ void KalmanFilter::reset()
 {
     x_ = (Vector<9>() << 0, 0, 0, 0, 0, 0, 0, 0, 0).finished(); // w.r.t. camera frame
     P_ = Matrix<9, 9>::Identity() * 10.0;
-    initialized_ = false;
 }
 
 void KalmanFilter::init(const Scalar Ts, Ref<Vector<9>> x0, const Scalar sigma_w, const Scalar sigma_v)
@@ -71,41 +70,6 @@ void KalmanFilter::update(const Ref<Vector<3>> z)
     x_ = x_ + K_ * (z - H_ * x_);
     // Covariance update
     P_ = (I_ - K_ * H_) * P_;
-}
-
-Vector<3> KalmanFilter::computeEstimatedPositionWrtWorld(Ref<Matrix<4, 4>> T_LC_W)
-{
-    // To homogeneous coordinates
-    Vector<4> P_C(x_[0], x_[3], x_[6], 1);
-
-    // Target coordinates w.r.t. body frame
-    Vector<3> p_w = (T_LC_W * P_C).segment<3>(0);
-
-    return p_w;
-}
-
-Vector<3> KalmanFilter::computeEstimatedVelocityWrtWorld(Ref<Matrix<4, 4>> T_LC_W)
-{
-    // To homogeneous coordinates
-    Vector<4> V_C(x_[1], x_[4], x_[7], 1);
-
-    // Target coordinates w.r.t. body frame
-    Vector<3> v_w = (T_LC_W * V_C).segment<3>(0);
-
-    return v_w;
-}
-
-Scalar KalmanFilter::computeRangeWrtBody(Ref<Vector<3>> from, Ref<Matrix<4, 4>> T_LC_B)
-{
-    // To homogeneous coordinates
-    Vector<4> P_C(x_[0], x_[3], x_[6], 1);
-
-    // Target coordinates w.r.t. body frame
-    Vector<3> p_b = (T_LC_B * P_C).segment<3>(0);
-
-    Scalar range = sqrt(pow(p_b[0] - from[0], 2) + pow(p_b[1] - from[1], 2) + pow(p_b[2] - from[2], 2));
-
-    return range;
 }
 
 }  // namespace flightlib

@@ -31,8 +31,9 @@ class TargetTrackingEnv {
   ~TargetTrackingEnv();
 
   // - public OpenAI-gym style functions for vectorized environment
-  bool reset(Ref<MatrixRowMajor<>> obs, Ref<Vector<>> target_obs);
-  bool step(Ref<MatrixRowMajor<>> act, Ref<MatrixRowMajor<>> obs, Ref<Vector<>> target_obs, Ref<Vector<>> reward,
+  // bool reset(Ref<MatrixRowMajor<>> obs, Ref<Vector<>> target_obs);
+  bool reset(Ref<MatrixRowMajor<>> obs, Ref<MatrixRowMajor<>> target_obs);
+  bool step(Ref<MatrixRowMajor<>> act, Ref<MatrixRowMajor<>> obs, Ref<MatrixRowMajor<>> target_obs, Ref<Vector<>> reward,
             Ref<BoolVector<>> done, Ref<MatrixRowMajor<>> extra_info);
   void close();
 
@@ -40,7 +41,7 @@ class TargetTrackingEnv {
   void setSeed(const int seed);
 
   // public get functions
-  void getObs(Ref<MatrixRowMajor<>> obs, Ref<Vector<>> target_obs);
+  void getObs(Ref<MatrixRowMajor<>> obs, Ref<MatrixRowMajor<>> target_obs);
   size_t getEpisodeLength(void);
 
   // - auxiliary functions
@@ -60,22 +61,26 @@ class TargetTrackingEnv {
   inline int getActDim(void) { return act_dim_; };
   inline int getExtraInfoDim(void) { return extra_info_names_.size(); };
   inline int getNumOfEnvs(void) { return envs_.size(); };
+  inline int getNumOfTargets(void) { return targets_.size(); };
   inline std::vector<std::string>& getExtraInfoNames() { return extra_info_names_; };
 
  private:
   // initialization
   void init(void);
   // step every environment
-  void targetStep(Ref<Vector<>> target_obs); // for target quadrotor
+  void perTargetStep(int target_id, Ref<Vector<>> target_obs); // for target quadrotor
   void perTrackerStep(int agent_id, Ref<MatrixRowMajor<>> act, Ref<MatrixRowMajor<>> obs, Ref<Vector<>> reward,
                       Ref<BoolVector<>> done, Ref<MatrixRowMajor<>> extra_info); // for multi-tracking quadrotors
 
-  // Initial tracker position (four trackers)
+  // Initial target & tracker position
+  std::vector<Vector<3>> target_positions_;
   std::vector<Vector<3>> tracker_positions_;
 
   // create objects
   Logger logger_{"TargetTrackingEnv"};
   std::vector<std::unique_ptr<EnvBase>> envs_;
+  std::vector<std::unique_ptr<TargetQuadrotorEnv>> targets_;
+
   std::unique_ptr<TargetQuadrotorEnv> target_;
   std::vector<std::string> extra_info_names_;
 
@@ -88,7 +93,7 @@ class TargetTrackingEnv {
   uint16_t receive_id_{0};
 
   // auxiliar variables
-  int seed_, num_envs_, obs_dim_, target_obs_dim_, act_dim_;
+  int seed_, num_envs_, num_targets_, obs_dim_, target_obs_dim_, act_dim_;
   Matrix<> obs_dummy_;
 
   // yaml configurations
