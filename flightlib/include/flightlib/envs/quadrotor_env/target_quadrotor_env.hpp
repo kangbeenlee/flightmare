@@ -52,7 +52,7 @@ class TargetQuadrotorEnv final : public EnvBase{
 
   // - public OpenAI-gym-style functions
   bool reset(Ref<Vector<>> obs, const bool random = true) override;
-  bool reset(Ref<Vector<>> obs, Ref<Vector<>> position);
+  bool reset(Ref<Vector<>> obs, Ref<Vector<>> position, const MinimumSnapTrajectory& trajectory);
   Scalar step(const Ref<Vector<>> act, Ref<Vector<>> obs) override; // Not used
   Scalar targetStep(Ref<Vector<>> obs);
 
@@ -77,7 +77,10 @@ class TargetQuadrotorEnv final : public EnvBase{
   QuadState quad_state_;
   Logger logger_{"TargetQaudrotorEnv"};
 
-  // // Minimum snap trajectory
+  // Initial position
+  Vector<3> init_position_;
+
+  // Minimum snap trajectory
   MinimumSnapTrajectory trajectory_;
   Scalar sim_time_;
 

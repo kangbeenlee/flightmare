@@ -25,8 +25,7 @@
 #include "flightlib/tracking_algorithm/kalman_filter.hpp"
 #include "flightlib/tracking_algorithm/hungarian.hpp"
 #include "flightlib/data/sensor_save.hpp"
-#include "flightlib/data/tracking_save_v1.hpp"
-#include "flightlib/data/tracking_save_v2.hpp"
+#include "flightlib/data/tracking_save.hpp"
 
 namespace flightlib {
 
@@ -106,23 +105,20 @@ class TrackerQuadrotorEnv final : public EnvBase {
   std::vector<std::shared_ptr<StereoCamera>> multi_stereo_;
   SensorSave sensor_save_;
   bool sensor_flag_{true};
+  Vector<4> gt_pixels_, pixels_;
 
   // Kalman filter
   std::vector<std::shared_ptr<KalmanFilter>> target_kalman_filters_, tracker_kalman_filters_;
   int num_targets_, num_trackers_; // except tracker itself
 
-
-  std::shared_ptr<KalmanFilter> kf_;
-  TrackingSaveV2 tracking_save_;
+  TrackingSave tracking_save_;
+  bool tracking_flag_{true};
   std::vector<Vector<3>> gt_target_positions_, estimated_target_positions_;
   std::vector<Vector<3>> gt_tracker_positions_, estimated_tracker_positions_;
-  Vector<4> gt_pixels_, pixels_;
-  bool tracking_flag_{true};
 
   //
   bool first_{true};
   Scalar prev_range_;
-
 
   // PID controller for linear velocity (LV) control policy tracker
   Scalar kp_vxy_, ki_vxy_, kd_vxy_, kp_vz_, ki_vz_, kd_vz_, kp_angle_, ki_angle_, kd_angle_, kp_wz_, ki_wz_, kd_wz_;

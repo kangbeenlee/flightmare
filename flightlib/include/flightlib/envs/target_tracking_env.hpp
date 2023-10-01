@@ -16,7 +16,7 @@
 #include "flightlib/envs/env_base.hpp"
 #include "flightlib/envs/quadrotor_env/tracker_quadrotor_env.hpp"
 #include "flightlib/envs/quadrotor_env/target_quadrotor_env.hpp"
-
+#include "flightlib/trajectory_planner/minimum_snap_trajectory.hpp"
 
 
 namespace flightlib {
@@ -76,12 +76,14 @@ class TargetTrackingEnv {
   std::vector<Vector<3>> target_positions_;
   std::vector<Vector<3>> tracker_positions_;
 
+  // Minimum snap trajectories for targets
+  // std::Vector<MinimumSnapTrajectory> trajectories_;
+  MinimumSnapTrajectory trajectory_;
+
   // create objects
   Logger logger_{"TargetTrackingEnv"};
   std::vector<std::unique_ptr<EnvBase>> envs_;
   std::vector<std::unique_ptr<TargetQuadrotorEnv>> targets_;
-
-  std::unique_ptr<TargetQuadrotorEnv> target_;
   std::vector<std::string> extra_info_names_;
 
   // Flightmare(Unity3D)
