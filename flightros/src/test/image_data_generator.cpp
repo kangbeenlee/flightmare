@@ -163,6 +163,23 @@ Vector<4> eulerToQuaternion(Vector<3> euler_zyx)
   return quaternion;
 }
 
+Matrix<3, 3> eulerToRotation(const Ref<Vector<3>> euler_zyx) {
+  Matrix<3, 3> R_x = (Matrix<3, 3>() << 1, 0, 0,
+                                        0, cos(euler_zyx[2]), -sin(euler_zyx[2]),
+                                        0, sin(euler_zyx[2]), cos(euler_zyx[2])).finished();
+
+  Matrix<3, 3> R_y = (Matrix<3, 3>() << cos(euler_zyx[1]), 0, sin(euler_zyx[1]),
+                                        0, 1, 0,
+                                        -sin(euler_zyx[1]), 0, cos(euler_zyx[1])).finished();
+
+  Matrix<3, 3> R_z = (Matrix<3, 3>() << cos(euler_zyx[0]), -sin(euler_zyx[0]), 0,
+                                        sin(euler_zyx[0]), cos(euler_zyx[0]), 0,
+                                        0, 0, 1).finished();
+  // Combined rotation matrix
+  Matrix<3, 3> R = R_z * R_y * R_x;
+  return R;
+}
+
 int main(int argc, char *argv[]) {
   // initialize ROS
   ros::init(argc, argv, "image_data_generator");
@@ -213,7 +230,7 @@ int main(int argc, char *argv[]) {
 
   // Add Camera sensors to each drone
   Vector<3> B_r_BC1(0.0, 0.0, 0.3);
-  Matrix<3, 3> R_BC1 = Quaternion(1.0, 0.0, 0.0, 0.0).toRotationMatrix();
+  Matrix<3, 3> R_BC1 = Quaternion(1.0, 0.0, 0.0, 0.0).toRotationMatrix();  
   std::cout << R_BC1 << std::endl;
   rgb_camera1->setFOV(45);
   rgb_camera1->setWidth(640);
@@ -223,6 +240,8 @@ int main(int argc, char *argv[]) {
   quad_ptr1->addRGBCamera(rgb_camera1);
 
   Vector<3> B_r_BC2(0.0, 0.0, 0.3);
+  // Vector<3> euler(2.0/3.0 * M_PI, 0, 0);
+  // Matrix<3, 3> R_BC2 = eulerToRotation(euler);
   Matrix<3, 3> R_BC2 = Quaternion(1.0, 0.0, 0.0, 0.0).toRotationMatrix();
   std::cout << R_BC2 << std::endl;
   rgb_camera2->setFOV(90);
@@ -352,7 +371,8 @@ int main(int argc, char *argv[]) {
         cv::circle(img, cv::Point(u_c_target, v_c_target), 1, cv::Scalar(255, 0, 0), 2);
         //
         image_with_box = dir + "/quadrotor_image_with_box/quadrotor_45_" + std::to_string(save_45) + ".png";
-        cv::imshow(image_with_box, img);
+        // cv::imshow(image_with_box, img);
+        // cv::waitKey(3);
         cv::imwrite(image_with_box, img);
         //
         coordinates = dir + "/quadrotor_label/quadrotor_45_" + std::to_string(save_45) + ".txt";

@@ -20,7 +20,7 @@ class FlightmareTargetTrackingEnv():
         self.rewards = [[] for _ in range(self.num_envs)]
 
         # Target Quadrotor
-        self._target_observation = np.zeros([self.num_target_obs], dtype=np.float32) # target ground truth state
+        self._target_observation = np.zeros([self.num_targets, self.num_target_obs], dtype=np.float32) # target ground truth state
         
     def seed(self, seed=0):
         self.wrapper.setSeed(seed)
@@ -89,6 +89,10 @@ class FlightmareTargetTrackingEnv():
     @property
     def num_envs(self):
         return self.wrapper.getNumOfEnvs()
+
+    @property
+    def num_targets(self):
+        return self.wrapper.getNumOfTargets()
 
     @property
     def observation_space(self):

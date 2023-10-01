@@ -16,43 +16,45 @@ class KalmanFilter {
   ~KalmanFilter();
 
   void reset(void);
-  void init(const Scalar Ts, Ref<Vector<9>> x0, const Scalar sigma_w, const Scalar sigma_v);
+  void init(const Scalar Ts, Ref<Vector<6>> x0);
 
   // Prediction and correction
   void predict(void);
   void update(const Ref<Vector<3>> z);
 
   // Public get functions
-  inline Vector<3> getEstimatedPosition(void) const { return Vector<3>(x_[0], x_[3], x_[6]); };  
-  inline Matrix<9, 9> getErrorCovariance(void) const { return P_; };
+  inline Vector<3> getEstimatedPosition(void) const { return Vector<3>(x_[0], x_[2], x_[4]); };  
+  inline Matrix<6, 6> getErrorCovariance(void) const { return P_; };
   inline bool isInitialized(void) const { return initialized_; };
 
  private:
   //
   bool initialized_;
 
+  // From body to left camera
+  Matrix<4, 4> T_B_C_;
+
   // Sampling time;
   Scalar Ts_;
 
   // Estimated state (w.r.t. left camera frame)
-  Vector<9> x_;
+  Vector<6> x_;
 
   // Kalman filter matrix
-  Matrix<9, 9> F_, P_;
-  Matrix<3, 9> H_;
+  Matrix<6, 6> F_, P_;
+  Matrix<3, 6> H_;
   Matrix<3, 3> Q_;
   Matrix<3, 3> R_;
-  Matrix<9, 3> K_;
+  Matrix<6, 3> K_;
 
   //
-  Matrix<9, 3> Gamma_;
+  Matrix<6, 3> Gamma_;
 
-  // System and sensor noise
-  Scalar sigma_w_{0.2};
-  Scalar sigma_v_{30.0};
+  // System & sensor noise
+  Scalar sigma_w_{1.0}, sigma_v_{5.0};
 
   // Identity matrix
-  Matrix<9, 9> I_ = Matrix<9, 9>::Identity();
+  Matrix<6, 6> I_ = Matrix<6, 6>::Identity();
 };
 
 }  // namespace flightlib

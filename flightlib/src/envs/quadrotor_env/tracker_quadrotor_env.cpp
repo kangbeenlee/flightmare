@@ -28,15 +28,9 @@ TrackerQuadrotorEnv::TrackerQuadrotorEnv(const std::string &cfg_path) : EnvBase(
   multi_stereo_[1]->init(d_l, d_r, R_left); // left back camera
   multi_stereo_[2]->init(d_l, d_r, R_right); // right back camera
 
-
   // Data recoder
   sensor_save_ = SensorSave();
-  kf_ = std::make_shared<KalmanFilter>();
-  tracking_save_ = TrackingSaveV2();
-
-  // Initialize kalman filter
-  Vector<9> x0 = (Vector<9>() << 5, 0, 0, 0, 0, 0, 0, 0, 0).finished(); // w.r.t. camera frame
-  kf_->init(sim_dt_, x0, 1.0, 20);
+  tracking_save_ = TrackingSave();
 
   // update dynamics
   QuadrotorDynamics dynamics;
@@ -128,18 +122,21 @@ bool TrackerQuadrotorEnv::reset(Ref<Vector<>> obs, Ref<Vector<>> position,
   // Initialize multi kalman filter for target
   for (int i = 0; i < num_targets_; ++i){
     std::shared_ptr<KalmanFilter> target_kf = std::make_shared<KalmanFilter>();
-    Vector<9> x0 = (Vector<9>() << target_positions[0], 0, 0, target_positions[1], 0, 0, target_positions[2], 0, 0).finished();
-    target_kf->init(sim_dt_, x0, 1.0, 20);
+    Vector<6> x0 = (Vector<6>() << target_positions[i][0], 0, target_positions[i][1], 0, target_positions[i][2], 0).finished();
+    target_kf->init(sim_dt_, x0);
     target_kalman_filters_.push_back(target_kf);
   }
 
   // Initialize multi kalman filter for tracker
   for (int i = 0; i < num_trackers_; ++i){
     std::shared_ptr<KalmanFilter> tracker_kf = std::make_shared<KalmanFilter>();
-    Vector<9> x0 = (Vector<9>() << tracker_positions[0], 0, 0, tracker_positions[1], 0, 0, tracker_positions[2], 0, 0).finished();
-    tracker_kf->init(sim_dt_, x0, 1.0, 20);
+    Vector<6> x0 = (Vector<6>() << tracker_positions[i][0], 0, tracker_positions[i][1], 0, tracker_positions[i][2], 0).finished();
+    tracker_kf->init(sim_dt_, x0);
     tracker_kalman_filters_.push_back(tracker_kf);
   }
+
+  // Initialize tracking recoder
+  tracking_save_.init(num_targets_, num_trackers_);
 
   // Reset velocity control command
   cmd_.t = 0.0;
@@ -236,8 +233,9 @@ Scalar TrackerQuadrotorEnv::trackerStep(const Ref<Vector<>> act, Ref<Vector<>> o
   Matrix<4, 4> T_B_W = getBodyToWorld();
   Matrix<4, 4> T_W_B = T_B_W.inverse(); // World to body
 
-  // Store ground truth target positions
+  // Store ground truth position
   gt_target_positions_ = target_positions;
+  gt_tracker_positions_ = tracker_positions;
 
   // Try to detect the number of "n" targets
   bool detected = false;
@@ -291,23 +289,17 @@ Scalar TrackerQuadrotorEnv::trackerStep(const Ref<Vector<>> act, Ref<Vector<>> o
   std::vector<std::vector<Scalar>> tracker_cost_matrix;
 
   for (int i = 0; i < num_targets_; ++i) {
-    std::vector<Scalar> place_holder(num_targets_, 1000.0);
-    target_cost_matrix.push_back(place_holder);
+    std::vector<Scalar> place_holder_1(num_targets_, 1000.0);
+    target_cost_matrix.push_back(place_holder_1);
   }
 
   for (int i = 0; i < num_trackers_; ++i) {
-    std::vector<Scalar> place_holder(num_trackers_, 1000.0);
-    tracker_cost_matrix.push_back(place_holder);
+    std::vector<Scalar> place_holder_2(num_trackers_, 1000.0);
+    tracker_cost_matrix.push_back(place_holder_2);
   }
 
   for (int i = 0; i < num_targets_; ++i) {
     for (int j = 0; j < target_measurements.size(); ++j) {
-      std::cout << "************************************" << std::endl;
-      std::cout << target_kalman_filters_[i]->getEstimatedPosition() << std::endl;
-      std::cout << target_measurements[j] << std::endl;
-      std::cout << target_kalman_filters_[i]->getEstimatedPosition() - target_measurements[j] << std::endl;
-      std::cout << "************************************" << std::endl;
-
       Scalar target_cost = (target_kalman_filters_[i]->getEstimatedPosition() - target_measurements[j]).norm();
       target_cost_matrix[i][j] = target_cost;
     }
@@ -320,38 +312,72 @@ Scalar TrackerQuadrotorEnv::trackerStep(const Ref<Vector<>> act, Ref<Vector<>> o
     }
   }
 
-
+  // Hungarian matching algorithm for kalman filter update
 	HungarianAlgorithm target_hungarian, tracker_hungarian;
 	std::vector<int> target_assignment, tracker_assignment;
-	double cost = target_hungarian.Solve(target_cost_matrix, target_assignment);
-	double cost = tracker_hungarian.Solve(target_cost_matrix, tracker_assignment);
+  
+  
+  if (num_targets_ != 0) {
+  	target_hungarian.Solve(target_cost_matrix, target_assignment);
 
-  // 행,열 점검
-  // matrix cost가 1000.0일 경우 할당 x -> prediction만 진행
-  // Parallel kalman filter
+    for (int i = 0; i < target_cost_matrix.size(); ++i) {
+      if (target_cost_matrix[i][target_assignment[i]] > 900.0) {
+        std::cout << i << " kalman filter starts prediction" << std::endl;
+        target_kalman_filters_[i]->predict();
+      }
+      else {
+        std::cout << i << " kalman filter starts update" << std::endl;
+        Vector<3> temp = target_measurements[target_assignment[i]];
+        std::cout << "measurement " << temp[0] << ", " << temp[1] << ", " << temp[2] << " is equal to ";
+        Vector<3> temp2 = target_kalman_filters_[i]->getEstimatedPosition();
+        std::cout << temp2[0] << ", " << temp2[1] << ", " << temp2[2];
+        std::cout << "\tcost:" << (temp - temp2).norm() << std::endl;
+        target_kalman_filters_[i]->predict();
+        target_kalman_filters_[i]->update(target_measurements[target_assignment[i]]);
+      }
+    }
+  }
+  
+  if (num_trackers_ != 0) {
+  	tracker_hungarian.Solve(tracker_cost_matrix, tracker_assignment);
 
-  // sensor saver
-  // kalman filter saver
+    for (int i = 0; i < tracker_cost_matrix.size(); ++i) {
+      if (tracker_cost_matrix[i][tracker_assignment[i]] > 900.0) {
+        std::cout << i << " kalman filter starts prediction" << std::endl;
+        tracker_kalman_filters_[i]->predict();
+      }
+      else {
+        std::cout << i << " kalman filter starts update" << std::endl;
+        tracker_kalman_filters_[i]->predict();
+        tracker_kalman_filters_[i]->update(tracker_measurements[tracker_assignment[i]]);
+      }
+    }
+  }
 
+  // Record tracking data
+  std::vector<Vector<3>> target_estim_pos, tracker_estim_pos;
+  std::vector<Matrix<6, 6>> target_cov, tracker_cov;
 
+  for (int i = 0; i < num_targets_; i++) {
+    target_estim_pos.push_back(target_kalman_filters_[i]->getEstimatedPosition());
+    target_cov.push_back(target_kalman_filters_[i]->getErrorCovariance());
+  }
+  for (int i = 0; i < num_trackers_; i++) {
+    tracker_estim_pos.push_back(tracker_kalman_filters_[i]->getEstimatedPosition());
+    tracker_cov.push_back(tracker_kalman_filters_[i]->getErrorCovariance());;
+  }
 
-  // if (!kf_->isInitialized()) {
-  //   // Initialize kalman filter with measurement input
-  //   Vector<9> x0 = (Vector<9>() << 5, 0, 0, 0, 0, 0, 0, 0, 0).finished(); // w.r.t. camera frame
-  //   kf_->init(sim_dt_, x0, 1.0, 20);
-  // }
-  // else {
-  //   // Kalman filter prediction
-  //   kf_->predict();
-  //   // Kalman filter measurement update
-  //   if (detected)
-  //     kf_->update(estimated_position_);
-  // }
-
+  if (!tracking_save_.isFull())
+    tracking_save_.store(quad_state_.p, gt_target_positions_, target_estim_pos, target_cov, gt_tracker_positions_, tracker_estim_pos, tracker_cov, sim_dt_);
+  else if (tracking_flag_ && tracking_save_.isFull()) {
+    tracking_save_.save();
+    tracking_flag_ = false;
+    std::cout << ">>> Tracking output save is done" << std::endl;
+  }
 
   // Vector<3> estimated_position = kf_->computeEstimatedPositionWrtWorld(T_LC_W);
   // Scalar estimated_range = kf_->computeRangeWrtBody(quad_state_.p, T_LC_B);
-  Matrix<9, 9> covariance = kf_->getErrorCovariance();
+  // Matrix<6, 6> covariance = kf_->getErrorCovariance();
 
   // if (sensor_flag_)
   //   sensor_save_.store(gt_pixels_, pixels_, gt_target_position_, estimated_position_, sim_dt_);
@@ -359,15 +385,6 @@ Scalar TrackerQuadrotorEnv::trackerStep(const Ref<Vector<>> act, Ref<Vector<>> o
   //   sensor_save_.save();
   //   sensor_flag_ = false;
   //   std::cout << ">>> Sensor output save is done" << std::endl;
-  // }
-
-  // // Kalman filter output
-  // if (tracking_flag_)
-  //   tracking_save_.store(target_position, estimated_position, covariance, sim_dt_);
-  // if (tracking_flag_ && tracking_save_.isFull()) {
-  //   tracking_save_.save();
-  //   tracking_flag_ = false;
-  //   std::cout << ">>> Tracking output save is done" << std::endl;
   // }
 
   // Simulate quadrotor (apply rungekutta4th 8 times during 0.02s)

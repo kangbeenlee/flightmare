@@ -7,45 +7,44 @@ KalmanFilter::~KalmanFilter() {}
 
 void KalmanFilter::reset()
 {
-    x_ = (Vector<9>() << 0, 0, 0, 0, 0, 0, 0, 0, 0).finished(); // w.r.t. camera frame
-    P_ = Matrix<9, 9>::Identity() * 10.0;
+    x_ = (Vector<6>() << 0, 0, 0, 0, 0, 0).finished(); // w.r.t. camera frame
+    P_ = Matrix<6, 6>::Identity();
 }
 
-void KalmanFilter::init(const Scalar Ts, Ref<Vector<9>> x0, const Scalar sigma_w, const Scalar sigma_v)
+void KalmanFilter::init(const Scalar Ts, Ref<Vector<6>> x0)
 {
     // Kalman filter sampling time
     Ts_ = Ts;
 
     // Initial guess
     x_ = x0;
-    P_ = Matrix<9, 9>::Identity() * 10.0;
+    P_ = Matrix<6, 6>::Identity();
 
     // System matrix for constant acceleration model
     F_.setZero();
-    Matrix<3, 3> F_base = (Matrix<3, 3>() << 1, Ts_, 0.5 * pow(Ts_, 2),
-                                             0,   1,               Ts_,
-                                             0,   0,                 1).finished();
-    F_.block<3,3>(0,0) = F_base;
-    F_.block<3,3>(3,3) = F_base;
-    F_.block<3,3>(6,6) = F_base;
+    Matrix<2, 2> F_base = (Matrix<2, 2>() << 1, Ts_, 
+                                             0,   1).finished();
+    F_.block<2, 2>(0,0) = F_base;
+    F_.block<2, 2>(2,2) = F_base;
+    F_.block<2, 2>(4,4) = F_base;
 
-    // Gamma.shape = (9, 3)
+    // Gamma.shape = (6, 3)
     Gamma_.setZero();
-    Matrix<3, 1> Gamma_base = (Matrix<3, 1>() << pow(Ts_, 3) / 6, pow(Ts_, 2) / 2, Ts_).finished();
-    Gamma_.block<3, 1>(0,0) = Gamma_base;
-    Gamma_.block<3, 1>(3,1) = Gamma_base;
-    Gamma_.block<3, 1>(6,2) = Gamma_base;
+    Matrix<2, 1> Gamma_base = (Matrix<2, 1>() << pow(Ts_, 2) / 2, Ts_).finished();
+    Gamma_.block<2, 1>(0,0) = Gamma_base;
+    Gamma_.block<2, 1>(2,1) = Gamma_base;
+    Gamma_.block<2, 1>(4,2) = Gamma_base;
 
     // Measurement matrix
     H_.setZero();
     H_(0, 0) = 1;
-    H_(1, 3) = 1;
-    H_(2, 6) = 1;
+    H_(1, 2) = 1;
+    H_(2, 4) = 1;
 
     // Define system noise matrix
-    Q_ = Matrix<3, 3>::Identity() * pow(sigma_w, 2);
+    Q_ = Matrix<3, 3>::Identity() * pow(sigma_w_, 2);
     // Define sensor noise matrix
-    R_ = Matrix<3, 3>::Identity() * pow(sigma_v, 2);
+    R_ = Matrix<3, 3>::Identity() * pow(sigma_v_, 2);
 
     initialized_ = true;
 }

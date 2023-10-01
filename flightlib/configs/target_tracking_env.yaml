@@ -1,7 +1,7 @@
 env:
   seed: 1
   scene_id: 2  # 0 empty, 1 industrial, 2 warehouse
-  num_targets: 4
+  num_targets: 1
   num_envs: 100
   num_threads: 10 
   render: no

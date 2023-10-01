@@ -69,52 +69,22 @@ bool TargetQuadrotorEnv::reset(Ref<Vector<>> obs, const bool random) {
   return true;
 }
 
-bool TargetQuadrotorEnv::reset(Ref<Vector<>> obs, Ref<Vector<>> position)
+bool TargetQuadrotorEnv::reset(Ref<Vector<>> obs, Ref<Vector<>> position, const MinimumSnapTrajectory& trajectory)
 {
   quad_state_.setZero();
-
   quad_state_.x(QS::POSX) = position[0];
   quad_state_.x(QS::POSY) = position[1];
   quad_state_.x(QS::POSZ) = position[2];
 
+  // Store init position
+  init_position_ = position;
+
   // Reset quadrotor with random states
   target_ptr_->reset(quad_state_);
 
-  // Reset control command
+  // Reset control command for minimumsnap trajectory
   sim_time_ = 0.0;
-
-  Eigen::MatrixXf way_points(7, 3); // Should be n
-  way_points << 0, 2, 5,
-                3, 4, 7,
-                3, 6, 4,
-                0, 8, 5,
-                -3, 6, 7,
-                -3, 4, 4,
-                0, 2, 5;
-  //
-  Eigen::VectorXf segment_times(6); // Should be n-1
-  segment_times << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
-
-  // Eigen::MatrixXf way_points(13, 3); // Should be n
-  // way_points << 0, 0, 5,
-  //               5, -5, 7,
-  //               10, -5, 3,
-  //               15, 0, 5,
-  //               10, 5, 7,
-  //               5, 5, 3,
-  //               0, 0, 5,
-  //               -5, -5, 7,
-  //               -10, -5, 3,
-  //               -15, 0, 5,
-  //               -10, 5, 7,
-  //               -5, 5, 3,
-  //               0, 0, 5;
-  // //
-  // Eigen::VectorXf segment_times(12); // Should be n-1
-  // segment_times << 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5;
-
-  // Set minimum snap trajectory (The number of way points must be less than the number of segment times by 1 !!!)
-  trajectory_.setMinimumSnapTrajectory(way_points, segment_times);
+  trajectory_ = trajectory;
 
   // Obtain observations
   getObs(obs);
@@ -142,17 +112,16 @@ Scalar TargetQuadrotorEnv::step(const Ref<Vector<>> act, Ref<Vector<>> obs)
 
 Scalar TargetQuadrotorEnv::targetStep(Ref<Vector<>> obs)
 {
+  Eigen::VectorXf desPosVelAcc = trajectory_.getDesiredPosVelAcc(sim_time_);
+  // std::cout << ">>> sim time: " << sim_time_ << std::endl;
+  // std::cout << ">>> desPosVelAcc: " << desPosVelAcc[0] << ", " << desPosVelAcc[1] << ", " << desPosVelAcc[2] << std::endl;
+  quad_state_.x[QS::POSX] = desPosVelAcc[0] + init_position_[0];
+  quad_state_.x[QS::POSY] = desPosVelAcc[1] + init_position_[1];
+  quad_state_.x[QS::POSZ] = desPosVelAcc[2];
+  target_ptr_->setState(quad_state_);
 
-  // Eigen::VectorXf desPosVelAcc = trajectory_.getDesiredPosVelAcc(sim_time_);
-  // // std::cout << ">>> sim time: " << sim_time_ << std::endl;
-  // // std::cout << ">>> desPosVelAcc: " << desPosVelAcc[0] << ", " << desPosVelAcc[1] << ", " << desPosVelAcc[2] << std::endl;
-  // quad_state_.x[QS::POSX] = desPosVelAcc[0];
-  // quad_state_.x[QS::POSY] = desPosVelAcc[1];
-  // quad_state_.x[QS::POSZ] = desPosVelAcc[2];
-  // target_ptr_->setState(quad_state_);
-
-  // //
-  // sim_time_ += sim_dt_;
+  //
+  sim_time_ += sim_dt_;
 
   // update observations
   getObs(obs);

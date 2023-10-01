@@ -51,33 +51,35 @@ void TargetTrackingEnv<EnvBase>::init(void)
   {
     envs_.push_back(std::make_unique<EnvBase>());
   }
+
+  // Define target drones
   for (int i = 0; i < num_targets_; i++)
   {
     targets_.push_back(std::make_unique<TargetQuadrotorEnv>());
   }
 
-
-
-  // Define target drone
-  target_ = std::make_unique<TargetQuadrotorEnv>();
-
-
-  target_positions_.push_back(Vector<3>{0.0, 2.0, 5.0});
-  target_positions_.push_back(Vector<3>{2.0, 2.0, 5.0});
-  target_positions_.push_back(Vector<3>{-2.0, 2.0, 5.0});
-
-
   // Set initial start position
+  // target_positions_.push_back(Vector<3>{0.0, 3.0, 5.0});
+  target_positions_.push_back(Vector<3>{3.0, 3.0, 5.0});
+  // target_positions_.push_back(Vector<3>{-3.0, 3.0, 5.0});
+
   tracker_positions_.push_back(Vector<3>{0.0, 0.0, 5.0});
   tracker_positions_.push_back(Vector<3>{-3.0, 0.0, 5.0});
   tracker_positions_.push_back(Vector<3>{3.0, 0.0, 5.0});
   tracker_positions_.push_back(Vector<3>{0.0, -3.0, 5.0});
 
+  // Target minimum snap trajectory
+  Eigen::MatrixXf way_points(7, 3); // Should be n
+  way_points << 0, 0, 5,   3, 2, 7,   3, 4, 4,   0, 6, 5,   -3, 4, 7,   -3, 2, 4,   0, 0, 5;
+  Eigen::VectorXf segment_times(6); // Should be n-1
+  segment_times << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
+  trajectory_ = MinimumSnapTrajectory();
+  trajectory_.setMinimumSnapTrajectory(way_points, segment_times);
+
   // Set Unity
   setUnity(unity_render_);
 
   obs_dim_ = envs_[0]->getObsDim();
-  // target_obs_dim_ = target_->getObsDim();
   target_obs_dim_ = targets_[0]->getObsDim();
   act_dim_ = envs_[0]->getActDim();
 
@@ -104,14 +106,14 @@ bool TargetTrackingEnv<EnvBase>::reset(Ref<MatrixRowMajor<>> obs, Ref<MatrixRowM
   receive_id_ = 0;
 
   for (int i = 0; i < num_targets_; i++) {
-    targets_[i]->reset(target_obs.row(i), target_positions_[i]);
+    targets_[i]->reset(target_obs.row(i), target_positions_[i], trajectory_);
   }
 
   for (int i = 0; i < num_envs_; i++) {
     std::vector<Vector<3>> other_tracker_positions;
     for (int j = 0; j < num_envs_; j++) {
-      if (j != i)
-        other_tracker_positions.push_back(tracker_positions_[i]);
+      if (i != j)
+        other_tracker_positions.push_back(tracker_positions_[j]);
     }
     envs_[i]->reset(obs.row(i), tracker_positions_[i], target_positions_, other_tracker_positions);
   }
@@ -224,7 +226,7 @@ void TargetTrackingEnv<EnvBase>::perTrackerStep(int agent_id, Ref<MatrixRowMajor
   }
 
   if (done[agent_id]) {
-    envs_[agent_id]->reset(obs.row(agent_id), tracker_positions_[agent_id], target_positions);
+    envs_[agent_id]->reset(obs.row(agent_id), tracker_positions_[agent_id], target_positions, other_tracker_positions);
     reward(agent_id) += terminal_reward;
   }
 }
