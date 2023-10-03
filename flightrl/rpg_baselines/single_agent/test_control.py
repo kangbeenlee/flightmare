@@ -16,6 +16,7 @@ def test_model(env, render=False):
         done, ep_len = False, 0
 
         while not done:
+            ep_len += 1
 
             # vx, vy, vz, wz (m/s, m/s, m/s, rad/s)
             act = np.array([[0.0, 0.0, 0.0, 0.0]], dtype=np.float32)
@@ -37,11 +38,8 @@ def test_model(env, render=False):
             # else:
             #     act = np.array([[0.0, 0.0, 0.0, 0.0]], dtype=np.float32)
             
-            
             obs, rew, done, infos = env.step(act)
             target_obs = env.get_target_state()
-            #
-            ep_len += 1
 
     if render:
         env.disconnectUnity()

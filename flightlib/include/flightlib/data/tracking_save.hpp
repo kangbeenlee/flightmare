@@ -32,7 +32,9 @@ class TrackingSave {
       tracker_estim_data_.push_back(arma::zeros<arma::mat>(state_size_, buffer_));
       tracker_error_cov_.push_back(arma::zeros<arma::mat>(state_size_, buffer_));
     }
-    ego_data_ = arma::zeros(state_size_, buffer_);
+
+    ego_state_size_ = 7;
+    ego_data_ = arma::zeros(ego_state_size_, buffer_);
     time_ = arma::zeros(buffer_);
   }
 
@@ -49,11 +51,12 @@ class TrackingSave {
       tracker_estim_data_.push_back(arma::zeros<arma::mat>(state_size_, buffer_));
       tracker_error_cov_.push_back(arma::zeros<arma::mat>(state_size_, buffer_));
     }
-    ego_data_ = arma::zeros(state_size_, buffer_);
+    ego_data_ = arma::zeros(ego_state_size_, buffer_);
     time_ = arma::zeros(buffer_);
   }
 
   void store(const Vector<3> ego_position,
+             const Vector<4> ego_orientation,
              const std::vector<Vector<3>> target_gt_position,
              const std::vector<Vector<3>> target_estim_position,
              const std::vector<Matrix<6, 6>> target_covariance,
@@ -67,6 +70,10 @@ class TrackingSave {
     ego_data_(0, i) = ego_position[0];
     ego_data_(1, i) = ego_position[1];
     ego_data_(2, i) = ego_position[2];
+    ego_data_(3, i) = ego_orientation[0];
+    ego_data_(4, i) = ego_orientation[1];
+    ego_data_(5, i) = ego_orientation[2];
+    ego_data_(6, i) = ego_orientation[3];
 
     for (int k = 0; k < num_targets_; ++k) {
       target_gt_data_[k](0, i) = target_gt_position[k][0];
@@ -103,9 +110,18 @@ class TrackingSave {
     arma::mat ego_x = ego_data_.row(0);
     arma::mat ego_y = ego_data_.row(1);
     arma::mat ego_z = ego_data_.row(2);
+    arma::mat ego_qw = ego_data_.row(3);
+    arma::mat ego_qx = ego_data_.row(4);
+    arma::mat ego_qy = ego_data_.row(5);
+    arma::mat ego_qz = ego_data_.row(6);
+
     ego_x.save("/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/tracking_output/ego_x.txt", arma::raw_ascii);
     ego_y.save("/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/tracking_output/ego_y.txt", arma::raw_ascii);
     ego_z.save("/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/tracking_output/ego_z.txt", arma::raw_ascii);
+    ego_qw.save("/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/tracking_output/ego_qw.txt", arma::raw_ascii);
+    ego_qx.save("/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/tracking_output/ego_qx.txt", arma::raw_ascii);
+    ego_qy.save("/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/tracking_output/ego_qy.txt", arma::raw_ascii);
+    ego_qz.save("/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/tracking_output/ego_qz.txt", arma::raw_ascii);
 
     for (int k = 0; k < num_targets_; ++k) {
       arma::mat target_gt_x = target_gt_data_[k].row(0);
@@ -175,6 +191,7 @@ class TrackingSave {
   std::vector<arma::mat> tracker_gt_data_;
   std::vector<arma::mat> tracker_estim_data_;
   std::vector<arma::mat> tracker_error_cov_;
+  int ego_state_size_; // x, y, z, qw, qx, qy, qz
   arma::mat ego_data_;
   arma::mat time_;
 };
