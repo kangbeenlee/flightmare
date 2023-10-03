@@ -20,7 +20,7 @@ class KalmanFilter {
 
   // Prediction and correction
   void predict(void);
-  void update(const Ref<Vector<3>> z);
+  void update(const Ref<Vector<3>> z, const Ref<Vector<3>> ego);
 
   // Public get functions
   inline Vector<3> getEstimatedPosition(void) const { return Vector<3>(x_[0], x_[2], x_[4]); };  
@@ -51,7 +51,9 @@ class KalmanFilter {
   Matrix<6, 3> Gamma_;
 
   // System & sensor noise
-  Scalar sigma_w_{1.0}, sigma_v_{5.0};
+  Scalar sigma_w_{30.0}, sigma_v_{2.0};
+  // Adaptive sensor noise
+  bool adaptive_{true};
 
   // Identity matrix
   Matrix<6, 6> I_ = Matrix<6, 6>::Identity();

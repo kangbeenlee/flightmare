@@ -57,11 +57,23 @@ void KalmanFilter::predict()
     P_ = F_ * P_ * F_.transpose() + Gamma_ * Q_ * Gamma_.transpose();
 }
 
-void KalmanFilter::update(const Ref<Vector<3>> z)
+void KalmanFilter::update(const Ref<Vector<3>> z, const Ref<Vector<3>> ego)
 {
     if (!initialized_) throw std::runtime_error("Kalman filter is not initialized!");
 
-    // Innovation
+    // Adaptive sensor noise
+    if (adaptive_) {
+        Vector<3> rel = Vector<3>(abs(z[0] - ego[0]), abs(z[1] - ego[1]), abs(z[2] - ego[2]));
+        std::cout << "Before scaled std : " << rel[0] << ", " << rel[1] << ", " << rel[2] << std::endl;
+
+        Scalar scale = 5.0;
+        Vector<3> sigma_v = rel * scale;
+        R_ = rel.asDiagonal();
+
+        std::cout << "Adaptive sensor std : " << sigma_v[0] << ", " << sigma_v[1] << ", " << sigma_v[2] << std::endl;
+    }
+
+    // Innovationf
     Matrix<3, 3> S = H_ * P_ * H_.transpose() + R_;
     // Kalman gain
     K_ = P_ * H_.transpose() * S.inverse();
