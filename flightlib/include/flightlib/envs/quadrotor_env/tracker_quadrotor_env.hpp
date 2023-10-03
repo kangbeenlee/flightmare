@@ -103,14 +103,18 @@ class TrackerQuadrotorEnv final : public EnvBase {
   // Stereo camera
   int num_cameras_{3};
   std::vector<std::shared_ptr<StereoCamera>> multi_stereo_;
-  SensorSave sensor_save_;
-  bool sensor_flag_{true};
-  Vector<4> gt_pixels_, pixels_;
 
   // Kalman filter
   std::vector<std::shared_ptr<KalmanFilter>> target_kalman_filters_, tracker_kalman_filters_;
   int num_targets_, num_trackers_; // except tracker itself
 
+  // Sensor data recoder
+  SensorSave sensor_save_;
+  bool sensor_flag_{true};
+  Vector<4> gt_pixels_, pixels_;
+  Vector<3> measured_position_;
+
+  // Tracking data recoder
   TrackingSave tracking_save_;
   bool tracking_flag_{true};
   std::vector<Vector<3>> gt_target_positions_, estimated_target_positions_;

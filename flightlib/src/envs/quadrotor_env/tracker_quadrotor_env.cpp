@@ -19,11 +19,13 @@ TrackerQuadrotorEnv::TrackerQuadrotorEnv(const std::string &cfg_path) : EnvBase(
     multi_stereo_.push_back(std::make_shared<StereoCamera>());
   }
 
-  Vector<3> d_l = Vector<3>(0.06, -0.015, -0.1); // from left camera frame to body
-  Vector<3> d_r = Vector<3>(-0.06, -0.015, -0.1); // from right camera frame to body
-  Matrix<3, 3> R_front = Rot_x(-M_PI_2) * Rot_z(-M_PI_2);
-  Matrix<3, 3> R_left  = Rot_y(-2.0/3.0 * M_PI) * Rot_x(-M_PI_2) * Rot_z(-M_PI_2);
-  Matrix<3, 3> R_right = Rot_y(2.0/3.0 * M_PI) * Rot_x(-M_PI_2) * Rot_z(-M_PI_2);
+  Vector<3> d_l = Vector<3>(0.06, 0.0, -0.1); // body origin w.r.t. left camera
+  Vector<3> d_r = Vector<3>(-0.06, 0.0, -0.1); // body origin w.r.t. right camera
+  Matrix<3, 3> R_front = (Rot_x(-M_PI_2) * Rot_y(M_PI_2)).inverse();
+  Matrix<3, 3> R_left  = (Rot_z(2.0/3.0 * M_PI) * Rot_x(-M_PI_2) * Rot_y(M_PI_2)).inverse();
+  Matrix<3, 3> R_right = (Rot_z(-2.0/3.0 * M_PI) * Rot_x(-M_PI_2) * Rot_y(M_PI_2)).inverse();
+
+
   multi_stereo_[0]->init(d_l, d_r, R_front); // front camera
   multi_stereo_[1]->init(d_l, d_r, R_left); // left back camera
   multi_stereo_[2]->init(d_l, d_r, R_right); // right back camera
@@ -243,9 +245,9 @@ Scalar TrackerQuadrotorEnv::trackerStep(const Ref<Vector<>> act, Ref<Vector<>> o
 
   for (int i = 0; i < target_positions.size(); i++) {
     detected = false;
-    Vector<3> tracker_position = target_positions[i];
+    Vector<3> target_position = target_positions[i];
     for (int j = 0; j < num_cameras_; j++) {
-      detected = multi_stereo_[j]->computePixelPoint(tracker_position, T_W_B);
+      detected = multi_stereo_[j]->computePixelPoint(target_position, T_W_B);
       if (detected) {
         Vector<3> target_measurement = multi_stereo_[j]->getObjectPosition();
         target_measurements.push_back(target_measurement);
@@ -333,7 +335,7 @@ Scalar TrackerQuadrotorEnv::trackerStep(const Ref<Vector<>> act, Ref<Vector<>> o
         std::cout << temp2[0] << ", " << temp2[1] << ", " << temp2[2];
         std::cout << "\tcost:" << (temp - temp2).norm() << std::endl;
         target_kalman_filters_[i]->predict();
-        target_kalman_filters_[i]->update(target_measurements[target_assignment[i]]);
+        target_kalman_filters_[i]->update(target_measurements[target_assignment[i]], quad_state_.p);
       }
     }
   }
@@ -349,11 +351,17 @@ Scalar TrackerQuadrotorEnv::trackerStep(const Ref<Vector<>> act, Ref<Vector<>> o
       else {
         std::cout << i << " kalman filter starts update" << std::endl;
         tracker_kalman_filters_[i]->predict();
-        tracker_kalman_filters_[i]->update(tracker_measurements[tracker_assignment[i]]);
+        tracker_kalman_filters_[i]->update(tracker_measurements[tracker_assignment[i]], quad_state_.p);
       }
     }
   }
 
+
+
+  //************************************************************************
+  //*************************** Data Recoder *******************************
+  //************************************************************************
+  
   // Record tracking data
   std::vector<Vector<3>> target_estim_pos, tracker_estim_pos;
   std::vector<Matrix<6, 6>> target_cov, tracker_cov;
@@ -367,25 +375,44 @@ Scalar TrackerQuadrotorEnv::trackerStep(const Ref<Vector<>> act, Ref<Vector<>> o
     tracker_cov.push_back(tracker_kalman_filters_[i]->getErrorCovariance());;
   }
 
-  if (!tracking_save_.isFull())
-    tracking_save_.store(quad_state_.p, gt_target_positions_, target_estim_pos, target_cov, gt_tracker_positions_, tracker_estim_pos, tracker_cov, sim_dt_);
+  if (!tracking_save_.isFull()) {
+    Vector<4> quadternion(quad_state_.x(QS::ATTW), quad_state_.x(QS::ATTX), quad_state_.x(QS::ATTY), quad_state_.x(QS::ATTZ));
+    tracking_save_.store(quad_state_.p, quadternion, gt_target_positions_, target_estim_pos, target_cov, gt_tracker_positions_, tracker_estim_pos, tracker_cov, sim_dt_);
+  }
   else if (tracking_flag_ && tracking_save_.isFull()) {
     tracking_save_.save();
     tracking_flag_ = false;
     std::cout << ">>> Tracking output save is done" << std::endl;
   }
 
-  // Vector<3> estimated_position = kf_->computeEstimatedPositionWrtWorld(T_LC_W);
-  // Scalar estimated_range = kf_->computeRangeWrtBody(quad_state_.p, T_LC_B);
-  // Matrix<6, 6> covariance = kf_->getErrorCovariance();
+  // Just for one target case
+  for (int i = 0; i < target_positions.size(); i++) {
+    detected = false;
+    Vector<3> target_position = target_positions[i];
+    for (int j = 0; j < num_cameras_; j++) {
+      detected = multi_stereo_[j]->computePixelPoint(target_position, T_W_B);
+      if (detected) {
+        measured_position_ = multi_stereo_[j]->getObjectPosition();
+        gt_pixels_ = multi_stereo_[j]->getGtPixels();
+        pixels_ = multi_stereo_[j]->getPixels();
+        break;      
+      }
+    }
+  }
 
-  // if (sensor_flag_)
-  //   sensor_save_.store(gt_pixels_, pixels_, gt_target_position_, estimated_position_, sim_dt_);
-  // if (sensor_flag_ && sensor_save_.isFull()) {
-  //   sensor_save_.save();
-  //   sensor_flag_ = false;
-  //   std::cout << ">>> Sensor output save is done" << std::endl;
-  // }
+  //************************************************************************
+  //*************************** Data Recoder *******************************
+  //************************************************************************
+
+  
+
+  if (!sensor_save_.isFull())
+    sensor_save_.store(gt_pixels_, pixels_, gt_target_positions_[0], measured_position_, sim_dt_);
+  if (sensor_flag_ && sensor_save_.isFull()) {
+    sensor_save_.save();
+    sensor_flag_ = false;
+    std::cout << ">>> Sensor output save is done" << std::endl;
+  }
 
   // Simulate quadrotor (apply rungekutta4th 8 times during 0.02s)
   tracker_ptr_->run(cmd_, sim_dt_);

@@ -59,20 +59,20 @@ void TargetTrackingEnv<EnvBase>::init(void)
   }
 
   // Set initial start position
-  // target_positions_.push_back(Vector<3>{0.0, 3.0, 5.0});
-  target_positions_.push_back(Vector<3>{3.0, 3.0, 5.0});
-  // target_positions_.push_back(Vector<3>{-3.0, 3.0, 5.0});
+  target_positions_.push_back(Vector<3>{0.0, 8.0, 5.0});
+  target_positions_.push_back(Vector<3>{5.0, 8.0, 5.0});
+  target_positions_.push_back(Vector<3>{-5.0, 8.0, 5.0});
 
   tracker_positions_.push_back(Vector<3>{0.0, 0.0, 5.0});
   tracker_positions_.push_back(Vector<3>{-3.0, 0.0, 5.0});
   tracker_positions_.push_back(Vector<3>{3.0, 0.0, 5.0});
-  tracker_positions_.push_back(Vector<3>{0.0, -3.0, 5.0});
 
   // Target minimum snap trajectory
   Eigen::MatrixXf way_points(7, 3); // Should be n
   way_points << 0, 0, 5,   3, 2, 7,   3, 4, 4,   0, 6, 5,   -3, 4, 7,   -3, 2, 4,   0, 0, 5;
   Eigen::VectorXf segment_times(6); // Should be n-1
   segment_times << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
+
   trajectory_ = MinimumSnapTrajectory();
   trajectory_.setMinimumSnapTrajectory(way_points, segment_times);
 

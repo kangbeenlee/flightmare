@@ -126,7 +126,7 @@ def configure_random_seed(seed, env=None):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser("Hyperparameters Setting for MADDPG and MATD3")
 
-    parser.add_argument('--n', type=int, default=4, help="Number of agent")
+    parser.add_argument('--n', type=int, default=3, help="Number of agent")
     parser.add_argument('--train', action="store_true", help="To train new model or simply test pre-trained model")
     parser.add_argument('--render', type=int, default=1, help="Enable Unity Render")
     parser.add_argument('--seed', type=int, default=0, help="Random seed")
@@ -179,7 +179,7 @@ if __name__ == '__main__':
     else:
         cfg["env"]["num_envs"] = args.n
         cfg["env"]["num_threads"] = 1
-        cfg["env"]["scene_id"] = 0      
+        cfg["env"]["scene_id"] = 0   
     if args.render:
         cfg["env"]["render"] = "yes"
     else:
