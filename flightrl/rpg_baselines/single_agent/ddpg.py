@@ -32,27 +32,6 @@ class Actor(nn.Module):
         x = F.relu(self.l2(x))
         return self.max_action * torch.tanh(self.l3(x))
 
-# # For collective thrust & body-rates action
-# class Actor(nn.Module):
-#     def __init__(self, obs_dim=None, action_dim=None, max_action=None):
-#         super(Actor, self).__init__()
-        
-#         self.l1 = nn.Linear(obs_dim, 256)
-#         self.l2 = nn.Linear(256, 256)
-#         self.l3 = nn.Linear(256, 1)
-#         self.l4 = nn.Linear(256, 3)
-        
-#         self.max_action = max_action
-        
-#     def forward(self, x):
-#         x = z_score_normalize(x)     
-#         x = F.relu(self.l1(x))
-#         x = F.relu(self.l2(x))
-        
-#         c = torch.sigmoid(self.l3(x)) * 22.0 # Thrust
-#         w = torch.tanh(self.l4(x)) * 3.0 # Omega
-#         return torch.cat([c, w], dim=1)
-
 # Action value network
 class Critic(nn.Module):
     def __init__(self, obs_dim=None, action_dim=None):
@@ -115,7 +94,6 @@ class ReplayBuffer:
 
 class DDPG:
     def __init__(self,
-                 device=None,
                  gamma=0.99,
                  lr_actor=3e-4,
                  lr_critic=3e-4,
@@ -124,13 +102,13 @@ class DDPG:
                  action_dim=4,
                  max_action=3.0):
         
-        self.device = device
+        self.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
         
-        self.actor = Actor(obs_dim, action_dim, max_action).to(device)
-        self.critic = Critic(obs_dim, action_dim).to(device)
+        self.actor = Actor(obs_dim, action_dim, max_action).to(self.device)
+        self.critic = Critic(obs_dim, action_dim).to(self.device)
         # Target network
-        self.target_actor = Actor(obs_dim, action_dim, max_action).to(device)
-        self.target_critic = Critic(obs_dim, action_dim).to(device)
+        self.target_actor = Actor(obs_dim, action_dim, max_action).to(self.device)
+        self.target_critic = Critic(obs_dim, action_dim).to(self.device)
         self.target_actor.load_state_dict(self.actor.state_dict())
         self.target_critic.load_state_dict(self.critic.state_dict())
 
@@ -219,14 +197,14 @@ class Trainer:
         self.evaluation_time_steps = evaluation_time_steps
         self.evaluation_times = evaluation_times
         self.training_start = training_start
-        self.save_dir = os.path.join(save_dir, "model_single", "ddpg")
+        self.save_dir = os.path.join(save_dir, "model", "ddpg")
         self.action_dim = action_dim
         self.max_action = max_action
         self.expl_noise = expl_noise
         self.replay_buffer = ReplayBuffer(obs_dim=obs_dim, action_dim=action_dim, memory_capacity=memory_capacity, batch_size=batch_size)
 
         # Tensorboard results
-        self.writer = SummaryWriter(log_dir="runs/ddpg/")
+        self.writer = SummaryWriter(log_dir="runs/single/ddpg/")
 
     def evaluate_policy(self, env, policy, max_episode_steps, eval_episodes=10):
         avg_reward = 0.
