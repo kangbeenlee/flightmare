@@ -81,4 +81,13 @@ void KalmanFilter::update(const Ref<Vector<3>> z, const Ref<Vector<3>> ego)
     P_ = (I_ - K_ * H_) * P_;
 }
 
+Matrix<3, 3> KalmanFilter::getStateErrorCovariance() const
+{
+    if (!initialized_) throw std::runtime_error("Kalman filter is not initialized!");
+    Matrix<3, 3> state_cov = (Matrix<3, 3>() << P_(0, 0),        0,       0,
+                                                       0, P_(2, 2),       0,
+                                                       0,        0, P_(4, 4)).finished(); // w.r.t. camera frame
+    return state_cov;
+}
+
 }  // namespace flightlib

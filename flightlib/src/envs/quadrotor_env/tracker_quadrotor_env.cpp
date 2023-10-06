@@ -49,7 +49,7 @@ TrackerQuadrotorEnv::TrackerQuadrotorEnv(const std::string &cfg_path) : EnvBase(
 
   // define input and output dimension for the environment
   // obs_dim_ = trackerquadenv::kNObs;
-  obs_dim_ = 22;
+  obs_dim_ = 55;
   act_dim_ = trackerquadenv::kNAct;
 }
 
@@ -119,7 +119,8 @@ bool TrackerQuadrotorEnv::reset(Ref<Vector<>> obs, Ref<Vector<>> position,
 
   //
   num_targets_ = target_positions.size();
-  num_trackers_ = tracker_positions.size();
+  // num_trackers_ = tracker_positions.size();
+  num_trackers_ = 0; // Should be 0 when training parallel ppo
 
   // Initialize multi kalman filter for target
   for (int i = 0; i < num_targets_; ++i){
@@ -373,7 +374,7 @@ Scalar TrackerQuadrotorEnv::trackerStep(const Ref<Vector<>> act, Ref<Vector<>> o
     std::cout << ">>> Tracking output save is done" << std::endl;
   }
 
-  // Just for one target case
+  // Record sensor data, just for one target case
   for (int i = 0; i < target_positions.size(); i++) {
     detected = false;
     Vector<3> target_position = target_positions[i];
@@ -388,12 +389,6 @@ Scalar TrackerQuadrotorEnv::trackerStep(const Ref<Vector<>> act, Ref<Vector<>> o
     }
   }
 
-  //************************************************************************
-  //*************************** Data Recoder *******************************
-  //************************************************************************
-
-  
-
   if (!sensor_save_.isFull())
     sensor_save_.store(gt_pixels_, pixels_, gt_target_positions_[0], measured_position_, sim_dt_);
   if (sensor_flag_ && sensor_save_.isFull()) {
@@ -402,6 +397,12 @@ Scalar TrackerQuadrotorEnv::trackerStep(const Ref<Vector<>> act, Ref<Vector<>> o
     std::cout << ">>> Sensor output save is done" << std::endl;
   }
 
+  //************************************************************************
+  //*************************** Data Recoder *******************************
+  //************************************************************************
+
+
+
   // Simulate quadrotor (apply rungekutta4th 8 times during 0.02s)
   tracker_ptr_->run(cmd_, sim_dt_);
 
@@ -409,8 +410,8 @@ Scalar TrackerQuadrotorEnv::trackerStep(const Ref<Vector<>> act, Ref<Vector<>> o
   getObs(obs);
 
   // Reward function of tracker
-  // Scalar reward = rewardFunction(target_position);
-  Scalar reward = 0.0;
+  Scalar reward = rewardFunction();
+  // Scalar reward = 0.0;
 
   return reward;
 }
@@ -419,98 +420,95 @@ bool TrackerQuadrotorEnv::getObs(Ref<Vector<>> obs)
 {
   tracker_ptr_->getState(&quad_state_);
 
-  // convert quaternion to euler angle
-  Vector<3> euler_zyx = quad_state_.q().toRotationMatrix().eulerAngles(2, 1, 0);
+  //
+  for (int i = 0; i < num_targets_; ++i) {
+    estimated_target_positions_.push_back(target_kalman_filters_[i]->getEstimatedPosition());
+    estimated_target_velocities_.push_back(target_kalman_filters_[i]->getEstimatedVelocity());
+    estimated_target_ranges_.push_back(computeEuclideanDistance(quad_state_.p, estimated_target_positions_[i]));
+  }
+  for (int i = 0; i < num_trackers_; ++i) {
+    estimated_tracker_positions_.push_back(tracker_kalman_filters_[i]->getEstimatedPosition());
+    estimated_tracker_velocities_.push_back(tracker_kalman_filters_[i]->getEstimatedVelocity());
+    estimated_tracker_ranges_.push_back(computeEuclideanDistance(quad_state_.p, estimated_tracker_positions_[i]));
+  }
 
-  // Matrix<4, 4> T_B_W = getBodyToWorld();
-  // Matrix<4, 4> T_LC_B = stereo_camera_->getFromLeftCameraToBody();
-  // Matrix<4, 4> T_LC_W = T_B_W * T_LC_B;
-  // Vector<3> target_p = kf_->computeEstimatedPositionWrtWorld(T_LC_W);
-  // Scalar target_r = kf_->computeRangeWrtBody(quad_state_.p, T_LC_B);
-
-
-  // Vector<3> gt_relative_position(gt_target_position_[0] - quad_state_.x(QS::POSX),
-  //                                gt_target_position_[1] - quad_state_.x(QS::POSY),
-  //                                gt_target_position_[2] - quad_state_.x(QS::POSZ));
-
-  Vector<3> gt_relative_position(1, 1, 1);
-  Scalar gt_range = sqrt(pow(gt_relative_position[0], 2) + pow(gt_relative_position[1], 2) + pow(gt_relative_position[2], 2));
-
-  // // observation dim : 3 + 9 + 3 = 15
-  // obs.segment<quadenv::kNObs>(quadenv::kObs) << quad_state_.p, ori, quad_state_.v;
   Vector<9> ori = Map<Vector<>>(quad_state_.R().data(), quad_state_.R().size());
+  
+  // Ego oservation dim: 3 + 3 + 9 + 3 + 1 = 19
+  // Target observation dim: 3 + 3 + 1 + 1 + 1 = 9
+  // Other tracker observations
+  quad_obs_ << quad_state_.p, quad_state_.v, ori, quad_state_.w, radius_,
+               estimated_target_positions_[0], estimated_target_velocities_[0], radius_, estimated_target_ranges_[0], radius_ * 2, 
+               estimated_target_positions_[1], estimated_target_velocities_[1], radius_, estimated_target_ranges_[1], radius_ * 2,
+               estimated_target_positions_[2], estimated_target_velocities_[2], radius_, estimated_target_ranges_[2], radius_ * 2,
+               estimated_target_positions_[3], estimated_target_velocities_[3], radius_, estimated_target_ranges_[3], radius_ * 2;
+  
 
-  // Observation dim: 3 + 3 + 9 + 3 = 18
-  quad_obs_ << quad_state_.p, quad_state_.v, ori, quad_state_.w,
-               gt_relative_position, gt_range; // target information
-
-  obs.segment<22>(0) = quad_obs_;
+  obs.segment<55>(0) = quad_obs_;
 
   return true;
 }
 
-Scalar TrackerQuadrotorEnv::rewardFunction(Vector<3> target_position)
+Scalar TrackerQuadrotorEnv::rewardFunction()
 {
   // Outter coefficient
-  Scalar c1 = 10.0;
+  Scalar c1 = 1.0;
   Scalar c2 = 1.0;
-  Scalar c3 = 0.5;
-  Scalar c4 = -1e-3;
 
-  // Inner coefficient
-  Scalar i1 = -0.1;
-  Scalar i2 = -0.01;
-  Scalar i3 = -10.0;
-
-  // Scalar range_xy = hypot(gt_target_position_[0] - quad_state_.x(QS::POSX), gt_target_position_[1] - quad_state_.x(QS::POSY));
-  // Scalar range_z = abs(gt_target_position_[2] - quad_state_.x(QS::POSZ));
-
-  Scalar range_xy = 0.0;
-  Scalar range_z = 0.0;
-
-  // // xy range reward
-  // Scalar range_xy_reward = exp(i1 * pow(range_xy, 3));
-
-  // Progress reward
-  Scalar progress_reward = prev_range_ - range_xy;
-
-  if (first_) {
-    first_ = false;
-    progress_reward = 0.0;
+  // 1. Heading reward
+  std::vector<Scalar> numerator;
+  Scalar denominator = 0.0;
+  for (int i = 0; i < num_targets_; ++i) {
+    Vector<3> position = target_kalman_filters_[i]->getEstimatedPosition();
+    Scalar distance = computeEuclideanDistance(quad_state_.p, position);
+    Scalar elem = exp(-distance * 0.6);
+    numerator.push_back(elem);
+    denominator += elem;
+    // std::cout << i << "distance : " << distance << std::endl;
   }
-  prev_range_ = range_xy;
 
-  // z range reward
-  Scalar range_z_reward = exp(i2 * pow(range_z, 3));
+  // Compute negative softmax
+  std::vector<Scalar> heading_weight;
+  for (int i = 0; i < num_targets_; ++i) {
+    heading_weight.push_back(numerator[i] / denominator);
+    // std::cout << i << "Heading weight : " << numerator[i] / denominator << std::endl;
+  }  
 
-  // Perception reward
-  Vector<3> h = quad_state_.q().toRotationMatrix() * Vector<3>(1, 0, 0);
-  // Vector<3> d(gt_target_position_[0] - quad_state_.x(QS::POSX), gt_target_position_[1] - quad_state_.x(QS::POSY), gt_target_position_[2] - quad_state_.x(QS::POSZ));
-  Vector<3> d(1, 1, 1);
+  // Compute heading reward
+  Scalar heading_reward = 0.0;
+  Vector<3> h = quad_state_.q().toRotationMatrix() * Vector<3>(1, 0, 0); // Ego tracker heading vector
   h = h / h.norm();
-  d = d / d.norm();
+  for (int i = 0; i < num_targets_; ++i) {
+    Vector<3> position = target_kalman_filters_[i]->getEstimatedPosition();
+    Vector<3> d(position[0] - quad_state_.x(QS::POSX), position[1] - quad_state_.x(QS::POSY), position[2] - quad_state_.x(QS::POSZ)); // Relative distance to target
+    d = d / d.norm();
+    Scalar theta = acos(h.dot(d));
+    Scalar individual_heading_reward = exp(-10.0 * pow(theta, 3));
+    heading_reward += heading_weight[i] * individual_heading_reward;
+  }  
+  // std::cout << "Heading reward : " << heading_reward << std::endl;
 
-  Scalar theta = acos(h.dot(d));
-  Scalar perception_reward = exp(i3 * pow(theta, 3));
- 
-  // command reward
-  Scalar command_reward = pow((quad_act_ - prev_act_).norm(), 2);
 
-
-  // prev_act_ = quad_act_;
-  // prev_range_ = range;
-
-  // std::cout << "progress   : " << progress_reward << std::endl;
-  // std::cout << "range z    : " << range_z_reward << std::endl;
-  // std::cout << "perception : " << perception_reward << std::endl;
-  // std::cout << "command        : " << command_reward << std::endl;
-  // std::cout << "scaled command : " << c4 * command_reward << std::endl;
-
+  // 2. Target Covariance reward
+  Scalar avg_cov_norm;
+  for (int i = 0; i < num_targets_; ++i) {
+    Matrix<6, 6> cov = target_kalman_filters_[i]->getErrorCovariance();
+    // std::cout << i << "Covariance : " << cov.norm() << std::endl;
+    avg_cov_norm += cov.norm();
+  }
+  avg_cov_norm /= num_targets_;
+  Scalar cov_reward = exp(-0.0001 * pow(avg_cov_norm, 2));
+  // std::cout << "Total cov norm : " << avg_cov_norm << std::endl;
+  // std::cout << "Covariance reward : " << cov_reward << std::endl;
 
   // Scalar total_reward = c1 * range_xy_reward + c2 * range_z_reward + c3 * perception_reward + c4 * command_reward;
-  Scalar total_reward = c1 * progress_reward + c2 * range_z_reward + c3 * perception_reward;
+  Scalar total_reward = c1 * heading_reward + c2 * cov_reward;
 
   return total_reward;
+}
+
+Scalar TrackerQuadrotorEnv::computeEuclideanDistance(Ref<Vector<3>> p1, Ref<Vector<3>> p2) {
+  return sqrt(pow(p1[0] - p2[0], 2) + pow(p1[1] - p2[1], 2) + pow(p1[2] - p2[2], 2));
 }
 
 bool TrackerQuadrotorEnv::isTerminalState(Scalar &reward) {
@@ -522,14 +520,22 @@ bool TrackerQuadrotorEnv::isTerminalState(Scalar &reward) {
     return true;
   }
 
-  // // Clashing target
-  // Scalar gt_range =  sqrt(pow(quad_state_.x(QS::POSX) - gt_target_position_[0], 2)
-  //                       + pow(quad_state_.x(QS::POSY) - gt_target_position_[1], 2)
-  //                       + pow(quad_state_.x(QS::POSZ) - gt_target_position_[2], 2));
-  // if (gt_range <= 0.5) {
-  //   reward = 2.0;
-  //   return true;
-  // }
+  // Collision to target or tracker
+  for (int i = 0; i < num_targets_; ++i) {
+    Scalar distance = computeEuclideanDistance(quad_state_.p, gt_target_positions_[i]);
+    if (distance <= 0.6) {
+      reward = -5.0;
+      return true;
+    }
+  }
+  
+  for (int i = 0; i < num_trackers_; ++ i) {
+    Scalar distance = computeEuclideanDistance(quad_state_.p, gt_tracker_positions_[i]);
+    if (distance <= 0.6) {
+      reward = -5.0;
+      return true;
+    }
+  }
 
   reward = 0.0;
   return false;

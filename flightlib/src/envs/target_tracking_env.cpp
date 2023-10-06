@@ -59,22 +59,42 @@ void TargetTrackingEnv<EnvBase>::init(void)
   }
 
   // Set initial start position
-  target_positions_.push_back(Vector<3>{0.0, 8.0, 5.0});
-  target_positions_.push_back(Vector<3>{5.0, 8.0, 5.0});
-  target_positions_.push_back(Vector<3>{-5.0, 8.0, 5.0});
+  target_positions_.push_back(Vector<3>{3.0, 3.0, 5.0});
+  target_positions_.push_back(Vector<3>{3.0, -3.0, 5.0});
+  target_positions_.push_back(Vector<3>{-3.0, -3.0, 5.0});
+  target_positions_.push_back(Vector<3>{-3.0, 3.0, 5.0});
 
   tracker_positions_.push_back(Vector<3>{0.0, 0.0, 5.0});
-  tracker_positions_.push_back(Vector<3>{-3.0, 0.0, 5.0});
-  tracker_positions_.push_back(Vector<3>{3.0, 0.0, 5.0});
+  tracker_positions_.push_back(Vector<3>{-3.0, 5.0, 5.0});
+  tracker_positions_.push_back(Vector<3>{3.0, 1.0, 7.0});
+  tracker_positions_.push_back(Vector<3>{0.0, 9.0, 5.0});
+  tracker_positions_.push_back(Vector<3>{-3.0, 0.0, 4.0});
+  tracker_positions_.push_back(Vector<3>{3.0, -6.0, 5.0});
+  tracker_positions_.push_back(Vector<3>{0.0, 2.0, 7.0});
+  tracker_positions_.push_back(Vector<3>{-3.0, 0.0, 3.0});
+  tracker_positions_.push_back(Vector<3>{8.0, 0.0, 6.0});
+  tracker_positions_.push_back(Vector<3>{5.0, -5.0, 5.0});
+
 
   // Target minimum snap trajectory
   Eigen::MatrixXf way_points(7, 3); // Should be n
-  way_points << 0, 0, 5,   3, 2, 7,   3, 4, 4,   0, 6, 5,   -3, 4, 7,   -3, 2, 4,   0, 0, 5;
+  way_points << 0, 0, 5,   3, 2, 7,   3, 4, 4,   0, 6, 5,   -3, 4, 7,   -3, 2, 4,   0, 0, 5; // 6m x 6m circle
   Eigen::VectorXf segment_times(6); // Should be n-1
-  segment_times << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
+  segment_times << 1.5, 1.5, 1.5, 1.5, 1.5, 1.5;
 
-  trajectory_ = MinimumSnapTrajectory();
-  trajectory_.setMinimumSnapTrajectory(way_points, segment_times);
+  MinimumSnapTrajectory trajectory1 = MinimumSnapTrajectory();
+  trajectory1.setMinimumSnapTrajectory(way_points, segment_times);
+
+  way_points << 0, 0, 5,   -3, 2, 4,   -3, 4, 7,   0, 6, 5,   3, 4, 4,   3, 2, 7,   0, 0, 5; // 6m x 6m circle
+  segment_times << 1.5, 1.5, 1.5, 1.5, 1.5, 1.5;
+
+  MinimumSnapTrajectory trajectory2 = MinimumSnapTrajectory();
+  trajectory2.setMinimumSnapTrajectory(way_points, segment_times);
+
+  trajectories_.push_back(trajectory1);
+  trajectories_.push_back(trajectory2);
+  trajectories_.push_back(trajectory1);
+  trajectories_.push_back(trajectory2);
 
   // Set Unity
   setUnity(unity_render_);
@@ -106,7 +126,7 @@ bool TargetTrackingEnv<EnvBase>::reset(Ref<MatrixRowMajor<>> obs, Ref<MatrixRowM
   receive_id_ = 0;
 
   for (int i = 0; i < num_targets_; i++) {
-    targets_[i]->reset(target_obs.row(i), target_positions_[i], trajectory_);
+    targets_[i]->reset(target_obs.row(i), target_positions_[i], trajectories_[i]);
   }
 
   for (int i = 0; i < num_envs_; i++) {
