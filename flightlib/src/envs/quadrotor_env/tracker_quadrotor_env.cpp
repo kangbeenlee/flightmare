@@ -272,21 +272,18 @@ Scalar TrackerQuadrotorEnv::trackerStep(const Ref<Vector<>> act, Ref<Vector<>> o
     }
   }
 
-  std::cout << "-------------------------------------" << std::endl;
-  std::cout << "Tracker has " << target_measurements.size() << " target measurements" << std::endl;
-  for (int i = 0; i < target_measurements.size(); i++) {
-    std::cout << target_measurements[i][0] << ", " << target_measurements[i][1] << ", " << target_measurements[i][2] << std::endl;
-  }
-  std::cout << "Tracker has " << tracker_measurements.size() << " tracker measurements" << std::endl;
-  for (int i = 0; i < tracker_measurements.size(); i++) {
-    std::cout << tracker_measurements[i][0] << ", " << tracker_measurements[i][1] << ", " << tracker_measurements[i][2] << std::endl;
-  }
-  std::cout << "-------------------------------------" << std::endl;
+  // std::cout << "-------------------------------------" << std::endl;
+  // std::cout << "Tracker has " << target_measurements.size() << " target measurements" << std::endl;
+  // for (int i = 0; i < target_measurements.size(); i++) {
+  //   std::cout << target_measurements[i][0] << ", " << target_measurements[i][1] << ", " << target_measurements[i][2] << std::endl;
+  // }
+  // std::cout << "Tracker has " << tracker_measurements.size() << " tracker measurements" << std::endl;
+  // for (int i = 0; i < tracker_measurements.size(); i++) {
+  //   std::cout << tracker_measurements[i][0] << ", " << tracker_measurements[i][1] << ", " << tracker_measurements[i][2] << std::endl;
+  // }
+  // std::cout << "-------------------------------------" << std::endl;
   
   // Hungarian algorithm
-  // Matrix<> target_cost_matrix = Matrix<>::Ones(num_targets_, num_targets_) * 1000.0;
-  // Matrix<> tracker_cost_matrix = Matrix<>::Ones(num_trackers_, num_trackers_) * 1000.0;
-
   std::vector<std::vector<Scalar>> target_cost_matrix;
   std::vector<std::vector<Scalar>> tracker_cost_matrix;
 
@@ -324,16 +321,9 @@ Scalar TrackerQuadrotorEnv::trackerStep(const Ref<Vector<>> act, Ref<Vector<>> o
 
     for (int i = 0; i < target_cost_matrix.size(); ++i) {
       if (target_cost_matrix[i][target_assignment[i]] > 900.0) {
-        std::cout << i << " kalman filter starts prediction" << std::endl;
         target_kalman_filters_[i]->predict();
       }
       else {
-        std::cout << i << " kalman filter starts update" << std::endl;
-        Vector<3> temp = target_measurements[target_assignment[i]];
-        std::cout << "measurement " << temp[0] << ", " << temp[1] << ", " << temp[2] << " is equal to ";
-        Vector<3> temp2 = target_kalman_filters_[i]->getEstimatedPosition();
-        std::cout << temp2[0] << ", " << temp2[1] << ", " << temp2[2];
-        std::cout << "\tcost:" << (temp - temp2).norm() << std::endl;
         target_kalman_filters_[i]->predict();
         target_kalman_filters_[i]->update(target_measurements[target_assignment[i]], quad_state_.p);
       }
@@ -345,11 +335,9 @@ Scalar TrackerQuadrotorEnv::trackerStep(const Ref<Vector<>> act, Ref<Vector<>> o
 
     for (int i = 0; i < tracker_cost_matrix.size(); ++i) {
       if (tracker_cost_matrix[i][tracker_assignment[i]] > 900.0) {
-        std::cout << i << " kalman filter starts prediction" << std::endl;
         tracker_kalman_filters_[i]->predict();
       }
       else {
-        std::cout << i << " kalman filter starts update" << std::endl;
         tracker_kalman_filters_[i]->predict();
         tracker_kalman_filters_[i]->update(tracker_measurements[tracker_assignment[i]], quad_state_.p);
       }

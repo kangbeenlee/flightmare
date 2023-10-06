@@ -37,27 +37,6 @@ class Actor(nn.Module):
         x = F.relu(self.l2(x))
         return self.max_action * torch.tanh(self.l3(x))
 
-# # For collective thrust & body-rates action
-# class Actor(nn.Module):
-#     def __init__(self, obs_dim, action_dim, max_action):
-#         super(Actor, self).__init__()
-        
-#         self.l1 = nn.Linear(obs_dim, 256)
-#         self.l2 = nn.Linear(256, 256)
-#         self.l3 = nn.Linear(256, 1)
-#         self.l4 = nn.Linear(256, 3)
-        
-#         self.max_action = max_action
-        
-#     def forward(self, x):
-#         x = z_score_normalize(x)
-#         x = F.relu(self.l1(x))
-#         x = F.relu(self.l2(x))
-        
-#         c = torch.sigmoid(self.l3(x)) * 22.0 # Thrust
-#         w = torch.tanh(self.l4(x)) * 3.0 # Omega
-#         return torch.cat([c, w], dim=1)
-
 class Critic(nn.Module):
     def __init__(self, obs_dim, action_dim):
         super(Critic, self).__init__()
@@ -132,7 +111,6 @@ class ReplayBuffer(object):
 class TD3(object):
     def __init__(
 		self,
-        device=None,
         gamma=0.99,
         lr_actor=3e-4,
         lr_critic=3e-4,
@@ -144,12 +122,12 @@ class TD3(object):
         action_dim=4,
         max_action=3.0):
 
-        self.device = device
-        self.actor = Actor(obs_dim, action_dim, max_action).to(device)
+        self.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+        self.actor = Actor(obs_dim, action_dim, max_action).to(self.device)
         self.actor_target = copy.deepcopy(self.actor)
         self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=lr_actor)
         
-        self.critic = Critic(obs_dim, action_dim).to(device)
+        self.critic = Critic(obs_dim, action_dim).to(self.device)
         self.critic_target = copy.deepcopy(self.critic)
         self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=lr_critic)
         
@@ -267,11 +245,11 @@ class Trainer:
         self.max_action = max_action
         self.expl_noise = expl_noise
         self.training_start = training_start
-        self.save_dir = os.path.join(save_dir, "model_single", "td3")
+        self.save_dir = os.path.join(save_dir, "model", "td3")
         self.replay_buffer = ReplayBuffer(obs_dim=obs_dim, action_dim=action_dim, memory_capacity=memory_capacity, batch_size=batch_size)
 
         # Tensorboard results
-        self.writer = SummaryWriter(log_dir="runs/td3/")
+        self.writer = SummaryWriter(log_dir="runs/single/td3/")
 
     def evaluate_policy(self, env, policy, max_episode_steps, eval_episodes=10):
         avg_reward = 0.

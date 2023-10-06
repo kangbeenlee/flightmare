@@ -1,44 +1,44 @@
 import numpy as np
-# import gym
-# from gym import spaces
-import gymnasium as gym
-from gymnasium import spaces
+from gym import spaces
 from stable_baselines3.common.vec_env import VecEnv
 
 
-
-class FlightmareTargetTrackingEnv(VecEnv):
+class FlightEnvVec(VecEnv):
+    #
     def __init__(self, impl):
         self.wrapper = impl
-        # Multi-Quadrotor
         self.num_obs = self.wrapper.getObsDim()
-        self.num_target_obs = self.wrapper.getTargetObsDim()
         self.num_acts = self.wrapper.getActDim()
-        self._observation_space = spaces.Box(np.ones(self.num_obs) * -np.Inf, np.ones(self.num_obs) * np.Inf, dtype=np.float32)
-        self._action_space = spaces.Box(low=np.ones(self.num_acts) * -1., high=np.ones(self.num_acts) * 1., dtype=np.float32)
-        self._observation = np.zeros([self.num_envs, self.num_obs], dtype=np.float32)
+        print(self.num_obs, self.num_acts)
+        self._observation_space = spaces.Box(
+            np.ones(self.num_obs) * -np.Inf,
+            np.ones(self.num_obs) * np.Inf, dtype=np.float32)
+        self._action_space = spaces.Box(
+            low=np.ones(self.num_acts) * -1.,
+            high=np.ones(self.num_acts) * 1.,
+            dtype=np.float32)
+        self._observation = np.zeros([self.num_envs, self.num_obs],
+                                     dtype=np.float32)
         self._reward = np.zeros(self.num_envs, dtype=np.float32)
-        self._done = np.zeros((self.num_envs), dtype=np.bool_)
+        self._done = np.zeros((self.num_envs), dtype=np.bool)
         self._extraInfoNames = self.wrapper.getExtraInfoNames()
-        self._extraInfo = np.zeros([self.num_envs, len(self._extraInfoNames)], dtype=np.float32)
+        self._extraInfo = np.zeros([self.num_envs,
+                                    len(self._extraInfoNames)], dtype=np.float32)
         self.rewards = [[] for _ in range(self.num_envs)]
 
-        # Target Quadrotor
-        self._target_observation = np.zeros([self.num_targets, self.num_target_obs], dtype=np.float32) # target ground truth state
+        self.max_episode_steps = 300
 
-    def env_is_wrapped(self, _=None):
-        is_wrapped = False
-        return is_wrapped, None
-        
     def seed(self, seed=0):
         self.wrapper.setSeed(seed)
 
     def step(self, action):
-        # self.wrapper.step(action, self._observation, self._reward, self._done, self._extraInfo)
-        self.wrapper.step(action, self._observation, self._target_observation, self._reward, self._done, self._extraInfo)
+        self.wrapper.step(action, self._observation,
+                          self._reward, self._done, self._extraInfo)
 
         if len(self._extraInfoNames) is not 0:
-            info = [{'extra_info': {self._extraInfoNames[j]: self._extraInfo[i, j] for j in range(0, len(self._extraInfoNames))}} for i in range(self.num_envs)]
+            info = [{'extra_info': {
+                self._extraInfoNames[j]: self._extraInfo[i, j] for j in range(0, len(self._extraInfoNames))
+            }} for i in range(self.num_envs)]
         else:
             info = [{} for i in range(self.num_envs)]
 
@@ -51,10 +51,14 @@ class FlightmareTargetTrackingEnv(VecEnv):
                 info[i]['episode'] = epinfo
                 self.rewards[i].clear()
 
-        return self._observation.copy(), self._reward.copy(), self._done.copy(), info.copy()
+        return self._observation.copy(), self._reward.copy(), \
+            self._done.copy(), info.copy()
 
-    def get_target_state(self):
-        return self._target_observation
+    def stepUnity(self, action, send_id):
+        receive_id = self.wrapper.stepUnity(action, self._observation,
+                                            self._reward, self._done, self._extraInfo, send_id)
+
+        return receive_id
 
     def sample_actions(self):
         actions = []
@@ -65,7 +69,7 @@ class FlightmareTargetTrackingEnv(VecEnv):
 
     def reset(self):
         self._reward = np.zeros(self.num_envs, dtype=np.float32)
-        self.wrapper.reset(self._observation, self._target_observation)
+        self.wrapper.reset(self._observation)
         return self._observation.copy()
 
     def reset_and_update_info(self):
@@ -99,10 +103,6 @@ class FlightmareTargetTrackingEnv(VecEnv):
         return self.wrapper.getNumOfEnvs()
 
     @property
-    def num_targets(self):
-        return self.wrapper.getNumOfTargets()
-
-    @property
     def observation_space(self):
         return self._observation_space
 
@@ -119,6 +119,9 @@ class FlightmareTargetTrackingEnv(VecEnv):
 
     def stop_recording_video(self):
         raise RuntimeError('This method is not implemented')
+
+    def curriculum_callback(self):
+        self.wrapper.curriculumUpdate()
 
     def step_async(self):
         raise RuntimeError('This method is not implemented')

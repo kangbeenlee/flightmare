@@ -15,11 +15,8 @@ setup(
     author_email='song@ifi.uzh.ch',
     description='Flightmare: A Quadrotor Simulator.',
     long_description='',
-    install_requires=['gym==0.11', 'ruamel.yaml', 'numpy', 'stable_baselines==2.10.1'],
+    install_requires=['gym==0.11', 'ruamel.yaml', 'numpy'],
     packages=['rpg_baselines',
               'rpg_baselines.envs',
-              'rpg_baselines.single_agent',
-              'rpg_baselines.multi_agent',
-              'rpg_baselines.multi_agent.off_policy',
-              'rpg_baselines.multi_agent.on_policy'],
+              'rpg_baselines.single_agent'],
 )
