@@ -77,8 +77,8 @@ class TargetTrackingEnv {
   std::vector<Vector<3>> tracker_positions_;
 
   // Minimum snap trajectories for targets
-  // std::Vector<MinimumSnapTrajectory> trajectories_;
-  MinimumSnapTrajectory trajectory_;
+  std::vector<MinimumSnapTrajectory> trajectories_;
+  // MinimumSnapTrajectory trajectory_;
 
   // create objects
   Logger logger_{"TargetTrackingEnv"};

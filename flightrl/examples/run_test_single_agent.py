@@ -35,7 +35,7 @@ def test_model(env, render=False):
             ep_len += 1
 
             # vx, vy, vz, wz (m/s, m/s, m/s, rad/s)
-            act = np.array([[0.0, 0.0, 0.0, 0.0]], dtype=np.float32)
+            act = np.array([[0.0, 0.0, 0.0, 2.0]], dtype=np.float32)
             
             # # Step input response test
             # vx = 3.0
@@ -66,7 +66,7 @@ def main():
     cfg["env"]["num_envs"] = 1
     cfg["env"]["num_threads"] = 1
     cfg["env"]["scene_id"] = 0
-    cfg["env"]["num_targets"] = 3
+    cfg["env"]["num_targets"] = 4
     cfg["env"]["render"] = "yes"
 
     # Environment and policy type information

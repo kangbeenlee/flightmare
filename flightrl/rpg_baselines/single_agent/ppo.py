@@ -131,9 +131,8 @@ class RolloutBuffer:
 
 
 def z_score_normalize(x):
-    mean = torch.mean(x)
-    std = torch.std(x)
-    return (x - mean) / (std + 1e-8)
+    x = (x - x.mean()) / (x.std() + 1e-8)
+    return x
 
 
 class ActorCritic(nn.Module):
@@ -156,8 +155,8 @@ class ActorCritic(nn.Module):
     def forward(self):
         raise NotImplementedError
     
-    def forward_actor(self, state):
-        x = z_score_normalize(state)
+    def forward_actor(self, x):
+        x = z_score_normalize(x)
         x = F.relu(self.actor_l1(x))
         x = F.relu(self.actor_l2(x))
         mu = torch.tanh(self.actor_mu(x)) * self.max_action
@@ -165,8 +164,8 @@ class ActorCritic(nn.Module):
 
         return mu, std
     
-    def forward_critic(self, state):
-        x = z_score_normalize(state)
+    def forward_critic(self, x):
+        x = z_score_normalize(x)
         x = F.relu(self.critic_l1(x))
         x = F.relu(self.critic_l2(x))
         values = self.critic_q(x)

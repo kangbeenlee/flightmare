@@ -23,9 +23,12 @@ class KalmanFilter {
   void update(const Ref<Vector<3>> z, const Ref<Vector<3>> ego);
 
   // Public get functions
-  inline Vector<3> getEstimatedPosition(void) const { return Vector<3>(x_[0], x_[2], x_[4]); };  
-  inline Matrix<6, 6> getErrorCovariance(void) const { return P_; };
   inline bool isInitialized(void) const { return initialized_; };
+  inline Vector<3> getEstimatedPosition(void) const { return Vector<3>(x_[0], x_[2], x_[4]); };
+  inline Vector<3> getEstimatedVelocity(void) const { return Vector<3>(x_[1], x_[3], x_[5]); };
+  inline Matrix<6, 6> getErrorCovariance(void) const { return P_; };
+
+  Matrix<3, 3> getStateErrorCovariance(void) const;
 
  private:
   //

@@ -79,7 +79,8 @@ class TrackerQuadrotorEnv final : public EnvBase {
                      const std::vector<Vector<3>>& target_positions, const std::vector<Vector<3>>& other_tracker_positions);
 
   // Reward function for RL
-  Scalar rewardFunction(Vector<3> target_position);
+  Scalar rewardFunction();
+  Scalar computeEuclideanDistance(Ref<Vector<3>> p1, Ref<Vector<3>> p2);
 
   // - public set functions
   bool loadParam(const YAML::Node &cfg);
@@ -95,6 +96,7 @@ class TrackerQuadrotorEnv final : public EnvBase {
 
  private:
   // Quadrotor
+  Scalar radius_{0.25};
   std::shared_ptr<TrackerQuadrotor> tracker_ptr_;
   QuadState quad_state_;
   Command cmd_;
@@ -117,8 +119,9 @@ class TrackerQuadrotorEnv final : public EnvBase {
   // Tracking data recoder
   TrackingSave tracking_save_;
   bool tracking_flag_{true};
-  std::vector<Vector<3>> gt_target_positions_, estimated_target_positions_;
-  std::vector<Vector<3>> gt_tracker_positions_, estimated_tracker_positions_;
+  std::vector<Vector<3>> gt_target_positions_, estimated_target_positions_, estimated_target_velocities_;
+  std::vector<Vector<3>> gt_tracker_positions_, estimated_tracker_positions_, estimated_tracker_velocities_;
+  std::vector<Scalar> estimated_target_ranges_, estimated_tracker_ranges_;
 
   //
   bool first_{true};
@@ -133,7 +136,7 @@ class TrackerQuadrotorEnv final : public EnvBase {
 
   // Observations and actions (for RL)
   // Vector<trackerquadenv::kNObs> quad_obs_;
-  Vector<22> quad_obs_;
+  Vector<55> quad_obs_;
   Vector<trackerquadenv::kNAct> quad_act_;
 
   YAML::Node cfg_;

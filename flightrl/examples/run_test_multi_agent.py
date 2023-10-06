@@ -36,22 +36,29 @@ def test_model(env, render=False):
             # vx, vy, vz, wz (m/s, m/s, m/s, rad/s)
             act = np.array([[0.0, 0.0, 0.0, 0.0],
                             [0.0, 0.0, 0.0, 0.0],
-                            [0.0, 0.0, 0.0, 1.0]], dtype=np.float32)
+                            [0.0, 0.0, 0.0, 0.0],
+                            [0.0, 0.0, 0.0, 0.0],
+                            [0.0, 0.0, 0.0, 0.0],
+                            [0.0, 0.0, 0.0, 0.0],
+                            [0.0, 0.0, 0.0, 0.0],
+                            [0.0, 0.0, 0.0, 0.0],
+                            [0.0, 0.0, 0.0, 0.0],
+                            [0.0, 0.0, 0.0, 0.0]], dtype=np.float32)
             
-            # Step input response test
-            vx = 3.0
-            vy = -3.0
-            vz = 0.0
-            wz = 1.0
+            # # Step input response test
+            # vx = 3.0
+            # vy = -3.0
+            # vz = 0.0
+            # wz = 1.0
             
-            if ((ep_len // 150) % 2 == 0): # 3secs
-                act = np.array([[-vx, -vy, -vz, -wz],
-                                [vx, vy, vz, wz],
-                                [0.0, 0.0, 0.0, 1.0]], dtype=np.float32)
-            else:
-                act = np.array([[vx, vy, vz, wz],
-                                [-vx, -vy, -vz, -wz],
-                                [0.0, 0.0, 0.0, 1.0]], dtype=np.float32)
+            # if ((ep_len // 150) % 2 == 0): # 3secs
+            #     act = np.array([[-vx, -vy, -vz, -wz],
+            #                     [vx, vy, vz, wz],
+            #                     [0.0, 0.0, 0.0, 1.0]], dtype=np.float32)
+            # else:
+            #     act = np.array([[vx, vy, vz, wz],
+            #                     [-vx, -vy, -vz, -wz],
+            #                     [0.0, 0.0, 0.0, 1.0]], dtype=np.float32)
             
             obs_n, r_n, done_n, _ = env.step(act)
             target_obs = env.get_target_state()
@@ -65,10 +72,10 @@ def test_model(env, render=False):
 def main():
     # Environment setting parameter
     cfg = YAML().load(open(os.environ["FLIGHTMARE_PATH"] + "/flightlib/configs/target_tracking_env.yaml", 'r'))
-    cfg["env"]["num_envs"] = 3
+    cfg["env"]["num_envs"] = 10
     cfg["env"]["num_threads"] = 1
     cfg["env"]["scene_id"] = 0
-    cfg["env"]["num_targets"] = 3
+    cfg["env"]["num_targets"] = 4
     cfg["env"]["render"] = "yes"
 
     # Environment and policy type information

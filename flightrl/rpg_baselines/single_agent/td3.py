@@ -17,9 +17,8 @@ from torch.utils.tensorboard import SummaryWriter
 
 
 def z_score_normalize(x):
-    mean = torch.mean(x)
-    std = torch.std(x)
-    return (x - mean) / (std + 1e-8)
+    x = (x - x.mean()) / (x.std() + 1e-8)
+    return x
 
 class Actor(nn.Module):
     def __init__(self, obs_dim, action_dim, max_action):
