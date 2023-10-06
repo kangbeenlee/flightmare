@@ -214,7 +214,7 @@ void TargetTrackingEnv<EnvBase>::perTrackerStep(int agent_id, Ref<MatrixRowMajor
     target_positions.push_back(targets_[i]->getPosition());
   }
 
-  std::cout << "Tracker " << agent_id << " =========================================" << std::endl;
+  // std::cout << "Tracker " << agent_id << " =========================================" << std::endl;
   reward(agent_id) = envs_[agent_id]->trackerStep(act.row(agent_id), obs.row(agent_id), target_positions, other_tracker_positions);
 
   Scalar terminal_reward = 0;
