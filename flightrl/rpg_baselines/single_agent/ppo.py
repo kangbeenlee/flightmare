@@ -6,6 +6,7 @@ from torch.distributions import MultivariateNormal
 import numpy as np
 import os
 import gym
+import sys
 from typing import NamedTuple
 
 from tqdm import tqdm
@@ -176,6 +177,7 @@ class ActorCritic(nn.Module):
         mu, std = self.forward_actor(state)
         values = self.forward_critic(state)
         cov = torch.diag_embed(std**2)
+        cov = cov + 1e-6 * torch.eye(cov.size(1)).to(cov.device) # To ensure that cov matrix must be positive definite
         dist = MultivariateNormal(mu, cov)
         actions = dist.sample()
         logprobs = dist.log_prob(actions)
@@ -186,6 +188,7 @@ class ActorCritic(nn.Module):
         mu, std = self.forward_actor(states)
         values = self.forward_critic(states)
         cov = torch.diag_embed(std**2)
+        cov = cov + 1e-6 * torch.eye(cov.size(1)).to(cov.device) # To ensure that cov matrix must be positive definite
         dist = MultivariateNormal(mu, cov)
         logprobs = dist.log_prob(actions)
         entropy = dist.entropy()
@@ -316,7 +319,7 @@ class Trainer:
                  max_training_timesteps=None,
                  max_episode_steps=None,
                  evaluation_time_steps=None,
-                 update_timestep=None,
+                 evaluation_times=None,
                  obs_dim=None,
                  action_dim=None,
                  max_action=None,
@@ -327,7 +330,7 @@ class Trainer:
         self.max_training_timesteps = max_training_timesteps
         self.max_episode_steps = max_episode_steps
         self.evaluation_time_steps = evaluation_time_steps
-        self.update_timestep = update_timestep
+        self.evaluation_times = evaluation_times
         self.obs_dim = obs_dim
         self.action_dim = action_dim
         self.max_action = max_action
@@ -339,22 +342,30 @@ class Trainer:
 
         self.writer = SummaryWriter(log_dir="runs/single/ppo/")
 
+    def evaluate_policy(self, env, policy, max_episode_steps, eval_episodes=10):
+        avg_reward = 0.
+        for _ in range(eval_episodes):
+            obs, done, epi_step = env.reset(), False, 0
+            while not (done or (epi_step > max_episode_steps)):
+                epi_step += 1
+                actions, _, _ = policy.select_action(np.array(obs))
+                obs, rewards, dones, _ = env.step(actions)
+                done = any(dones)
+                avg_reward += np.mean(rewards)
+        avg_reward = round(avg_reward / eval_episodes, 2)
+        return avg_reward
+
     def learn(self, render=False):
         time_step = 0 # Total training time step
         tqdm_bar = tqdm(initial=0, desc="Training", total=self.max_training_timesteps, unit="timestep")
-        accumulative_reward, n_episode, print_episode = 0.0, 0, 0
-        best_score = None
+        n_episode, best_score = 0, None
 
         if render:
             self.env.connectUnity()
 
         while time_step < self.max_training_timesteps:
             n_episode += 1 # Start new episode
-            print_episode += 1
-            epi_step, score = 0, 0.0
-
-            for env_i in range(self.n_envs):
-                self._last_obs[env_i] = self.env[env_i].reset()
+            self._last_obs, epi_step, score = self.env.reset(), 0, 0.0
             
             while not epi_step > self.max_episode_steps:
                 tqdm_bar.update(1)
@@ -367,31 +378,28 @@ class Trainer:
 
                 new_obs, rewards, new_dones, _ = self.env.step(clipped_actions)
 
-                self.model.rollout_buffer.add(self._last_obs, actions, rewards, self._dones, values, log_probs)
-
-                self._last_obs = new_obs
-                self._dones = new_dones
-
                 # update PPO agent
-                if time_step % self.update_timestep == 0:
-                    last_values = self.model.predict_values(self.new_obs)
-                    actor_loss, critic_loss = self.model.train(last_values, self.new_dones)
+                if self.model.rollout_buffer.full == True:
+                    last_values = self.model.predict_values(new_obs)
+                    actor_loss, critic_loss = self.model.train(last_values, new_dones)
                     self.writer.add_scalar("actor_loss", actor_loss, global_step=time_step)
                     self.writer.add_scalar("critic_loss", critic_loss, global_step=time_step)
-                    
-                accumulative_reward += np.mean(rewards)
-                score += np.mean(rewards)
-                if any(new_dones):
-                    break
+
+                self.model.rollout_buffer.add(self._last_obs, actions, rewards, self._dones, values, log_probs)
+                self._last_obs = new_obs
+                self._dones = new_dones
                 
                 if time_step % self.evaluation_time_steps == 0:
-                    avg_reward = round(accumulative_reward / print_episode, 2)
-                    accumulative_reward, print_episode = 0.0, 0
+                    avg_reward = self.evaluate_policy(self.env, self.model, self.max_episode_steps, eval_episodes=1)
                     print("Episode : {} \t\t Timestep : {} \t\t Average Reward : {}".format(n_episode, time_step, avg_reward))
                     
                     if best_score == None or avg_reward > best_score:
                         self.save(self.save_dir, int(time_step/1000))
                         best_score = avg_reward
+
+                score += np.mean(rewards)
+                if any(new_dones):
+                    break
 
             self.writer.add_scalar("score", score, global_step=time_step) # Save episodic reward
 

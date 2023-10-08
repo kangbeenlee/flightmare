@@ -21,41 +21,32 @@ def configure_random_seed(seed, env=None):
 
 def test_model(env, render=False):
     num_rollouts = 20
-    
+    max_episode_steps = 400
+
     if render:
         env.connectUnity()
 
     for n_roll in range(num_rollouts):
-        obs = env.reset()
-        target_obs = env.get_target_state()
+        obs, done, epi_step = env.reset(), False, 0
 
-        done, ep_len = False, 0
-
-        while not done:
-            ep_len += 1
+        while not (done or (epi_step > max_episode_steps)):
+            epi_step += 1
 
             # vx, vy, vz, wz (m/s, m/s, m/s, rad/s)
-            act = np.array([[0.0, 0.0, 0.0, 2.0]], dtype=np.float32)
+            act = np.array([[-1.0, 0.0, 0.0, 0.0]], dtype=np.float32)
             
             # # Step input response test
-            # vx = 3.0
-            # vy = -3.0
+            # vx = 0.0
+            # vy = 0.0
             # vz = 0.0
-            # wz = 1.0
-            
-            # if ep_len < 150:
+            # wz = 6.0
+
+            # if ((epi_step // 150) % 2 == 0): # 3secs
             #     act = np.array([[vx, vy, vz, wz]], dtype=np.float32)
-            # elif 150 <= ep_len < 300:
-            #     act = np.array([[-vx, -vy, -vz, -wz]], dtype=np.float32)
-            # elif 300 <= ep_len < 450:
-            #     act = np.array([[vx, vy, vz, wz]], dtype=np.float32)
-            # elif 450 <= ep_len < 600:
-            #     act = np.array([[-vx, -vy, -vz, -wz]], dtype=np.float32)
             # else:
-            #     act = np.array([[0.0, 0.0, 0.0, 0.0]], dtype=np.float32)
-            
+            #     act = np.array([[-vx, -vy, -vz, -wz]], dtype=np.float32)
+
             obs, rew, done, infos = env.step(act)
-            target_obs = env.get_target_state()
 
     if render:
         env.disconnectUnity()
