@@ -43,12 +43,11 @@ def main():
     parser.add_argument("--policy", type=str, default="ddpg", help='Policy based reinforcement learning model')
 
     # Learning parameters
-    parser.add_argument('--max_training_timesteps', default=400000, type=int, help='Number of training timesteps')
-    parser.add_argument('--max_episode_steps', default=400, type=int, help='Number of steps per episode')
+    parser.add_argument('--max_training_timesteps', default=1000000, type=int, help='Number of training timesteps')
+    parser.add_argument('--max_episode_steps', default=500, type=int, help='Number of steps per episode')
     parser.add_argument('--evaluation_time_steps', default=5000, type=int, help='Number of steps for evaluation')
     parser.add_argument("--evaluation_times", type=int, default=5, help="Evaluate times")
     parser.add_argument('--memory_capacity', default=100000, type=int, help='Replay memory capacity')
-    parser.add_argument('--batch_size', default=256, type=int, help='Batch size')
     parser.add_argument('--training_start', default=2000, type=int, help='The number of timestep when training start')
     
     args = parser.parse_args()
@@ -56,6 +55,7 @@ def main():
     # Model hyperparameters
     if args.policy == "ddpg":
         hyperparameters = parser.add_argument_group('ddpg_hyperparameters')
+        hyperparameters.add_argument('--batch_size', default=256, type=int, help='Batch size')
         hyperparameters.add_argument("--gamma", type=float, default=0.99, help="Discount factor")
         hyperparameters.add_argument("--lr_actor", type=float, default=3e-4, help="Actor learning rate")
         hyperparameters.add_argument("--lr_critic", type=float, default=3e-4, help="Critic learning rate")
@@ -63,6 +63,7 @@ def main():
         hyperparameters.add_argument("--expl_noise", default=0.1, type=float, help="Std of Gaussian exploration noise")
     elif args.policy == "td3":
         hyperparameters = parser.add_argument_group('td3_hyperparameters')
+        hyperparameters.add_argument('--batch_size', default=256, type=int, help='Batch size')
         hyperparameters.add_argument("--gamma", default=0.99, type=float, help="Discount factor")
         hyperparameters.add_argument("--lr_actor", default=3e-4, type=float, help="Actor learning rate")
         hyperparameters.add_argument("--lr_critic", default=3e-4, type=float, help="Critic learning rate")
@@ -78,14 +79,11 @@ def main():
         hyperparameters.add_argument("--gae_lambda", default=0.95, type=float, help="Factor for trade-off of bias vs variance for Generalized Advantage Estimator")
         hyperparameters.add_argument("--learning_rate", default=3e-4, type=float, help="Actor learning rate")
         hyperparameters.add_argument("--n_epochs", default=15, type=int, help="Update policy for K epochs in one PPO update")
+        hyperparameters.add_argument("--batch_size", default=64, type=int, help="Batch size")
         hyperparameters.add_argument("--ent_coef", default=0.0, type=float, help="Weight of entropy loss for exploration")
         hyperparameters.add_argument("--vf_coef", default=0.5, type=float, help="Weight of value loss")
         hyperparameters.add_argument("--max_grad_norm", default=0.5, type=float, help="Maximum gradient norm")
         hyperparameters.add_argument("--clip_range", default=0.2, type=float, help="Clip parameter for PPO")
-        hyperparameters.add_argument("--action_std_init", default=0.6, type=float, help="Starting std for action distribution (Multivariate Normal)")
-        hyperparameters.add_argument("--action_std_decay_rate", default=0.05, type=float, help="Linearly decay action_std (action_std = action_std - action_std_decay_rate)")
-        hyperparameters.add_argument("--min_action_std", default=0.1, type=float, help="Minimum action_std (stop decay after action_std <= min_action_std)")
-        hyperparameters.add_argument('--action_std_decay_freq', default=2.5e5, type=int, help="Action_std decay frequency (in num timesteps)")
         hyperparameters.add_argument('--update_timestep', default=256, type=int, help="Update policy every n timesteps")
     else:
         print(f"{args.policy} is unsupported policy")
@@ -96,9 +94,10 @@ def main():
 
     # Set device
     print("============================================================================================")
-    if(torch.cuda.is_available()): 
+    if(torch.cuda.is_available()):
+        device = torch.device('cuda')
         torch.cuda.empty_cache()
-        print("Device set to : " + str(torch.cuda.get_device_name(args.device)))
+        print("Device set to : " + str(torch.cuda.get_device_name(device)))
     else:
         print("Device set to : cpu")
     print("============================================================================================")
@@ -210,7 +209,7 @@ def main():
                                  max_training_timesteps=args.max_training_timesteps,
                                  max_episode_steps=args.max_episode_steps,
                                  evaluation_time_steps=args.evaluation_time_steps,
-                                 update_timestep=args.update_timestep,
+                                 evaluation_times=args.evaluation_times,
                                  obs_dim=env.num_obs,
                                  action_dim=env.num_acts,
                                  max_action=args.max_action,
@@ -237,20 +236,17 @@ def main():
     else:
         # Load trained model!
         if args.policy == "ddpg":
-            model = DDPG(device=args.device,
-                         obs_dim=env.num_obs,
+            model = DDPG(obs_dim=env.num_obs,
                          action_dim=env.num_acts)
             model.load(args.load_nn)
             test_model(env, model=model, render=args.render, max_episode_steps=args.max_episode_steps)
         elif args.policy == "td3":
-            model = TD3(device=args.device,
-                        obs_dim=env.num_obs,
+            model = TD3(obs_dim=env.num_obs,
                         action_dim=env.num_acts)
             model.load(args.load_nn)
             test_model(env, model=model, render=args.render, max_episode_steps=args.max_episode_steps)
         elif args.policy == "ppo":
-            model = PPO(device=args.device,
-                        obs_dim=env.num_obs,
+            model = PPO(obs_dim=env.num_obs,
                         action_dim=env.num_acts)
             model.load(args.load_nn)
             test_model(env, model=model, render=args.render, max_episode_steps=args.max_episode_steps)

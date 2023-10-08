@@ -15,11 +15,11 @@ from torch.utils.tensorboard import SummaryWriter
 
 # from make_env import make_env
 import argparse
-from rpg_baselines.multi_agent.off_policy.replay_buffer import ReplayBuffer
-from rpg_baselines.multi_agent.off_policy.maddpg import MADDPG
-from rpg_baselines.multi_agent.off_policy.matd3 import MATD3
-# from rpg_baselines.multi_agent.test import test_model
-from rpg_baselines.multi_agent.test_control import test_model
+from rpg_baselines.multi_agent.replay_buffer import ReplayBuffer
+from rpg_baselines.multi_agent.maddpg import MADDPG
+from rpg_baselines.multi_agent.matd3 import MATD3
+from rpg_baselines.multi_agent.test import test_model
+
 
 
 class Runner:
@@ -41,7 +41,7 @@ class Runner:
         self.replay_buffer = ReplayBuffer(self.args)
 
         # Create a tensorboard
-        self.writer = SummaryWriter(log_dir='runs/{}'.format(self.args.policy))
+        self.writer = SummaryWriter(log_dir='runs/multi/{}'.format(self.args.policy))
 
         self.evaluate_rewards = []  # Record the rewards during the evaluating
         
@@ -64,7 +64,6 @@ class Runner:
                 
                 # Each agent selects actions based on its own local observations(add noise for exploration)
                 a_n = np.array([agent.choose_action(obs, noise_std=self.noise_std) for agent, obs in zip(self.agent_n, obs_n)]).astype(np.float32)
-                # --------------------------!!!! 주의!!!여기서 deepcopy, MPE 환경은 a_n에 5를 곱합니다.-------------------------------------------
                 obs_next_n, r_n, done_n, _ = self.env.step(copy.deepcopy(a_n))
 
                 # Store the transition
@@ -84,7 +83,7 @@ class Runner:
                 if self.time_steps % self.args.evaluation_time_steps == 0:
                     self.evaluate_policy()
 
-                if all(done_n):
+                if any(done_n):
                     break
 
         if self.render:
@@ -100,7 +99,7 @@ class Runner:
                 obs_next_n, r_n, done_n, _ = self.env.step(copy.deepcopy(a_n))
                 episode_reward += np.sum(r_n)
                 obs_n = obs_next_n
-                if all(done_n):
+                if any(done_n):
                     break
             evaluate_reward += episode_reward
 
@@ -113,7 +112,7 @@ class Runner:
             os.makedirs("./marl_train_data")
         np.save("./marl_train_data/{}_.npy".format(self.args.policy), np.array(self.evaluate_rewards))
         for agent_id in range(self.args.N):
-            self.agent_n[agent_id].save_model(os.path.join("./", "model_multi"), self.args.policy, self.time_steps, agent_id)
+            self.agent_n[agent_id].save_model("./model", self.args.policy, self.time_steps, agent_id)
 
 
 def configure_random_seed(seed, env=None):
@@ -130,7 +129,7 @@ if __name__ == '__main__':
     parser.add_argument('--train', action="store_true", help="To train new model or simply test pre-trained model")
     parser.add_argument('--render', type=int, default=1, help="Enable Unity Render")
     parser.add_argument('--seed', type=int, default=0, help="Random seed")
-    parser.add_argument('--load_nn', type=str, default='./model_multi', help='Trained actor weight path for ddpg and td3')
+    parser.add_argument('--load_nn', type=str, default='./model', help='Trained actor weight path for ddpg and td3')
     
     parser.add_argument("--max_training_timesteps", type=int, default=int(1e6), help=" Maximum number of training steps")
     parser.add_argument("--max_episode_steps", type=int, default=500, help="Maximum number of steps per episode")
@@ -141,7 +140,7 @@ if __name__ == '__main__':
     parser.add_argument("--policy", type=str, default="maddpg", help="maddpg or matd3")
     parser.add_argument("--buffer_size", type=int, default=int(1e6), help="The capacity of the replay buffer")
     parser.add_argument("--batch_size", type=int, default=1024, help="Batch size")
-    parser.add_argument("--hidden_dim", type=int, default=64, help="The number of neurons in hidden layers of the neural network")
+    parser.add_argument("--hidden_dim", type=int, default=256, help="The number of neurons in hidden layers of the neural network")
     parser.add_argument("--noise_std_init", type=float, default=0.2, help="The std of Gaussian noise for exploration")
     parser.add_argument("--noise_std_min", type=float, default=0.05, help="The std of Gaussian noise for exploration")
     parser.add_argument("--noise_decay_steps", type=float, default=3e5, help="How many steps before the noise_std decays to the minimum")
@@ -226,17 +225,14 @@ if __name__ == '__main__':
         # Load trained model!
         if args.policy == "maddpg":
             agent_n = [MADDPG(args, agent_id) for agent_id in range(args.N)]
-            # for i in range(args.N):
-            #     agent_n[i].load_model(os.path.join(args.load_nn, f"maddpg_actor_step_910k_agent_{i}.pth"))
-            # test_model(env, agent_n=agent_n, render=args.render, max_episode_steps=args.max_episode_steps)
-            test_model(env, render=args.render)
+            for i in range(args.N):
+                agent_n[i].load_model(os.path.join(args.load_nn, f"maddpg_actor_step_910k_agent_{i}.pth"))
+            test_model(env, agent_n=agent_n, render=args.render, max_episode_steps=args.max_episode_steps)
         elif args.policy == "matd3":
             agent_n = [MATD3(args, agent_id) for agent_id in range(args.N)]
             for i in range(args.N):
                 agent_n[i].load_model(os.path.join(args.load_nn, f"matd3_actor_step_790k_agent_{i}.pth"))
             test_model(env, agent_n=agent_n, render=args.render, max_episode_steps=args.max_episode_steps)
-            # test_model(env, render=args.render)
         else:
             print(f"{args.policy} is unsupported policy")
-            print("--------------------------------------------------------------------------------------------")
             sys.exit()

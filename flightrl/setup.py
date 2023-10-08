@@ -18,5 +18,6 @@ setup(
     install_requires=['gym==0.11', 'ruamel.yaml', 'numpy'],
     packages=['rpg_baselines',
               'rpg_baselines.envs',
-              'rpg_baselines.single_agent'],
+              'rpg_baselines.single_agent',
+              'rpg_baselines.multi_agent'],
 )
