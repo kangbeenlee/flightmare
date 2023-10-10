@@ -2,9 +2,10 @@ import numpy as np
 from numpy import linalg
 import matplotlib.pyplot as plt
 import argparse
-import sys
 from matplotlib.animation import FuncAnimation, PillowWriter
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from utils import R_x, R_y, R_z, quaternion_to_rotation_matrix
+import sys
 
 
 
@@ -103,15 +104,15 @@ def plot_drone(ax, x, y, z, R_b):
                [rotor_1[2], rotor_2[2], rotor_3[2], rotor_4[2]], c='g', s=10)
     
     # Arms
-    arm_1 = R_b @ np.array([ rotor_distance,  rotor_distance, z]) + np.array([x, y, z])
-    arm_2 = R_b @ np.array([-rotor_distance,  rotor_distance, z]) + np.array([x, y, z])
-    arm_3 = R_b @ np.array([ rotor_distance, -rotor_distance, z]) + np.array([x, y, z])
-    arm_4 = R_b @ np.array([-rotor_distance, -rotor_distance, z]) + np.array([x, y, z])
+    arm_1 = R_b @ np.array([ rotor_distance,  rotor_distance, 0]) + np.array([x, y, z])
+    arm_2 = R_b @ np.array([-rotor_distance,  rotor_distance, 0]) + np.array([x, y, z])
+    arm_3 = R_b @ np.array([ rotor_distance, -rotor_distance, 0]) + np.array([x, y, z])
+    arm_4 = R_b @ np.array([-rotor_distance, -rotor_distance, 0]) + np.array([x, y, z])
 
-    ax.plot([x, arm_1[0]], [y, arm_1[1]], [z, z], c='k')
-    ax.plot([x, arm_2[0]], [y, arm_2[1]], [z, z], c='k')
-    ax.plot([x, arm_3[0]], [y, arm_3[1]], [z, z], c='k')
-    ax.plot([x, arm_4[0]], [y, arm_4[1]], [z, z], c='k')
+    ax.plot([x, arm_1[0]], [y, arm_1[1]], [z, arm_1[2]], c='k')
+    ax.plot([x, arm_2[0]], [y, arm_2[1]], [z, arm_2[2]], c='k')
+    ax.plot([x, arm_3[0]], [y, arm_3[1]], [z, arm_3[2]], c='k')
+    ax.plot([x, arm_4[0]], [y, arm_4[1]], [z, arm_4[2]], c='k')
     
     # Drone's body frame
     colors = ['r', 'g', 'b']  # RGB for XYZ
@@ -129,16 +130,21 @@ def plot_ego(x, y, z, qw, qx, qy, qz, ax):
 
     # Image window cooridinates w.r.t. camera frame
     scale = 2.0
-    corners = np.array([[0.32, 0.32,  0.32],
-                        [0.32, 0.32, -0.32],
+    fov_scale = 10.0
+    corners = np.array([[0.32,  0.32,  0.32],
+                        [0.32,  0.32, -0.32],
                         [0.32, -0.32,  0.32],
                         [0.32, -0.32, -0.32]]) * scale
     front, left, right = np.zeros([4, 3]), np.zeros([4, 3]), np.zeros([4, 3])
+    
+    # Plot front camera field of view
+    front_fov = np.zeros([4, 3])
+    corners_fov = corners * fov_scale
 
     # From body frame origin to (left) camera frame origin
     t1 = np.array([0.1, 0.06, 0.0])
-    t2 = np.array(R_z(2/3*np.pi) @ t1).squeeze()
-    t3 = np.array(R_z(-2/3*np.pi) @ t1).squeeze()
+    # t2 = np.array(R_z(2/3*np.pi) @ t1).squeeze()
+    # t3 = np.array(R_z(-2/3*np.pi) @ t1).squeeze()
 
     R1 = np.eye(3)
     R2 = R_z(2/3*np.pi)
@@ -147,19 +153,28 @@ def plot_ego(x, y, z, qw, qx, qy, qz, ax):
     # from camera frame to body frame
     for i in range(4):
         front[i] = R1 @ corners[i] + t1
-        left[i] = R2 @ corners[i] + t2
-        right[i] = R3 @ corners[i] + t3
-    
+        front_fov[i] = R1 @ corners_fov[i] + t1
+        # left[i] = R2 @ corners[i] + t2
+        # right[i] = R3 @ corners[i] + t3
+
     # Plot camera image
     for i in range(4):
         front[i] = R_b @ front[i] + center # front camera image w.r.t. world
-        left[i] = R_b @ left[i] + center
-        right[i] = R_b @ right[i] + center
+        front_fov[i] = R_b @ front_fov[i] + center # front camera image w.r.t. world
+        # left[i] = R_b @ left[i] + center
+        # right[i] = R_b @ right[i] + center
     t1 = R_b @ t1 + center # front camera origin w.r.t. world
-    t2 = R_b @ t2 + center
-    t3 = R_b @ t3 + center
+    # t2 = R_b @ t2 + center
+    # t3 = R_b @ t3 + center
 
-    for origin, image in zip([t1, t2, t3], [front, left, right]):
+    # Plot front camera field of view
+    v = np.vstack((front_fov, t1))
+    vertices = [v[[0, 2, 4]], v[[2, 3, 4]], v[[3, 1, 4]], v[[1, 0, 4]]]
+    for verts in vertices:
+        ax.add_collection3d(Poly3DCollection([verts], alpha=.2, linewidths=1, edgecolors='#e8ebff'))
+
+    # for origin, image in zip([t1, t2, t3], [front, left, right]):
+    for origin, image in zip([t1], [front]):
         t_l, t_r, b_l, b_r = image
         ax.plot(*zip(t_l, t_r), color='black', linewidth=0.5)
         ax.plot(*zip(t_l, b_l), color='black', linewidth=0.5)
@@ -179,30 +194,30 @@ def main():
 
     ego_pos, ego_orien, target_gt, target_estim, target_cov, tracker_gt, tracker_estim, tracker_cov, time = load_data(args.data_dir, args.targets, args.trackers)
 
-    # Plot: position estimate
-    fig = plt.figure(figsize=(6,6))
-    ax = fig.add_subplot(projection='3d')
+    # # Plot: position estimate
+    # fig = plt.figure(figsize=(6,6))
+    # ax = fig.add_subplot(projection='3d')
 
-    # Ego drone
-    ax.plot(ego_pos[0,:], ego_pos[1,:], ego_pos[2,:], 'kx', linewidth=3)
+    # # Ego drone
+    # ax.plot(ego_pos[0,:], ego_pos[1,:], ego_pos[2,:], 'kx', linewidth=3)
 
-    # Targets and trackers
-    for i in range(args.targets):
-        ax.plot(target_gt[i,0,:], target_gt[i,1,:], target_gt[i,2,:], '.', color='#6e0000', markersize=3, label='true', alpha=0.1)
-        ax.plot(target_estim[i,0,:], target_estim[i,1,:], target_estim[i,2,:], '.', color='#ff7575', markersize=3, label='estimate')
-        ax.plot(target_gt[i,0,0], target_gt[i,1,0], target_gt[i,2,0], '.', color='red', markersize=5, label='true initial position')
-    for i in range(args.trackers):
-        ax.plot(tracker_gt[i,0,:], tracker_gt[i,1,:], tracker_gt[i,2,:], '.', color='#07006e', markersize=3, label='true', alpha=0.1)
-        ax.plot(tracker_estim[i,0,:], tracker_estim[i,1,:], tracker_estim[i,2,:], '.', color='#7a70ff', markersize=3, label='estimate')
-        ax.plot(tracker_gt[i,0,0], tracker_gt[i,1,0], tracker_gt[i,2,0], '.', color='blue', markersize=5, label='true initial position')
+    # # Targets and trackers
+    # for i in range(args.targets):
+    #     ax.plot(target_gt[i,0,:], target_gt[i,1,:], target_gt[i,2,:], '.', color='#6e0000', markersize=3, label='true', alpha=0.1)
+    #     ax.plot(target_estim[i,0,:], target_estim[i,1,:], target_estim[i,2,:], '.', color='#ff7575', markersize=3, label='estimate')
+    #     ax.plot(target_gt[i,0,0], target_gt[i,1,0], target_gt[i,2,0], '.', color='red', markersize=5, label='true initial position')
+    # for i in range(args.trackers):
+    #     ax.plot(tracker_gt[i,0,:], tracker_gt[i,1,:], tracker_gt[i,2,:], '.', color='#07006e', markersize=3, label='true', alpha=0.1)
+    #     ax.plot(tracker_estim[i,0,:], tracker_estim[i,1,:], tracker_estim[i,2,:], '.', color='#7a70ff', markersize=3, label='estimate')
+    #     ax.plot(tracker_gt[i,0,0], tracker_gt[i,1,0], tracker_gt[i,2,0], '.', color='blue', markersize=5, label='true initial position')
     
-    ax.set_xlabel('x, m')
-    ax.set_ylabel('y, m')
-    ax.set_zlabel('z, m')
-    plt.title('Position Estimate')
-    # plt.savefig(args.data_dir + 'position_estimation.png')
-    plt.axis('equal')
-    plt.show()
+    # ax.set_xlabel('x, m')
+    # ax.set_ylabel('y, m')
+    # ax.set_zlabel('z, m')
+    # plt.title('Position Estimate')
+    # # plt.savefig(args.data_dir + 'position_estimation.png')
+    # plt.axis('equal')
+    # plt.show()
 
     # Show animation
     fig = plt.figure()
@@ -215,12 +230,25 @@ def main():
         # Ego drone
         plot_ego(ego_pos[0, t], ego_pos[1, t], ego_pos[2, t], ego_orien[0, t], ego_orien[1, t], ego_orien[2, t], ego_orien[3, t], ax)
 
+        # #
+        # print("-------------------------------------")
+        # total_norm = 0.0
+
         # Targets and trackers
         for i in range(args.targets):
             ax.plot(target_gt[i, 0, t], target_gt[i, 1, t], target_gt[i, 2, t], 'o', color='#fa0000', markersize=3, label='true')
             ax.plot(target_estim[i, 0, t], target_estim[i, 1, t], target_estim[i, 2, t], 'o', color='#ff7575', markersize=3, label='estimate')
             plot_3d_ellipsoid(target_estim[i, 0, t], target_estim[i, 1, t], target_estim[i, 2, t],
                               3*target_cov[i, 0, t], 3*target_cov[i, 1, t], 3*target_cov[i, 2, t], ax)
+            # norm = np.sqrt(target_cov[i, 0, t] ** 2 + target_cov[i, 1, t] ** 2 + target_cov[i, 2, t] ** 2)
+            # print(f"Target {i} norm :", norm)
+            # total_norm += norm
+
+        # # Check target error covariance norm
+        # # state norm
+        # print("Total state norm :", total_norm)
+        # print("Average state norm :", total_norm / 4)
+
         for i in range(args.trackers):
             ax.plot(tracker_gt[i, 0, t], tracker_gt[i, 1, t], tracker_gt[i, 2, t], 'o', color='#1100fa', markersize=3, label='true')
             ax.plot(tracker_estim[i, 0, t], tracker_estim[i, 1, t], tracker_estim[i, 2, t], 'o', color='#7a70ff', markersize=3, label='estimate')
@@ -242,9 +270,9 @@ def main():
     # Connect key event to figure
     fig.canvas.mpl_connect('key_press_event', lambda event: [exit(0) if event.key == 'escape' else None])
 
-    # # Save as GIF
-    # writer = PillowWriter(fps=20)  # Adjust fps (frames per second) as needed
-    # ani.save(args.data_dir + 'animation.gif', writer=writer)
+    # Save as GIF
+    writer = PillowWriter(fps=20)  # Adjust fps (frames per second) as needed
+    ani.save(args.data_dir + 'animation.gif', writer=writer)
 
     plt.show()
 

@@ -20,7 +20,7 @@ class TrackingSave {
     num_targets_ = num_targets;
     num_trackers_ = num_trackers;
     state_size_ = 3; // x, y, z
-    buffer_ = 500; // time buffer
+    buffer_ = 1000; // time buffer
 
     for (int k = 0; k < num_targets_; ++k) {
       target_gt_data_.push_back(arma::zeros<arma::mat>(state_size_, buffer_));
