@@ -1,0 +1,7 @@
+setup.py
+flightgym.egg-info/PKG-INFO
+flightgym.egg-info/SOURCES.txt
+flightgym.egg-info/dependency_links.txt
+flightgym.egg-info/not-zip-safe
+flightgym.egg-info/requires.txt
+flightgym.egg-info/top_level.txt

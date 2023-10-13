@@ -1,0 +1,9 @@
+# Ignore everything in this directory
+*
+# Except this file
+!.gitignore
+!.clang-format
+!CMakeLists.txt
+!package.xml
+
+RPG_Flightmare
