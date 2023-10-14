@@ -16,9 +16,9 @@ def test_model(env, agent_n=None, render=False, max_episode_steps=500):
         while epi_step < max_episode_steps:
             epi_step += 1
             # We do not add noise when evaluating
-            a_n = np.array([agent.choose_action(obs, noise_std=0, train=False) for agent, obs in zip(agent_n, obs_n)]).astype(np.float32)
+            a_n = agent_n.choose_action(obs_n, noise_std=0)
             obs_n, r_n, done_n, _ = env.step(copy.deepcopy(a_n))
-            episode_reward += np.sum(r_n)
+            episode_reward += np.mean(r_n)
 
             if all(done_n):
                 break
