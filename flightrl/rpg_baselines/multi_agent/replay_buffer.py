@@ -2,40 +2,44 @@ import torch
 import numpy as np
 
 
+
 class ReplayBuffer(object):
     def __init__(self, args):
         self.device = args.device
-        self.N = args.N  # The number of agents
+        self.N = args.N
+        self.obs_dim = args.obs_dim
+        self.action_dim = args.action_dim
         self.buffer_size = args.buffer_size
         self.batch_size = args.batch_size
-        self.count = 0
+        self.ptr = 0
         self.current_size = 0
-        self.buffer_obs_n, self.buffer_a_n, self.buffer_r_n, self.buffer_s_next_n, self.buffer_done_n = [], [], [], [], []
-        for agent_id in range(self.N):
-            self.buffer_obs_n.append(np.empty((self.buffer_size, args.obs_dim_n[agent_id])))
-            self.buffer_a_n.append(np.empty((self.buffer_size, args.action_dim_n[agent_id])))
-            self.buffer_r_n.append(np.empty((self.buffer_size, 1)))
-            self.buffer_s_next_n.append(np.empty((self.buffer_size, args.obs_dim_n[agent_id])))
-            self.buffer_done_n.append(np.empty((self.buffer_size, 1)))
+        
+        # Initialize buffer to store transitions.
+        self.buffer = {
+            'obs_n': np.empty([self.buffer_size, self.N, self.obs_dim]).astype(np.float32),
+            'a_n': np.empty([self.buffer_size, self.N, self.action_dim]).astype(np.float32),
+            'r_n': np.empty([self.buffer_size, self.N, 1]).astype(np.float32),
+            'obs_next_n': np.empty([self.buffer_size, self.N, self.obs_dim]).astype(np.float32),
+            'done_n': np.empty([self.buffer_size, self.N, 1]).astype(np.float32)
+        }
 
     def store_transition(self, obs_n, a_n, r_n, obs_next_n, done_n):
-        for agent_id in range(self.N):
-            self.buffer_obs_n[agent_id][self.count] = obs_n[agent_id]
-            self.buffer_a_n[agent_id][self.count] = a_n[agent_id]
-            self.buffer_r_n[agent_id][self.count] = r_n[agent_id]
-            self.buffer_s_next_n[agent_id][self.count] = obs_next_n[agent_id]
-            self.buffer_done_n[agent_id][self.count] = done_n[agent_id]
-        self.count = (self.count + 1) % self.buffer_size  # When the 'count' reaches max_size, it will be reset to 0.
+        self.buffer['obs_n'][self.ptr] = obs_n
+        self.buffer['a_n'][self.ptr] = a_n
+        self.buffer['r_n'][self.ptr] = r_n
+        self.buffer['obs_next_n'][self.ptr] = obs_next_n
+        self.buffer['done_n'][self.ptr] = done_n
+
+        self.ptr = (self.ptr + 1) % self.buffer_size
         self.current_size = min(self.current_size + 1, self.buffer_size)
 
-    def sample(self, ):
+    def sample(self):
         index = np.random.choice(self.current_size, size=self.batch_size, replace=False)
-        batch_obs_n, batch_a_n, batch_r_n, batch_obs_next_n, batch_done_n = [], [], [], [], []
-        for agent_id in range(self.N):
-            batch_obs_n.append(torch.tensor(self.buffer_obs_n[agent_id][index], dtype=torch.float).to(self.device))
-            batch_a_n.append(torch.tensor(self.buffer_a_n[agent_id][index], dtype=torch.float).to(self.device))
-            batch_r_n.append(torch.tensor(self.buffer_r_n[agent_id][index], dtype=torch.float).to(self.device))
-            batch_obs_next_n.append(torch.tensor(self.buffer_s_next_n[agent_id][index], dtype=torch.float).to(self.device))
-            batch_done_n.append(torch.tensor(self.buffer_done_n[agent_id][index], dtype=torch.float).to(self.device))
 
-        return batch_obs_n, batch_a_n, batch_r_n, batch_obs_next_n, batch_done_n
+        # Batch-fetch transitions from buffer.
+        mini_batch = {key: torch.tensor(value[index], dtype=torch.float32).to(self.device) for key, value in self.buffer.items()}
+        
+        return mini_batch['obs_n'], mini_batch['a_n'], mini_batch['r_n'], mini_batch['obs_next_n'], mini_batch['done_n']
+    
+    def __len__(self):
+        return self.current_size
