@@ -1,26 +1,20 @@
 from ruamel.yaml import YAML, dump, RoundTripDumper
 
-#
 import os
 import math
 import argparse
 import numpy as np
 import tensorflow as tf
 
-#
 from stable_baselines import logger
-
-#
 from rpg_baselines.single_agent.common.policies import MlpPolicy, MlpLstmPolicy
 from rpg_baselines.single_agent.ppo.ppo2 import PPO2
 from rpg_baselines.single_agent.ppo.ppo2_test import test_model
-# from rpg_baselines.envs import vec_env_wrapper as wrapper
 import rpg_baselines.single_agent.common.util as U
-#
-# from flightgym import QuadrotorEnv_v1
 
 from rpg_baselines.envs import target_tracking_env_wrapper as wrapper
 from flightgym import TargetTrackingEnv_v0
+
 
 
 def configure_random_seed(seed, env=None):
@@ -34,24 +28,20 @@ def parser():
     parser = argparse.ArgumentParser()
     parser.add_argument('--train', action="store_true", help="To train new model or simply test pre-trained model")
     parser.add_argument('--render', type=int, default=1, help="Enable Unity Render")
-    parser.add_argument('--save_dir', type=str, default=os.path.dirname(os.path.realpath(__file__)),
-                        help="Directory where to save the checkpoints and training metrics")
     parser.add_argument('--seed', type=int, default=0, help="Random seed")
-    parser.add_argument('-w', '--weight', type=str, default='./model/ppo/ppo2.zip', help='trained weight path')
+    parser.add_argument('--load_nn', type=str, default='./model/ppo/ppo2.zip', help='Trained ppo2 weight path')
     return parser
 
 
 def main():
     args = parser().parse_args()
-    # cfg = YAML().load(open(os.environ["FLIGHTMARE_PATH"] + "/flightlib/configs/vec_env.yaml", 'r'))
     cfg = YAML().load(open(os.environ["FLIGHTMARE_PATH"] + "/flightlib/configs/target_tracking_env.yaml", 'r'))
     if args.train:
-        cfg["env"]["num_envs"] = 10
+        cfg["env"]["num_envs"] = 100
         cfg["env"]["num_threads"] = 10
         cfg["env"]["scene_id"] = 0
     else:
         cfg["env"]["num_envs"] = 1
-        cfg["env"]["num_threads"] = 10
         cfg["env"]["scene_id"] = 0
     if args.render:
         cfg["env"]["render"] = "yes"
@@ -69,7 +59,6 @@ def main():
         # save the configuration and other files
         rsg_root = os.path.dirname(os.path.abspath(__file__))
 
-
         if args.render:
             env.connectUnity()
 
@@ -80,26 +69,23 @@ def main():
         save_dir = os.path.join(save_dir, 'ppo2')
 
         # saver = U.ConfigurationSaver(log_dir=log_dir)
-        model = PPO2(
-            tensorboard_log=log_dir,
-            policy=MlpPolicy,  # check activation function
-            policy_kwargs=dict(net_arch=[dict(pi=[128, 128], vf=[128, 128])], act_fun=tf.nn.relu),
-            env=env,
-            lam=0.95,
-            gamma=0.99,  # lower 0.9 ~ 0.99
-            # n_steps=math.floor(cfg['env']['max_time'] / cfg['env']['ctl_dt']),
-            n_steps=1024,
-            ent_coef=0.00,
-            learning_rate=3e-4,
-            vf_coef=0.5,
-            max_grad_norm=0.5,
-            nminibatches=64,
-            noptepochs=10,
-            cliprange=0.2,
-            verbose=1,
-        )
+        model = PPO2(tensorboard_log=log_dir,
+                     policy=MlpPolicy,
+                     policy_kwargs=dict(net_arch=[dict(pi=[256, 256], vf=[256, 256])], act_fun=tf.nn.relu),
+                     env=env,
+                     lam=0.95,
+                     gamma=0.99, # lower 0.9 ~ 0.99
+                     # n_steps=math.floor(cfg['env']['max_time'] / cfg['env']['ctl_dt']),
+                     n_steps=1024,
+                     ent_coef=0.00,
+                     learning_rate=3e-4,
+                     vf_coef=0.5,
+                     max_grad_norm=0.5,
+                     nminibatches=64,
+                     noptepochs=10,
+                     cliprange=0.2,
+                     verbose=1)
 
-        # logger.configure(folder=log_dir)
         model.learn(total_timesteps=int(1e7),
                     # total_timesteps=int(25000000),
                     log_dir=save_dir,
@@ -111,8 +97,7 @@ def main():
 
     # Testing mode with a trained weight
     else:
-        # model = PPO2.load(args.weight)
-        model = PPO2.load(args.weight)
+        model = PPO2.load(args.load_nn)
         test_model(env, model, render=args.render)
 
 

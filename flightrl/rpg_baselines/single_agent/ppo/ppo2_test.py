@@ -17,7 +17,6 @@ def test_model(env, model=None, render=False, max_episode_steps=500):
   
             obs, reward, done, infos = env.step(action)
             score += reward[0]
-            print(reward)
 
         print(">>> Evaluation episode {}, reward: {:.1f}".format(n_roll, score))
 
