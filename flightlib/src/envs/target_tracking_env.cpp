@@ -151,11 +151,30 @@ bool TargetTrackingEnv<EnvBase>::step(Ref<MatrixRowMajor<>> act, Ref<MatrixRowMa
     }
 
 #pragma omp parallel for schedule(dynamic)
-  // For tracker quadrotor
+  // For tracker quadrotor (in single agent setting)
   for (int i = 0; i < num_envs_; i++)
   {
     perTrackerStep(i, act, obs, reward, done, extra_info);
   }
+
+
+  //************************************************************************
+  //*************************** Global Reward ******************************
+  //************************************************************************
+
+  Scalar global_reward = computeGlobalReward();
+  
+  for (int i = 0; i < num_envs_; i++)
+  {
+    reward(i) = global_reward;
+  }
+
+  //************************************************************************
+  //*************************** Global Reward ******************************
+  //************************************************************************
+
+
+
 
   // For target quadrotor
   for (int i = 0; i < num_targets_; i++)
@@ -168,6 +187,7 @@ bool TargetTrackingEnv<EnvBase>::step(Ref<MatrixRowMajor<>> act, Ref<MatrixRowMa
     unity_bridge_ptr_->getRender(0);
     unity_bridge_ptr_->handleOutput();
   }
+
   return true;
 }
 
@@ -232,17 +252,7 @@ void TargetTrackingEnv<EnvBase>::perTrackerStep(int agent_id, Ref<MatrixRowMajor
     target_positions.push_back(targets_[i]->getPosition());
   }
 
-  // std::cout << "Tracker " << agent_id << " =========================================" << std::endl;
   reward(agent_id) = envs_[agent_id]->trackerStep(act.row(agent_id), obs.row(agent_id), target_positions, other_tracker_positions);
-
-  // // Compute average minimum target covariance
-  // int num_trackers = num_envs_;
-  // std::vector<std::vector<Scalar>>;
-  // for (int i = 0; i < num_trackers; ++i) {
-  //   std::vector<Scalar> target_cov = envs_[agent_id]->getTargetStateErrorCovarianceNorms();
-  //   // Store only minimum covariance
-  // }
-
 
   Scalar terminal_reward = 0;
   done(agent_id) = envs_[agent_id]->isTerminalState(terminal_reward);
@@ -256,6 +266,59 @@ void TargetTrackingEnv<EnvBase>::perTrackerStep(int agent_id, Ref<MatrixRowMajor
     envs_[agent_id]->reset(obs.row(agent_id), tracker_positions_[agent_id], target_positions, other_tracker_positions);
     reward(agent_id) += terminal_reward;
   }
+}
+
+template<typename EnvBase>
+Scalar TargetTrackingEnv<EnvBase>::computeGlobalReward() {
+  // Reward coefficient
+  Scalar c1 = 0.5;
+  Scalar c2 = 1.0;
+  Scalar c3 = -1e-4;
+
+  // Reward type
+  Scalar global_heading_reward = 0.0;
+  Scalar global_cov_reward = 0.0;
+  Scalar global_cmd_reward = 0.0;
+  Scalar global_terminal_reward = 0.0;
+
+  // Total heading reward & total command reward (penalty)
+  for (int i = 0; i < num_envs_; ++i) {
+    Scalar terminal_reward = 0;
+    global_heading_reward += envs_[i]->getIndividualHeadingReward();
+    global_cmd_reward += envs_[i]->getIndividualCmdReward();
+    envs_[i]->isTerminalState(terminal_reward);
+    global_terminal_reward += terminal_reward;
+  }
+  global_heading_reward /= num_envs_;
+  global_cmd_reward /= num_envs_;
+  global_terminal_reward /= num_envs_;
+
+  // Choose minimum target covariance among targets
+  Scalar avg_cov_norm = 0.0;
+  for (int target_id = 0; target_id < num_targets_; ++target_id) {
+    Scalar min_cov_norm = std::numeric_limits<Scalar>::infinity();
+    for (int i = 0; i < num_envs_; ++i) {
+      Scalar cov_norm = envs_[i]->getTargetPositionCovNorm(target_id);
+      if (cov_norm < min_cov_norm)
+        min_cov_norm = cov_norm;
+    }
+    avg_cov_norm += min_cov_norm;
+  }
+  avg_cov_norm /= num_targets_;
+  global_cov_reward = exp(-0.1 * pow(avg_cov_norm, 5));
+
+  // Global reward (team reward)
+  Scalar global_reward = c1 * global_heading_reward + c2 * global_cov_reward + c3 * global_cmd_reward + global_terminal_reward;
+
+
+  // std::cout << "--------------- global reward ---------------" << std::endl;
+  // std::cout << "heading : " << global_heading_reward << std::endl;
+  // std::cout << "cov     : " << global_cov_reward << std::endl;
+  // std::cout << "cmd     : " << global_cmd_reward << std::endl;
+  // std::cout << "global  : " << global_reward << std::endl;
+
+
+  return global_reward;
 }
 
 template<typename EnvBase>

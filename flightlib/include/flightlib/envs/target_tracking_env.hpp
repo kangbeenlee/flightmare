@@ -73,6 +73,8 @@ class TargetTrackingEnv {
   void perTrackerStep(int agent_id, Ref<MatrixRowMajor<>> act, Ref<MatrixRowMajor<>> obs, Ref<Vector<>> reward,
                       Ref<BoolVector<>> done, Ref<MatrixRowMajor<>> extra_info); // for multi-tracking quadrotors
 
+  Scalar computeGlobalReward();
+
   // Random initialization
   std::uniform_real_distribution<Scalar> uniform_dist_{-1.0, 1.0};
   std::random_device rd_;

@@ -16,14 +16,19 @@ class ReplayBuffer(object):
         
         # Initialize buffer to store transitions.
         self.buffer = {
-            'obs_n': np.empty([self.buffer_size, self.N, self.obs_dim]).astype(np.float32),
-            'a_n': np.empty([self.buffer_size, self.N, self.action_dim]).astype(np.float32),
-            'r_n': np.empty([self.buffer_size, self.N, 1]).astype(np.float32),
-            'obs_next_n': np.empty([self.buffer_size, self.N, self.obs_dim]).astype(np.float32),
-            'done_n': np.empty([self.buffer_size, self.N, 1]).astype(np.float32)
+            'obs_n': np.empty([self.buffer_size, self.N, self.obs_dim], dtype=np.float32),
+            'a_n': np.empty([self.buffer_size, self.N, self.action_dim], dtype=np.float32),
+            'r_n': np.empty([self.buffer_size, self.N, 1], dtype=np.float32),
+            'obs_next_n': np.empty([self.buffer_size, self.N, self.obs_dim], dtype=np.float32),
+            'done_n': np.empty([self.buffer_size, self.N, 1], dtype=np.float32)
         }
 
     def store_transition(self, obs_n, a_n, r_n, obs_next_n, done_n):
+        if len(r_n.shape) == 1:
+            r_n = np.array(r_n).reshape(-1, 1)
+        if len(done_n.shape) == 1:
+            done_n = np.array(done_n).reshape(-1, 1)
+
         self.buffer['obs_n'][self.ptr] = obs_n
         self.buffer['a_n'][self.ptr] = a_n
         self.buffer['r_n'][self.ptr] = r_n

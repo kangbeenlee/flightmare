@@ -81,7 +81,7 @@ void KalmanFilter::update(const Ref<Vector<3>> z, const Ref<Vector<3>> ego)
     P_ = (I_ - K_ * H_) * P_;
 }
 
-Matrix<3, 3> KalmanFilter::getStateErrorCovariance() const
+Matrix<3, 3> KalmanFilter::getPositionErrorCovariance() const
 {
     if (!initialized_) throw std::runtime_error("Kalman filter is not initialized!");
     Matrix<3, 3> state_cov = (Matrix<3, 3>() << P_(0, 0),        0,       0,
