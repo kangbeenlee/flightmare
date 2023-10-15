@@ -40,15 +40,16 @@ class Runner:
         self.replay_buffer = ReplayBuffer(self.args)
 
         # Create a tensorboard
-        self.writer = SummaryWriter(log_dir='runs/multi/batch_64_{}'.format(self.args.policy))
-        # Record the rewards during the evaluating
-        self.evaluate_rewards = []
+        self.writer = SummaryWriter(log_dir='runs/multi/batch_256_{}'.format(self.args.policy))
         # Total training time step
         self.time_steps = 0
         # TQDM training bar
         self.tqdm_bar = tqdm(initial=0, desc="Training", total=self.args.max_training_timesteps, unit="timestep", dynamic_ncols=True)
         # Initialize noise_std
         self.noise_std = self.args.noise_std_init
+
+        self.best_score = None
+        self.best_step = None
 
     def run(self, ):
         if self.render:
@@ -104,17 +105,19 @@ class Runner:
                     break
             
             evaluate_reward += episode_reward
-
         evaluate_reward = evaluate_reward / self.args.evaluation_times
-        self.evaluate_rewards.append(evaluate_reward)
-        print("time_steps:{} \t\t evaluate_reward:{} \t\t noise_std:{}".format(self.time_steps, evaluate_reward, self.noise_std))
-        self.writer.add_scalar("evaluate_step_rewards", evaluate_reward, global_step=self.time_steps)
         
-        # Save model
-        save_path = os.path.join("./model", self.args.policy)
+        # Save best model
+        save_path = os.path.join("./model", "batch_256_"+self.args.policy)
         if not os.path.exists(save_path):
             os.makedirs(save_path)
-        self.agent_n.save_model(save_path, self.time_steps)
+        if self.best_score == None or evaluate_reward > self.best_score:
+            self.best_score = evaluate_reward
+            self.best_step  = self.time_steps
+            self.agent_n.save_model(save_path, self.time_steps)
+
+        print("time_steps:{} \t\t evaluate_reward:{} \t\t noise_std:{} \t\t best step:{}".format(self.time_steps, evaluate_reward, self.noise_std, self.best_step))
+        self.writer.add_scalar("evaluate_step_rewards", evaluate_reward, global_step=self.time_steps)
 
 
 def configure_random_seed(seed, env=None):
@@ -133,7 +136,7 @@ if __name__ == '__main__':
     parser.add_argument('--seed', type=int, default=0, help="Random seed")
     parser.add_argument('--load_nn', type=str, default='./model', help='Trained actor weight path for ddpg and td3')
     
-    parser.add_argument("--max_training_timesteps", type=int, default=int(1e6), help=" Maximum number of training steps")
+    parser.add_argument("--max_training_timesteps", type=int, default=int(1e7), help=" Maximum number of training steps")
     parser.add_argument("--max_episode_steps", type=int, default=1000, help="Maximum number of steps per episode")
     parser.add_argument("--evaluation_time_steps", type=float, default=5000, help="Evaluate the policy every 'evaluation_time_steps'")
     parser.add_argument("--evaluation_times", type=float, default=3, help="Evaluate times")
@@ -141,7 +144,7 @@ if __name__ == '__main__':
 
     parser.add_argument("--policy", type=str, default="maddpg", help="maddpg or matd3")
     parser.add_argument("--buffer_size", type=int, default=int(1e6), help="The capacity of the replay buffer")
-    parser.add_argument("--batch_size", type=int, default=64, help="Batch size")
+    parser.add_argument("--batch_size", type=int, default=256, help="Batch size")
     parser.add_argument("--hidden_dim", type=int, default=256, help="The number of neurons in hidden layers of the neural network")
     parser.add_argument("--noise_std_init", type=float, default=0.2, help="The std of Gaussian noise for exploration")
     parser.add_argument("--noise_std_min", type=float, default=0.05, help="The std of Gaussian noise for exploration")
