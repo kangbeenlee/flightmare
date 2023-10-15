@@ -35,13 +35,6 @@ def test_model(env, render=False):
             # vx, vy, vz, wz (m/s, m/s, m/s, rad/s)
             act = np.array([[0.0, 0.0, 0.0, 0.0],
                             [0.0, 0.0, 0.0, 0.0],
-                            [0.0, 0.0, 0.0, 0.0],
-                            [0.0, 0.0, 0.0, 0.0],
-                            [0.0, 0.0, 0.0, 0.0],
-                            [0.0, 0.0, 0.0, 0.0],
-                            [0.0, 0.0, 0.0, 0.0],
-                            [0.0, 0.0, 0.0, 0.0],
-                            [0.0, 0.0, 0.0, 0.0],
                             [0.0, 0.0, 0.0, 0.0]], dtype=np.float32)
             
             # # Step input response test
@@ -70,7 +63,7 @@ def test_model(env, render=False):
 def main():
     # Environment setting parameter
     cfg = YAML().load(open(os.environ["FLIGHTMARE_PATH"] + "/flightlib/configs/target_tracking_env.yaml", 'r'))
-    cfg["env"]["num_envs"] = 10
+    cfg["env"]["num_envs"] = 3
     cfg["env"]["num_threads"] = 1
     cfg["env"]["scene_id"] = 0
     cfg["env"]["num_targets"] = 4

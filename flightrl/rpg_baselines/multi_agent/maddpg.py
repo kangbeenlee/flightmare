@@ -32,7 +32,7 @@ class MADDPG(object):
     def choose_action(self, obs_n, noise_std):
         obs_n = torch.tensor(obs_n, dtype=torch.float).to(self.device)
         a_n = self.actor(obs_n).detach().cpu().numpy() # obs_n.shape=(N, obs_dim)
-        a_n = (a_n + np.random.normal(0, noise_std, size=a_n.shape)).clip(-self.max_action, self.max_action) # a_n.shape=(N, obs_dim)
+        a_n = (a_n + np.random.normal(0, noise_std, size=a_n.shape)).clip(-self.max_action, self.max_action).astype(np.float32) # a_n.shape=(N, obs_dim)
         return a_n
     
     def train(self, replay_buffer):

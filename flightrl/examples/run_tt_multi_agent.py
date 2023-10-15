@@ -40,7 +40,7 @@ class Runner:
         self.replay_buffer = ReplayBuffer(self.args)
 
         # Create a tensorboard
-        self.writer = SummaryWriter(log_dir='runs/multi/{}'.format(self.args.policy))
+        self.writer = SummaryWriter(log_dir='runs/multi/batch_64_{}'.format(self.args.policy))
         # Record the rewards during the evaluating
         self.evaluate_rewards = []
         # Total training time step
@@ -96,7 +96,8 @@ class Runner:
             for _ in range(self.args.max_episode_steps):
                 a_n = self.agent_n.choose_action(obs_n, noise_std=0)
                 obs_next_n, r_n, done_n, _ = self.env.step(copy.deepcopy(a_n))
-                episode_reward += np.mean(r_n) # All agent get same team reward
+                # episode_reward += np.mean(r_n) # All agent get same team reward
+                episode_reward += r_n[0] # All agent get same team reward
                 obs_n = obs_next_n
                 
                 if any(done_n):
@@ -140,7 +141,7 @@ if __name__ == '__main__':
 
     parser.add_argument("--policy", type=str, default="maddpg", help="maddpg or matd3")
     parser.add_argument("--buffer_size", type=int, default=int(1e6), help="The capacity of the replay buffer")
-    parser.add_argument("--batch_size", type=int, default=128, help="Batch size")
+    parser.add_argument("--batch_size", type=int, default=64, help="Batch size")
     parser.add_argument("--hidden_dim", type=int, default=256, help="The number of neurons in hidden layers of the neural network")
     parser.add_argument("--noise_std_init", type=float, default=0.2, help="The std of Gaussian noise for exploration")
     parser.add_argument("--noise_std_min", type=float, default=0.05, help="The std of Gaussian noise for exploration")

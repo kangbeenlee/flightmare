@@ -28,7 +28,7 @@ class KalmanFilter {
   inline Vector<3> getEstimatedVelocity(void) const { return Vector<3>(x_[1], x_[3], x_[5]); };
   inline Matrix<6, 6> getErrorCovariance(void) const { return P_; };
 
-  Matrix<3, 3> getStateErrorCovariance(void) const;
+  Matrix<3, 3> getPositionErrorCovariance(void) const;
 
  private:
   //

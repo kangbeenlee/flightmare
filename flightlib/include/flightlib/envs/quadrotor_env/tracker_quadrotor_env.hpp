@@ -80,6 +80,10 @@ class TrackerQuadrotorEnv final : public EnvBase {
 
   // Reward function for RL
   Scalar rewardFunction();
+  Scalar getIndividualHeadingReward();
+  Scalar getIndividualCmdReward();
+  Scalar getTargetPositionCovNorm(const int i);
+
   Scalar computeEuclideanDistance(Ref<Vector<3>> p1, Ref<Vector<3>> p2);
 
   // - public set functions
@@ -136,8 +140,8 @@ class TrackerQuadrotorEnv final : public EnvBase {
 
   // Observations and actions (for RL)
   // Vector<trackerquadenv::kNObs> quad_obs_;
-  Vector<55> quad_obs_;
-  // Vector<73> quad_obs_;
+  // Vector<55> quad_obs_;
+  Vector<73> quad_obs_;
   Vector<trackerquadenv::kNAct> quad_act_;
 
   YAML::Node cfg_;
