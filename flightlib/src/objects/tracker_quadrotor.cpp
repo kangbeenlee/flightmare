@@ -84,18 +84,30 @@ bool TrackerQuadrotor::run(const Scalar ctl_dt) {
     // Compute linear acceleration and body torque
     const Vector<3> force(0.0, 0.0, force_torques[0]);
 
-    // PID controller step input response check & PID gain tuning
-    if (save_flag_)
-      controller_save_.store(velocity_des[0], velocity_des[1], velocity_des[2], velocity_des[3], velocity_controller_.getControlPhi(), velocity_controller_.getControlTheta(),
-                             force_torques[0], force_torques[1], force_torques[2], force_torques[3],
-                             velocity[0], velocity[1], velocity[2], state_.x(QS::OMEZ),
-                             phi, theta, psi,
-                             sim_dt);
-    if (save_flag_ && controller_save_.isFull()) {
-      controller_save_.save();
-      save_flag_ = false;
-      std::cout << ">>> PID controller output save is done" << std::endl;
-    }
+
+
+    //************************************************************************
+    //*************************** Data Recoder *******************************
+    //************************************************************************
+
+    // // PID controller step input response check & PID gain tuning
+    // if (save_flag_)
+    //   controller_save_.store(velocity_des[0], velocity_des[1], velocity_des[2], velocity_des[3], velocity_controller_.getControlPhi(), velocity_controller_.getControlTheta(),
+    //                          force_torques[0], force_torques[1], force_torques[2], force_torques[3],
+    //                          velocity[0], velocity[1], velocity[2], state_.x(QS::OMEZ),
+    //                          phi, theta, psi,
+    //                          sim_dt);
+    // if (save_flag_ && controller_save_.isFull()) {
+    //   controller_save_.save();
+    //   save_flag_ = false;
+    //   std::cout << ">>> PID controller output save is done" << std::endl;
+    // }
+
+    //************************************************************************
+    //*************************** Data Recoder *******************************
+    //************************************************************************
+
+
 
     state_.a = state_.q() * force * 1.0 / dynamics_.getMass() + gz_; // state_.q(): coordinates of body frame w.r.t. world frame
 

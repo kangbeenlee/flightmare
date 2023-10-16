@@ -1,6 +1,7 @@
 from ruamel.yaml import YAML, dump, RoundTripDumper
 
 import os
+import sys
 import math
 import argparse
 import numpy as np
@@ -53,6 +54,11 @@ def main():
 
     # set random seed
     configure_random_seed(args.seed, env=env)
+
+    print("--------------------------------------------------------------------------------------------")
+    print("Observation space dimension :", env.num_obs)
+    print("Action space dimension :", env.num_acts)
+    print("--------------------------------------------------------------------------------------------")
 
     #
     if args.train:

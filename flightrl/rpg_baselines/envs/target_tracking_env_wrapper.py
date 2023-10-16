@@ -4,7 +4,7 @@ import gymnasium as gym
 from gymnasium import spaces
 from stable_baselines3.common.vec_env import VecEnv
 
-# When training single ppo
+# # When training single ppo
 # import gym
 # from gym import spaces 
 # from stable_baselines.common.vec_env import VecEnv
@@ -19,7 +19,7 @@ class FlightmareTargetTrackingEnv(VecEnv):
         self.num_target_obs = self.wrapper.getTargetObsDim()
         self.num_acts = self.wrapper.getActDim()
         self._observation_space = spaces.Box(np.ones(self.num_obs) * -np.Inf, np.ones(self.num_obs) * np.Inf, dtype=np.float32)
-        self._action_space = spaces.Box(low=np.ones(self.num_acts) * -1., high=np.ones(self.num_acts) * 1., dtype=np.float32)
+        self._action_space = spaces.Box(low=np.ones(self.num_acts) * -3., high=np.ones(self.num_acts) * 3., dtype=np.float32)
         self._observation = np.zeros([self.num_envs, self.num_obs], dtype=np.float32)
         self._reward = np.zeros(self.num_envs, dtype=np.float32)
         self._done = np.zeros((self.num_envs), dtype=np.bool_)

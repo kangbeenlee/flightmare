@@ -5,6 +5,7 @@ import argparse
 from matplotlib.animation import FuncAnimation, PillowWriter
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from utils import R_x, R_y, R_z, quaternion_to_rotation_matrix
+import os
 import sys
 
 
@@ -189,10 +190,13 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_dir', type=str, default="/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/tracking_output/")
     parser.add_argument('--targets', type=int, default=4, help="The number of targets")
-    parser.add_argument('--trackers', type=int, default=0, help="The number of trackers except itself")
+    parser.add_argument('--trackers', type=int, default=2, help="The number of trackers except itself (total # of tracker - 1)")
+    parser.add_argument('--tracker_id', type=int, default=2, help="The id of ego tracker (agent)")
     args = parser.parse_args()
 
-    ego_pos, ego_orien, target_gt, target_estim, target_cov, tracker_gt, tracker_estim, tracker_cov, time = load_data(args.data_dir, args.targets, args.trackers)
+    data_path = os.path.join(args.data_dir, 'tracker_'+ str(args.tracker_id) + '/')
+    ego_pos, ego_orien, target_gt, target_estim, target_cov, tracker_gt, tracker_estim, tracker_cov, time = load_data(data_path, args.targets, args.trackers)
+
 
     # # Plot: position estimate
     # fig = plt.figure(figsize=(6,6))

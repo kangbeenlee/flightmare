@@ -34,8 +34,8 @@ TrackerQuadrotorEnv::TrackerQuadrotorEnv(const std::string &cfg_path) : EnvBase(
   // multi_stereo_[2]->init(d_l, d_r, R_right); // right back camera
 
   // Data recoder
-  sensor_save_ = SensorSave();
-  tracking_save_ = TrackingSave();
+  sensor_save_ = std::make_shared<SensorSave>();
+  tracking_save_ = std::make_shared<TrackingSave>();
 
   // update dynamics
   QuadrotorDynamics dynamics;
@@ -99,7 +99,9 @@ bool TrackerQuadrotorEnv::reset(Ref<Vector<>> obs, const bool random) {
 }
 
 bool TrackerQuadrotorEnv::reset(Ref<Vector<>> obs, Ref<Vector<>> position,
-                                const std::vector<Vector<3>>& target_positions, const std::vector<Vector<3>>& tracker_positions) {
+                                const std::vector<Vector<3>>& target_positions, const std::vector<Vector<3>>& tracker_positions, const int agent_id) {
+  agent_id_ = agent_id;
+  
   quad_state_.setZero();
   quad_act_.setZero();
 
@@ -143,7 +145,7 @@ bool TrackerQuadrotorEnv::reset(Ref<Vector<>> obs, Ref<Vector<>> position,
   }
 
   // Initialize tracking recoder
-  tracking_save_.init(num_targets_, num_trackers_);
+  tracking_save_->init(num_targets_, num_trackers_, agent_id_);
 
   // Reset velocity control command
   cmd_.t = 0.0;
@@ -357,14 +359,14 @@ Scalar TrackerQuadrotorEnv::trackerStep(const Ref<Vector<>> act, Ref<Vector<>> o
   //   tracker_cov.push_back(tracker_kalman_filters_[i]->getErrorCovariance());;
   // }
 
-  // if (!tracking_save_.isFull()) {
+  // if (!tracking_save_->isFull()) {
   //   Vector<4> quadternion(quad_state_.x(QS::ATTW), quad_state_.x(QS::ATTX), quad_state_.x(QS::ATTY), quad_state_.x(QS::ATTZ));
-  //   tracking_save_.store(quad_state_.p, quadternion, gt_target_positions_, target_estim_pos, target_cov, gt_tracker_positions_, tracker_estim_pos, tracker_cov, sim_dt_);
+  //   tracking_save_->store(quad_state_.p, quadternion, gt_target_positions_, target_estim_pos, target_cov, gt_tracker_positions_, tracker_estim_pos, tracker_cov, sim_dt_);
   // }
-  // else if (tracking_flag_ && tracking_save_.isFull()) {
-  //   tracking_save_.save();
+  // else if (tracking_flag_ && tracking_save_->isFull()) {
+  //   tracking_save_->save();
   //   tracking_flag_ = false;
-  //   std::cout << ">>> Tracking output save is done" << std::endl;
+  //   std::cout << ">>> Tracker " << agent_id_ << "'s tracking output save is done" << std::endl;
   // }
 
   // // Record sensor data, just for one target case
@@ -382,10 +384,10 @@ Scalar TrackerQuadrotorEnv::trackerStep(const Ref<Vector<>> act, Ref<Vector<>> o
   //   }
   // }
 
-  // if (!sensor_save_.isFull())
-  //   sensor_save_.store(gt_pixels_, pixels_, gt_target_positions_[0], measured_position_, sim_dt_);
-  // if (sensor_flag_ && sensor_save_.isFull()) {
-  //   sensor_save_.save();
+  // if (!sensor_save_->isFull())
+  //   sensor_save_->store(gt_pixels_, pixels_, gt_target_positions_[0], measured_position_, sim_dt_);
+  // if (sensor_flag_ && sensor_save_->isFull()) {
+  //   sensor_save_->save();
   //   sensor_flag_ = false;
   //   std::cout << ">>> Sensor output save is done" << std::endl;
   // }
