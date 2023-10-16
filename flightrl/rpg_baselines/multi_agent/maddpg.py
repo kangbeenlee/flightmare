@@ -96,3 +96,6 @@ class MADDPG(object):
     def save_model(self, path, total_steps):
         path = os.path.join(path, "maddpg_{}k.pth".format(int(total_steps / 1000)))
         torch.save(self.actor.state_dict(), path)
+
+    def load_model(self, load_nn):
+        self.actor.load_state_dict(torch.load(load_nn))

@@ -6,7 +6,8 @@ import copy
 
 def test_model(env, agent_n=None, render=False, max_episode_steps=500):
     num_rollouts = 100
-    
+    max_episode_steps = 1001
+
     if render:
         env.connectUnity()
         
