@@ -40,7 +40,7 @@ class Runner:
         self.replay_buffer = ReplayBuffer(self.args)
 
         # Create a tensorboard
-        self.writer = SummaryWriter(log_dir='runs/multi/batch_128_{}'.format(self.args.policy))
+        self.writer = SummaryWriter(log_dir='runs/multi/batch_{}_{}'.format(self.args.batch_size, self.args.policy))
         # Total training time step
         self.time_steps = 0
         # TQDM training bar
@@ -108,7 +108,7 @@ class Runner:
         evaluate_reward = evaluate_reward / self.args.evaluation_times
         
         # Save best model
-        save_path = os.path.join("./model", "batch_128_"+self.args.policy)
+        save_path = os.path.join('./model', 'batch_{}_{}'.format(self.args.batch_size, self.args.policy))
         if not os.path.exists(save_path):
             os.makedirs(save_path)
         if self.best_score == None or evaluate_reward > self.best_score:
