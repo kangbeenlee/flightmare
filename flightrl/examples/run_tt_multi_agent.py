@@ -40,7 +40,7 @@ class Runner:
         self.replay_buffer = ReplayBuffer(self.args)
 
         # Create a tensorboard
-        self.writer = SummaryWriter(log_dir='runs/multi/batch_256_{}'.format(self.args.policy))
+        self.writer = SummaryWriter(log_dir='runs/multi/batch_128_{}'.format(self.args.policy))
         # Total training time step
         self.time_steps = 0
         # TQDM training bar
@@ -108,7 +108,7 @@ class Runner:
         evaluate_reward = evaluate_reward / self.args.evaluation_times
         
         # Save best model
-        save_path = os.path.join("./model", "batch_256_"+self.args.policy)
+        save_path = os.path.join("./model", "batch_128_"+self.args.policy)
         if not os.path.exists(save_path):
             os.makedirs(save_path)
         if self.best_score == None or evaluate_reward > self.best_score:
@@ -136,7 +136,7 @@ if __name__ == '__main__':
     parser.add_argument('--seed', type=int, default=0, help="Random seed")
     parser.add_argument('--load_nn', type=str, default='./model', help='Trained actor weight path for ddpg and td3')
     
-    parser.add_argument("--max_training_timesteps", type=int, default=int(1e7), help=" Maximum number of training steps")
+    parser.add_argument("--max_training_timesteps", type=int, default=int(5e6), help=" Maximum number of training steps")
     parser.add_argument("--max_episode_steps", type=int, default=1000, help="Maximum number of steps per episode")
     parser.add_argument("--evaluation_time_steps", type=float, default=5000, help="Evaluate the policy every 'evaluation_time_steps'")
     parser.add_argument("--evaluation_times", type=float, default=3, help="Evaluate times")
@@ -144,7 +144,7 @@ if __name__ == '__main__':
 
     parser.add_argument("--policy", type=str, default="maddpg", help="maddpg or matd3")
     parser.add_argument("--buffer_size", type=int, default=int(1e6), help="The capacity of the replay buffer")
-    parser.add_argument("--batch_size", type=int, default=256, help="Batch size")
+    parser.add_argument("--batch_size", type=int, default=128, help="Batch size")
     parser.add_argument("--hidden_dim", type=int, default=256, help="The number of neurons in hidden layers of the neural network")
     parser.add_argument("--noise_std_init", type=float, default=0.2, help="The std of Gaussian noise for exploration")
     parser.add_argument("--noise_std_min", type=float, default=0.05, help="The std of Gaussian noise for exploration")
@@ -184,7 +184,7 @@ if __name__ == '__main__':
     else:
         cfg["env"]["num_envs"] = args.n
         cfg["env"]["num_threads"] = 1
-        cfg["env"]["scene_id"] = 0   
+        cfg["env"]["scene_id"] = 0
     if args.render:
         cfg["env"]["render"] = "yes"
     else:
@@ -231,15 +231,13 @@ if __name__ == '__main__':
         print("============================================================================================")
     else:
         # Load trained model!
-        load_path = os.path.join(args.load_nn, args.policy)
-
         if args.policy == "maddpg":
             agent_n = MADDPG(args)
-            agent_n.load_model(os.path.join(load_path, "maddpg_900k.pth"))
+            agent_n.load_model(args.load_nn)
             test_model(env, agent_n=agent_n, render=args.render, max_episode_steps=args.max_episode_steps)
         elif args.policy == "matd3":
             agent_n = MATD3(args)
-            agent_n.load_model(os.path.join(load_path, "matd3_900k.pth"))
+            agent_n.load_model(args.load_nn)
             test_model(env, agent_n=agent_n, render=args.render, max_episode_steps=args.max_episode_steps)
         else:
             print(f"{args.policy} is unsupported policy")

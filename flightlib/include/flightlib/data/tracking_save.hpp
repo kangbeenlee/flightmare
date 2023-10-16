@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 #include <armadillo>
+#include <string>
 
 // flightlib
 #include "flightlib/common/types.hpp"
@@ -13,7 +14,8 @@ class TrackingSave {
   TrackingSave() {};
   ~TrackingSave() {};
 
-  void init(const int num_targets, const int num_trackers) {
+  void init(const int num_targets, const int num_trackers, const int agent_id) {
+    agent_id_ = agent_id;
     initialized_ = true;
     i = 0;
     t = 0.0;
@@ -114,62 +116,65 @@ class TrackingSave {
     arma::mat ego_qx = ego_data_.row(4);
     arma::mat ego_qy = ego_data_.row(5);
     arma::mat ego_qz = ego_data_.row(6);
+    
+    std::string save_path = "/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/tracking_output/";
+    save_path = save_path + "tracker_" + std::to_string(agent_id_) + "/";
 
-    ego_x.save("/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/tracking_output/ego_x.txt", arma::raw_ascii);
-    ego_y.save("/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/tracking_output/ego_y.txt", arma::raw_ascii);
-    ego_z.save("/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/tracking_output/ego_z.txt", arma::raw_ascii);
-    ego_qw.save("/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/tracking_output/ego_qw.txt", arma::raw_ascii);
-    ego_qx.save("/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/tracking_output/ego_qx.txt", arma::raw_ascii);
-    ego_qy.save("/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/tracking_output/ego_qy.txt", arma::raw_ascii);
-    ego_qz.save("/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/tracking_output/ego_qz.txt", arma::raw_ascii);
+    ego_x.save(save_path+"ego_x.txt", arma::raw_ascii);
+    ego_y.save(save_path+"ego_y.txt", arma::raw_ascii);
+    ego_z.save(save_path+"ego_z.txt", arma::raw_ascii);
+    ego_qw.save(save_path+"ego_qw.txt", arma::raw_ascii);
+    ego_qx.save(save_path+"ego_qx.txt", arma::raw_ascii);
+    ego_qy.save(save_path+"ego_qy.txt", arma::raw_ascii);
+    ego_qz.save(save_path+"ego_qz.txt", arma::raw_ascii);
 
     for (int k = 0; k < num_targets_; ++k) {
       arma::mat target_gt_x = target_gt_data_[k].row(0);
       arma::mat target_gt_y = target_gt_data_[k].row(1);
       arma::mat target_gt_z = target_gt_data_[k].row(2);
-      target_gt_x.save("/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/tracking_output/target_gt_x_"+std::to_string(k)+".txt", arma::raw_ascii);
-      target_gt_y.save("/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/tracking_output/target_gt_y_"+std::to_string(k)+".txt", arma::raw_ascii);
-      target_gt_z.save("/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/tracking_output/target_gt_z_"+std::to_string(k)+".txt", arma::raw_ascii);
+      target_gt_x.save(save_path+"target_gt_x_"+std::to_string(k)+".txt", arma::raw_ascii);
+      target_gt_y.save(save_path+"target_gt_y_"+std::to_string(k)+".txt", arma::raw_ascii);
+      target_gt_z.save(save_path+"target_gt_z_"+std::to_string(k)+".txt", arma::raw_ascii);
       
       arma::mat target_estim_x = target_estim_data_[k].row(0);
       arma::mat target_estim_y = target_estim_data_[k].row(1);
       arma::mat target_estim_z = target_estim_data_[k].row(2);
-      target_estim_x.save("/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/tracking_output/target_estim_x_"+std::to_string(k)+".txt", arma::raw_ascii);
-      target_estim_y.save("/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/tracking_output/target_estim_y_"+std::to_string(k)+".txt", arma::raw_ascii);
-      target_estim_z.save("/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/tracking_output/target_estim_z_"+std::to_string(k)+".txt", arma::raw_ascii);
+      target_estim_x.save(save_path+"target_estim_x_"+std::to_string(k)+".txt", arma::raw_ascii);
+      target_estim_y.save(save_path+"target_estim_y_"+std::to_string(k)+".txt", arma::raw_ascii);
+      target_estim_z.save(save_path+"target_estim_z_"+std::to_string(k)+".txt", arma::raw_ascii);
 
       arma::mat target_cov_x = target_error_cov_[k].row(0);
       arma::mat target_cov_y = target_error_cov_[k].row(1);
       arma::mat target_cov_z = target_error_cov_[k].row(2);
-      target_cov_x.save("/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/tracking_output/target_cov_x_"+std::to_string(k)+".txt", arma::raw_ascii);
-      target_cov_y.save("/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/tracking_output/target_cov_y_"+std::to_string(k)+".txt", arma::raw_ascii);
-      target_cov_z.save("/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/tracking_output/target_cov_z_"+std::to_string(k)+".txt", arma::raw_ascii);
+      target_cov_x.save(save_path+"target_cov_x_"+std::to_string(k)+".txt", arma::raw_ascii);
+      target_cov_y.save(save_path+"target_cov_y_"+std::to_string(k)+".txt", arma::raw_ascii);
+      target_cov_z.save(save_path+"target_cov_z_"+std::to_string(k)+".txt", arma::raw_ascii);
     }
 
     for (int k = 0; k < num_trackers_; ++k) {
       arma::mat tracker_gt_x = tracker_gt_data_[k].row(0);
       arma::mat tracker_gt_y = tracker_gt_data_[k].row(1);
       arma::mat tracker_gt_z = tracker_gt_data_[k].row(2);
-      tracker_gt_x.save("/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/tracking_output/tracker_gt_x_"+std::to_string(k)+".txt", arma::raw_ascii);
-      tracker_gt_y.save("/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/tracking_output/tracker_gt_y_"+std::to_string(k)+".txt", arma::raw_ascii);
-      tracker_gt_z.save("/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/tracking_output/tracker_gt_z_"+std::to_string(k)+".txt", arma::raw_ascii);
+      tracker_gt_x.save(save_path+"tracker_gt_x_"+std::to_string(k)+".txt", arma::raw_ascii);
+      tracker_gt_y.save(save_path+"tracker_gt_y_"+std::to_string(k)+".txt", arma::raw_ascii);
+      tracker_gt_z.save(save_path+"tracker_gt_z_"+std::to_string(k)+".txt", arma::raw_ascii);
       
       arma::mat tracker_estim_x = tracker_estim_data_[k].row(0);
       arma::mat tracker_estim_y = tracker_estim_data_[k].row(1);
       arma::mat tracker_estim_z = tracker_estim_data_[k].row(2);
-      tracker_estim_x.save("/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/tracking_output/tracker_estim_x_"+std::to_string(k)+".txt", arma::raw_ascii);
-      tracker_estim_y.save("/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/tracking_output/tracker_estim_y_"+std::to_string(k)+".txt", arma::raw_ascii);
-      tracker_estim_z.save("/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/tracking_output/tracker_estim_z_"+std::to_string(k)+".txt", arma::raw_ascii);
+      tracker_estim_x.save(save_path+"tracker_estim_x_"+std::to_string(k)+".txt", arma::raw_ascii);
+      tracker_estim_y.save(save_path+"tracker_estim_y_"+std::to_string(k)+".txt", arma::raw_ascii);
+      tracker_estim_z.save(save_path+"tracker_estim_z_"+std::to_string(k)+".txt", arma::raw_ascii);
 
       arma::mat tracker_cov_x = tracker_error_cov_[k].row(0);
       arma::mat tracker_cov_y = tracker_error_cov_[k].row(1);
       arma::mat tracker_cov_z = tracker_error_cov_[k].row(2);
-      tracker_cov_x.save("/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/tracking_output/tracker_cov_x_"+std::to_string(k)+".txt", arma::raw_ascii);
-      tracker_cov_y.save("/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/tracking_output/tracker_cov_y_"+std::to_string(k)+".txt", arma::raw_ascii);
-      tracker_cov_z.save("/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/tracking_output/tracker_cov_z_"+std::to_string(k)+".txt", arma::raw_ascii);
+      tracker_cov_x.save(save_path+"tracker_cov_x_"+std::to_string(k)+".txt", arma::raw_ascii);
+      tracker_cov_y.save(save_path+"tracker_cov_y_"+std::to_string(k)+".txt", arma::raw_ascii);
+      tracker_cov_z.save(save_path+"tracker_cov_z_"+std::to_string(k)+".txt", arma::raw_ascii);
     }
 
-    time_.save("/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/tracking_output/time.txt", arma::raw_ascii);
+    time_.save(save_path+"time.txt", arma::raw_ascii);
   }
 
   bool isFull() {
@@ -178,6 +183,7 @@ class TrackingSave {
   }
 
  private:
+  int agent_id_;
   bool initialized_{false};
   int i;
   Scalar t;

@@ -60,7 +60,7 @@ class TrackerQuadrotorEnv final : public EnvBase {
   // - public OpenAI-gym-style functions
   bool reset(Ref<Vector<>> obs, const bool random = true) override;
   bool reset(Ref<Vector<>> obs, Ref<Vector<>> position,
-             const std::vector<Vector<3>>& target_positions, const std::vector<Vector<3>>& other_tracker_positions);
+             const std::vector<Vector<3>>& target_positions, const std::vector<Vector<3>>& other_tracker_positions, const int agent_id);
 
   //
   Matrix<3, 3> Rot_x(const Scalar angle) const;
@@ -100,6 +100,7 @@ class TrackerQuadrotorEnv final : public EnvBase {
 
  private:
   // Quadrotor
+  int agent_id_;
   Scalar radius_{0.25};
   std::shared_ptr<TrackerQuadrotor> tracker_ptr_;
   QuadState quad_state_;
@@ -115,13 +116,13 @@ class TrackerQuadrotorEnv final : public EnvBase {
   int num_targets_, num_trackers_; // except tracker itself
 
   // Sensor data recoder
-  SensorSave sensor_save_;
+  std::shared_ptr<SensorSave> sensor_save_;
   bool sensor_flag_{true};
   Vector<4> gt_pixels_, pixels_;
   Vector<3> measured_position_;
 
   // Tracking data recoder
-  TrackingSave tracking_save_;
+  std::shared_ptr<TrackingSave> tracking_save_;
   bool tracking_flag_{true};
   std::vector<Vector<3>> gt_target_positions_, estimated_target_positions_, estimated_target_velocities_;
   std::vector<Vector<3>> gt_tracker_positions_, estimated_tracker_positions_, estimated_tracker_velocities_;

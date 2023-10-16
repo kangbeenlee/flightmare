@@ -133,7 +133,7 @@ bool TargetTrackingEnv<EnvBase>::reset(Ref<MatrixRowMajor<>> obs, Ref<MatrixRowM
       if (i != j)
         other_tracker_positions.push_back(tracker_positions_[j]);
     }
-    envs_[i]->reset(obs.row(i), tracker_positions_[i], target_positions_, other_tracker_positions);
+    envs_[i]->reset(obs.row(i), tracker_positions_[i], target_positions_, other_tracker_positions, i);
   }
 
   return true;
@@ -263,7 +263,7 @@ void TargetTrackingEnv<EnvBase>::perTrackerStep(int agent_id, Ref<MatrixRowMajor
   }
 
   if (done[agent_id]) {
-    envs_[agent_id]->reset(obs.row(agent_id), tracker_positions_[agent_id], target_positions, other_tracker_positions);
+    envs_[agent_id]->reset(obs.row(agent_id), tracker_positions_[agent_id], target_positions, other_tracker_positions, agent_id);
     reward(agent_id) += terminal_reward;
   }
 }
