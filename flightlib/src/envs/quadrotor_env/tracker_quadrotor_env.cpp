@@ -466,24 +466,56 @@ Scalar TrackerQuadrotorEnv::getIndividualHeadingReward() {
     denominator += elem;
   }
 
+
+  if (std::isnan(denominator)) {
+    std::cout << "nan occurs from individual denominator" << std::endl;
+    std::cout << "denominator : " << denominator << std::endl;
+    exit(0);
+  }
+
+
   // Compute negative softmax
   std::vector<Scalar> heading_weight;
   for (int i = 0; i < num_targets_; ++i) {
-    heading_weight.push_back(numerator[i] / denominator);
+    Scalar weight = numerator[i] / denominator;
+
+    if (std::isnan(weight)) {
+      std::cout << "nan occurs from individual weight" << std::endl;
+      std::cout << "weight : " << weight << std::endl;
+      exit(0);
+    }
+
+    heading_weight.push_back(weight);
   }  
 
   // Compute heading reward
   Scalar heading_reward = 0.0;
   Vector<3> h = quad_state_.q().toRotationMatrix() * Vector<3>(1, 0, 0); // Ego tracker heading vector
   h = h / h.norm();
+
+
   for (int i = 0; i < num_targets_; ++i) {
     Vector<3> target_position = target_kalman_filters_[i]->getEstimatedPosition();
     Vector<3> d = target_position - quad_state_.p; // Relative distance to target
     d = d / d.norm();
     Scalar theta = acos(h.dot(d));
+
+    if (std::isnan(theta)) {
+      std::cout << "nan occurs from individual theta" << std::endl;
+      std::cout << "theta : " << theta << std::endl;
+      exit(0);
+    }
+
+
     Scalar target_heading_reward = exp(-10.0 * pow(theta, 3));
     heading_reward += heading_weight[i] * target_heading_reward;
   }
+
+  if (std::isnan(heading_reward)) {
+    std::cout << "nan occurs from individual heading reward" << std::endl;
+    exit(0);
+  }
+
 
   return heading_reward;
 }
