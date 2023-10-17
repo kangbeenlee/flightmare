@@ -318,6 +318,24 @@ Scalar TargetTrackingEnv<EnvBase>::computeGlobalReward() {
   // std::cout << "global  : " << global_reward << std::endl;
 
 
+  if (std::isnan(global_reward)) {
+    std::cout << "--------- Check nan reward ---------" << std::endl;
+    std::cout << "heading : " << global_heading_reward << std::endl;
+    std::cout << "cov     : " << global_cov_reward << std::endl;
+    std::cout << "cmd     : " << global_cmd_reward << std::endl;
+    if (std::isnan(global_heading_reward))
+      std::cout << "nan occurs from heading reward" << std::endl;
+    if (std::isnan(global_cov_reward)) {
+      std::cout << "nan occurs from cov reward" << std::endl;
+      std::cout << "avg_cov_norm : " << avg_cov_norm << std::endl;
+    }
+    if (std::isnan(global_cmd_reward))
+      std::cout << "nan occurs from cmd reward" << std::endl;
+
+
+    exit(0);
+  }
+
   return global_reward;
 }
 
