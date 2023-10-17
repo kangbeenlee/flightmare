@@ -6,76 +6,163 @@
 // MPCController::MPCController() {}
 // MPCController::~MPCController() {}
 
-// void MPCController::init(const Scalar Ts, const Scalar mass, const Scalar Ixx, const Scalar Iyy, const Scalar Izz) {}
-
-// Vector<12> MPCController::nonlinearDynamics(const Vector<12> x, const Vector<4> u) {
-//     Vector<12> xdot(12);
-//     double phi = x(6), theta = x(7), psi = x(8);
-//     double U1 = u(0);
-
-//     xdot << x(3),
-//             x(4),
-//             x(5),
-//             (sin(phi) * sin(psi) + cos(phi) * sin(theta) * cos(psi)) * U1 / mass_,
-//             (-sin(phi) * cos(psi) + cos(phi) * sin(theta) * sin(psi)) * U1 / mass_,
-//             -G_ + cos(phi) * cos(theta) * U1 / mass_,
-//             x(9) + sin(phi) * tan(theta) * x(10) + cos(phi) * tan(theta) * x(11),
-//             cos(phi) * x(10) - sin(phi) * x(11),
-//             (sin(phi) / cos(theta)) * x(10) + (cos(phi) / cos(theta)) * x(11),
-//             ((Iyy_ - Izz_) / Ixx_) * x(10) * x(11) + u(1) / Ixx_,
-//             ((Izz_ - Ixx_) / Iyy_) * x(9) * x(11) + u(2) / Iyy_,
-//             ((Iyy_ - Ixx_) / Izz_) * x(9) * x(10) + u(3) / Izz_;
-
-//     return xdot;
+// void MPCController::init(float Ts, uint N) {
+//     Ts_ = Ts;
+//     N_ = N;
 // }
 
-// Matrix<12, 12> MPCController::computeJacobianAprime(const Scalar phi, const Scalar theta, const Scalar psi,
-//                                                     const Scalar p, const Scalar q, const Scalar r, const Scalar U1) {
-//     Matrix<12, 12> A_prime(12, 12);
-//     A_prime <<  0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0,
-//                 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0,
-//                 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0,
-//                 0, 0, 0, 0, 0, 0, U1*(-sin(phi)*sin(theta)*cos(psi) + sin(psi)*cos(phi))/mass_, U1*cos(phi)*cos(psi)*cos(theta)/mass_, U1*(sin(phi)*cos(psi) - sin(psi)*sin(theta)*cos(phi))/mass_, 0, 0, 0,
-//                 0, 0, 0, 0, 0, 0, U1*(-sin(phi)*sin(psi)*sin(theta) - cos(phi)*cos(psi))/mass_, U1*sin(psi)*cos(phi)*cos(theta)/mass_, U1*(sin(phi)*sin(psi) + sin(theta)*cos(phi)*cos(psi))/mass_, 0, 0, 0,
-//                 0, 0, 0, 0, 0, 0, -U1*sin(phi)*cos(theta)/mass_, -U1*sin(theta)*cos(phi)/mass_, 0, 0, 0, 0,
-//                 0, 0, 0, 0, 0, 0, q*cos(phi)*tan(theta) - r*sin(phi)*tan(theta), q*(tan(theta)*tan(theta) + 1)*sin(phi) + r*(tan(theta)*tan(theta) + 1)*cos(phi), 0, 1, sin(phi)*tan(theta), cos(phi)*tan(theta),
-//                 0, 0, 0, 0, 0, 0, -q*sin(phi) - r*cos(phi), 0, 0, 0, cos(phi), -sin(phi),
-//                 0, 0, 0, 0, 0, 0, q*cos(phi)/cos(theta) - r*sin(phi)/cos(theta), q*sin(phi)*sin(theta)/pow(cos(theta), 2) + r*sin(theta)*cos(phi)/pow(cos(theta), 2), 0, 0, sin(phi)/cos(theta), cos(phi)/cos(theta),
-//                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, r*(Iyy_ - Izz_)/Ixx_, q*(Iyy_ - Izz_)/Ixx_,
-//                 0, 0, 0, 0, 0, 0, 0, 0, 0, r*(-Ixx_ + Izz_)/Iyy_, 0, p*(-Ixx_ + Izz_)/Iyy_,
-//                 0, 0, 0, 0, 0, 0, 0, 0, 0, q*(-Ixx_ + Iyy_)/Izz_, p*(-Ixx_ + Iyy_)/Izz_, 0;
-//     return A_prime;
-// }
+// bool MPCController::runMPC(const float x_0,
+//                            const float y_0,
+//                            const float z_0,
+//                            const float u_0,
+//                            const float v_0,
+//                            const float w_0,
+//                            const float phi_0,
+//                            const float theta_0,
+//                            const float psi_0,
+//                            const float p_0,
+//                            const float q_0,
+//                            const float r_0,
+//                            std::vector<float>& sub_goal,
+//                            std::vector<float>& control) {
+//     // Define optimization control problem
+//     OCP ocp(0.0, N_ * Ts_, N_);
+//     DifferentialEquation f;
+//     DifferentialState x, y, z, u, v, w, phi, theta, psi, p, q, r;
+//     Control U1, U2, U3, U4; // Quadrotor control input: T, Mx, My, Mz
 
-// Matrix<12, 4> MPCController::computeJacobianBprime(const Scalar phi, const Scalar theta, const Scalar psi) {
-//     Matrix<12, 4> B_prime(12, 4);
-//     B_prime <<  0, 0, 0, 0,
-//                 0, 0, 0, 0,
-//                 0, 0, 0, 0,
-//                 (sin(phi)*sin(psi) + sin(theta)*cos(phi)*cos(psi))/mass_, 0, 0, 0,
-//                 (-sin(phi)*cos(psi) + sin(psi)*sin(theta)*cos(phi))/mass_, 0, 0, 0,
-//                 cos(phi)*cos(theta)/mass_, 0, 0, 0,
-//                 0, 0, 0, 0,
-//                 0, 0, 0, 0,
-//                 0, 0, 0, 0,
-//                 0, 1/Ixx_, 0, 0,
-//                 0, 0, 1/Iyy_, 0,
-//                 0, 0, 0, 1/Izz_;
-//     return B_prime;
-// }
+//     // Quadrotor nonlinear dynamics
+//     f << dot(x) == u;
+//     f << dot(y) == v;
+//     f << dot(z) == w;
+//     f << dot(u) == (sin(phi) * sin(psi) + cos(phi) * sin(theta) * cos(psi)) * U1 / mass;
+//     f << dot(v) == (-sin(phi) * cos(psi) + cos(phi) * sin(theta) * sin(psi)) * U1 / mass;
+//     f << dot(w) == -g + cos(phi) * cos(theta) * U1 / mass;
+//     f << dot(phi) == p + sin(phi) * tan(theta) * q + cos(phi) * tan(theta) * r;
+//     f << dot(theta) == cos(phi) * q - sin(phi) * r;
+//     f << dot(psi) == (sin(phi) / cos(theta)) * q + (cos(phi) / cos(theta)) * r;
+//     f << dot(p) == ((Iyy - Izz) / Ixx) * q * r + U2 / Ixx;
+//     f << dot(q) == ((Izz - Ixx) / Iyy) * p * r + U3 / Iyy;
+//     f << dot(r) == ((Iyy - Ixx) / Izz) * p * q + U4 / Izz;
 
-// Matrix<12, 12> MPCController::computeJacobianA(const Matrix<12, 12> A_prime) {
-//     Matrix<12, 12> I = Matrix<12, 12>::Identity(A_prime.rows(), A_prime.cols());
-//     Matrix<12, 12> A = I + Ts_ * A_prime;
-//     return A;
-// }
 
-// Matrix<12, 4> MPCController::computeJacobianB(const Matrix<12, 4> B_prime) {
-//     return Ts_ * B_prime;
-// }
+//     // Constraints
+//     ocp.subjectTo(f);
 
-// Matrix<12, 4> MPCController::computeJacobianC(const Vector<12> x_bar, const Vector<4> u_bar, const Matrix<12, 12> A_prime, const Matrix<12, 4> B_prime) {
-//     return Ts_ * (nonlinearDynamics(x_bar, u_bar) - A_prime * x_bar - B_prime * u_bar);
+//     ocp.subjectTo(-3.0 <= u <= 3.0);           // m/s
+//     ocp.subjectTo(-3.0 <= v <= 3.0);           // m/s
+//     ocp.subjectTo(-3.0 <= w <= 3.0);           // m/s
+//     ocp.subjectTo(-M_PI_4 <= phi <= M_PI_4);   // rad
+//     ocp.subjectTo(-M_PI_4 <= theta <= M_PI_4); // rad
+//     ocp.subjectTo(-M_PI <= p <= M_PI);         // rad/s
+//     ocp.subjectTo(-M_PI <= q <= M_PI);         // rad/s
+//     ocp.subjectTo(-M_PI <= r <= M_PI);         // rad/s
+
+//     ocp.subjectTo(T_min_ <= U1 <= T_max_);          // rad/s
+//     ocp.subjectTo(-Mxy_min_ <= U2 <= Mxy_max_);        // rad/s
+//     ocp.subjectTo(-Mxy_min_ <= U3 <= Mxy_max_);        // rad/s
+//     ocp.subjectTo(-Mz_min_ <= U4 <= Mz_max_);        // rad/s
+
+//     // Provide the problem with an objective
+//     uint action_dim = 4;
+//     DMatrix Q(action_dim, action_dim);
+//     Q.setIdentity();
+//     Q(0, 0) = 1.0; // u
+//     Q(1, 1) = 1.0; // v
+//     Q(2, 2) = 1.0; // w
+//     Q(3, 3) = 1.0; // yaw (psi)
+
+//     DMatrix Q_N(action_dim, action_dim);
+//     Q_N.setIdentity();
+//     Q_N(0,0) = 10.0; // u
+//     Q_N(1,1) = 10.0; // v
+//     Q_N(2,2) = 10.0; // w
+//     Q_N(3,3) = 10.0; // yaw (psi)
+
+//     uint control_dim = 4;
+//     DMatrix R(control_dim, control_dim);
+//     R.setIdentity();
+//     R(0, 0) = 1.0; // T
+//     R(1, 1) = 1.0; // M_x
+//     R(2, 2) = 1.0; // M_y
+//     R(3, 3) = 1.0; // M_z
+
+//     Function state, u_control, state_N;
+
+//     state << u;
+//     state << v;
+//     state << w;
+//     state << psi;
+
+//     state_N << u;
+//     state_N << v;
+//     state_N << w;
+//     state_N << psi;
+
+//     u_control << U1;
+//     u_control << U2;
+//     u_control << U3;
+//     u_control << U4;
+
+//     DVector ref(action_dim), ref_N(action_dim);
+//     ref(0) = sub_goal[0];
+//     ref(1) = sub_goal[1];
+//     ref(2) = sub_goal[2];
+//     ref(3) = sub_goal[3];
+
+//     ref_N = ref;
+
+//     ocp.minimizeLSQ(Q, state, ref);
+//     ocp.minimizeLSQ(R, u_control);
+//     ocp.minimizeLSQEndTerm(Q_N, state_N, ref_N);
+
+//     // Define a solver for this problem
+//     float mpc_rate = 10.0;                       // Hz
+//     RealTimeAlgorithm solver(ocp, 1 / mpc_rate); // args: problem, mpc_period
+//     // OptimizationAlgorithm solver(ocp);
+//     solver.set(PRINT_COPYRIGHT, false);
+//     solver.set(PRINTLEVEL, 0);
+//     solver.set(INTEGRATOR_TYPE, INT_RK45);
+//     solver.set(HESSIAN_APPROXIMATION, GAUSS_NEWTON);  // GAUSS_NEWTON is for LSQ only, else I recommend BLOCK_BFGS_UPDATE
+//     solver.set(DISCRETIZATION_TYPE, SINGLE_SHOOTING); // listen bro *direct* multiple-shooting is overrated
+
+//     // Initial condition vector
+//     DVector x0(12);
+//     x0.setZero();
+//     x0(0) = x_0;
+//     x0(1) = y_0;
+//     x0(2) = z_0;
+//     x0(3) = u_0;
+//     x0(4) = v_0;
+//     x0(5) = w_0;
+//     x0(6) = phi_0;
+//     x0(7) = theta_0;
+//     x0(8) = psi_0;
+//     x0(9) = p_0;
+//     x0(10) = q_0;
+//     x0(11) = r_0;
+
+//     bool failed = false;
+//     uint max_iters = 3;
+//     for (uint i = 0; i < max_iters; ++i)
+//     {
+//         std::clock_t begin_time = std::clock();
+//         failed = solver.solve(0.0, x0); // args: t_now, state_now
+//         std::clock_t end_time = std::clock();
+
+//         std::cout << "Iter: " << i << " | " << "Delay: " << 1000 * double(end_time - begin_time) / CLOCKS_PER_SEC << " ms" << std::endl;
+
+//         if (failed) {
+//             std::cout << "Solve failed! (ACADO prints the full details)" << std::endl;
+//             return false;
+//         }
+        
+//         // Get first optimal control input
+//         DVector u_values;
+//         solver.getU(u_values);
+//         control = {(float)u_values(0), (float)u_values(1), (float)u_values(2), (float)u_values(3)};
+//     }
+//     return true;
 // }
 
 // }  // namespace flightlib

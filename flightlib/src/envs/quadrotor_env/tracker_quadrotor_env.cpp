@@ -498,7 +498,11 @@ Scalar TrackerQuadrotorEnv::getIndividualHeadingReward() {
     Vector<3> target_position = target_kalman_filters_[i]->getEstimatedPosition();
     Vector<3> d = target_position - quad_state_.p; // Relative distance to target
     d = d / d.norm();
-    Scalar theta = acos(h.dot(d));
+    // Scalar theta = acos(h.dot(d));
+
+    Scalar dot_value = h.dot(d);
+    dot_value = std::max(static_cast<Scalar>(-1.0), std::min(static_cast<Scalar>(1.0), dot_value));
+    Scalar theta = acos(dot_value);
 
     if (std::isnan(theta)) {
       std::cout << "nan occurs from individual theta" << std::endl;
@@ -567,7 +571,12 @@ Scalar TrackerQuadrotorEnv::rewardFunction()
     Vector<3> target_position = target_kalman_filters_[i]->getEstimatedPosition();
     Vector<3> d = target_position - quad_state_.p; // Relative distance to target
     d = d / d.norm();
-    Scalar theta = acos(h.dot(d));
+    // Scalar theta = acos(h.dot(d));
+
+    Scalar dot_value = h.dot(d);
+    dot_value = std::max(static_cast<Scalar>(-1.0), std::min(static_cast<Scalar>(1.0), dot_value));
+    Scalar theta = acos(dot_value);
+
     Scalar target_heading_reward = exp(-10.0 * pow(theta, 3));
     heading_reward += heading_weight[i] * target_heading_reward;
   }

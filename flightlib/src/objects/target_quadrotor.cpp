@@ -122,7 +122,7 @@ void TargetQuadrotor::init(void) {
   velocity_controller_ = VelocityController();
   velocity_controller_.setQuadrotorMass(dynamics_.getMass());
   velocity_controller_.setGravity(-Gz);
-  controller_save_ = ControllerSave();
+  controller_save_ = PIDControllerSave();
 }
 
 bool TargetQuadrotor::reset(void) {

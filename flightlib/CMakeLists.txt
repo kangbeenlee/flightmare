@@ -55,6 +55,10 @@ find_package(OpenMP REQUIRED)
 find_package(Eigen3 REQUIRED)
 include_directories(${EIGEN3_INCLUDE_DIR})
 
+# Including dependencies 
+include_directories(/usr/local/include/acado)
+
+
 if(ENABLE_BLAS)
   set(BLA_VENDOR "Generic")
   find_package(BLAS REQUIRED)
@@ -213,7 +217,8 @@ else()
     yaml-cpp
     zmq
     zmqpp
-    stdc++fs)
+    stdc++fs
+    acado_toolkit_s)
   set(LIBRARY_NAME ${PROJECT_NAME})
   set_target_properties(${PROJECT_NAME} PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 endif()

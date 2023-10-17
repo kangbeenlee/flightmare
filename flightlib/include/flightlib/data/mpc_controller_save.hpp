@@ -8,22 +8,21 @@
 
 namespace flightlib {
 
-class ControllerSave {
+class MPCControllerSave {
  public:
-  ControllerSave() {};
-  ~ControllerSave() {};
+  MPCControllerSave() {};
+  ~MPCControllerSave() {};
 
-  void store(const Scalar vx_des, const Scalar vy_des, const Scalar vz_des, const Scalar wz_des, const Scalar phi_c, const Scalar theta_c,
+  void store(const Scalar vx_des, const Scalar vy_des, const Scalar vz_des, const Scalar wz_des,
              const Scalar T, const Scalar Mx, const Scalar My, const Scalar Mz,
-             const Scalar vx_o, const Scalar vy_o, const Scalar vz_o, const Scalar wz_o, const Scalar phi_o, const Scalar theta_o, const Scalar psi_o,
+             const Scalar vx_o, const Scalar vy_o, const Scalar vz_o, const Scalar wz_o,
+             const Scalar phi_o, const Scalar theta_o, const Scalar psi_o,
              const Scalar sim_dt)
   {
     input_des_(0, i) = vx_des;
     input_des_(1, i) = vy_des;
     input_des_(2, i) = vz_des;
     input_des_(3, i) = wz_des;
-    input_des_(4, i) = phi_c;
-    input_des_(5, i) = theta_c;
     input_c_(0, i) = T;
     input_c_(1, i) = Mx;
     input_c_(2, i) = My;
@@ -47,14 +46,10 @@ class ControllerSave {
     arma::mat input_des_vy = input_des_.row(1);
     arma::mat input_des_vz = input_des_.row(2);
     arma::mat input_des_wz = input_des_.row(3);
-    arma::mat input_des_phi = input_des_.row(4);
-    arma::mat input_des_theta = input_des_.row(5);
     input_des_vx.save("/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/controller_output/vx_des.txt", arma::raw_ascii);
     input_des_vy.save("/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/controller_output/vy_des.txt", arma::raw_ascii);
     input_des_vz.save("/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/controller_output/vz_des.txt", arma::raw_ascii);
     input_des_wz.save("/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/controller_output/wz_des.txt", arma::raw_ascii);
-    input_des_phi.save("/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/controller_output/phi_des.txt", arma::raw_ascii);
-    input_des_theta.save("/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/controller_output/theta_des.txt", arma::raw_ascii);
 
     arma::mat input_T = input_c_.row(0);
     arma::mat input_Mx = input_c_.row(1);
@@ -100,7 +95,7 @@ class ControllerSave {
  private:
   unsigned int i = 0;
   Scalar t = 0.0;
-  unsigned int control_input_size_ = 6; // vx, vy, vz, wz
+  unsigned int control_input_size_ = 4; // vx, vy, vz, wz
   unsigned int output_size_ = 7; // vx, vy, vz, wz
   unsigned int buffer_ = 6000; // time buffer
   arma::mat input_des_ = arma::zeros(control_input_size_, buffer_);
