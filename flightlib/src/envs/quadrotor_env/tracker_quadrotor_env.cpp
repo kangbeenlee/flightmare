@@ -507,6 +507,9 @@ Scalar TrackerQuadrotorEnv::getIndividualHeadingReward() {
     if (std::isnan(theta)) {
       std::cout << "nan occurs from individual theta" << std::endl;
       std::cout << "theta : " << theta << std::endl;
+      std::cout << "dot_value : " << dot_value << std::endl;
+      std::cout << "h : " << h << std::endl;
+      std::cout << "d : " << d << std::endl;
       exit(0);
     }
 
