@@ -52,9 +52,6 @@ bool TrackerQuadrotor::run(const Scalar ctl_dt) {
     const Scalar sim_dt = std::min(remain_ctl_dt, max_dt);
     velocity_controller_.setDt(sim_dt);
 
-    // if (cmd_.isVelocityAction()) const Vector<4> velocity_des = cmd_.velocity;
-    // else return false;
-
     const Vector<4> velocity_des = cmd_.velocity;
 
     Vector<3> euler = quaternionToEuler(state_);
@@ -74,6 +71,16 @@ bool TrackerQuadrotor::run(const Scalar ctl_dt) {
                                                             velocity[0], velocity[1], velocity[2], state_.x(QS::OMEZ),
                                                             phi, theta, psi);
 
+
+    // std::vector<float> sub_goal{velocity_des[0], velocity_des[1], velocity_des[2], velocity_des[3]};
+    // mpc_controller_.runMPC(state_.x(QS::POSX), state_.x(QS::POSY), state_.x(QS::POSZ),
+    //                        state_.x(QS::VELX), state_.x(QS::VELY), state_.x(QS::VELZ),
+    //                        phi, theta, psi,
+    //                        state_.x(QS::OMEX), state_.x(QS::OMEY), state_.x(QS::OMEZ),
+    //                        sub_goal, control_);
+
+    // const Vector<4> control_input(control_[0], control_[1], control_[2], control_[3]);
+
     const Vector<4> motor_thrusts_des = B_allocation_inv_ * control_input;
 
     // Cliping motor thrust with motor constraint
@@ -90,18 +97,27 @@ bool TrackerQuadrotor::run(const Scalar ctl_dt) {
     //*************************** Data Recoder *******************************
     //************************************************************************
 
-    // // PID controller step input response check & PID gain tuning
+    // PID controller step input response check & PID gain tuning
+    if (save_flag_)
+      controller_save_.store(velocity_des[0], velocity_des[1], velocity_des[2], velocity_des[3], velocity_controller_.getControlPhi(), velocity_controller_.getControlTheta(),
+                             force_torques[0], force_torques[1], force_torques[2], force_torques[3],
+                             velocity[0], velocity[1], velocity[2], state_.x(QS::OMEZ),
+                             phi, theta, psi,
+                             sim_dt);
+
+    // // MPC controller step input reponse check
     // if (save_flag_)
-    //   controller_save_.store(velocity_des[0], velocity_des[1], velocity_des[2], velocity_des[3], velocity_controller_.getControlPhi(), velocity_controller_.getControlTheta(),
+    //   controller_save_.store(velocity_des[0], velocity_des[1], velocity_des[2], velocity_des[3],
     //                          force_torques[0], force_torques[1], force_torques[2], force_torques[3],
     //                          velocity[0], velocity[1], velocity[2], state_.x(QS::OMEZ),
     //                          phi, theta, psi,
     //                          sim_dt);
-    // if (save_flag_ && controller_save_.isFull()) {
-    //   controller_save_.save();
-    //   save_flag_ = false;
-    //   std::cout << ">>> PID controller output save is done" << std::endl;
-    // }
+
+    if (save_flag_ && controller_save_.isFull()) {
+      controller_save_.save();
+      save_flag_ = false;
+      std::cout << ">>> Controller output save is done" << std::endl;
+    }
 
     //************************************************************************
     //*************************** Data Recoder *******************************
@@ -137,8 +153,11 @@ void TrackerQuadrotor::init(void) {
   velocity_controller_ = VelocityController();
   velocity_controller_.setQuadrotorMass(dynamics_.getMass());
   velocity_controller_.setGravity(-Gz);
-  controller_save_ = ControllerSave();
+  controller_save_ = PIDControllerSave();
 
+  // mpc_controller_ = MPCController();
+  // mpc_controller_.init(0.01, 10);
+  // controller_save_ = MPCControllerSave();
 }
 
 bool TrackerQuadrotor::reset(void) {

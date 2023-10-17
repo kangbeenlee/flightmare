@@ -12,8 +12,10 @@
 #include "flightlib/objects/object_base.hpp"
 #include "flightlib/sensors/imu.hpp"
 #include "flightlib/sensors/rgb_camera.hpp"
+#include "flightlib/controller/mpc_controller.hpp"
 #include "flightlib/controller/velocity_controller.hpp"
-#include "flightlib/data/controller_save.hpp"
+#include "flightlib/data/pid_controller_save.hpp"
+#include "flightlib/data/mpc_controller_save.hpp"
 
 
 namespace flightlib {
@@ -97,6 +99,10 @@ class TrackerQuadrotor : ObjectBase {
   Vector<3> size_;
   bool collision_;
 
+//   // MPC controller for reinforcement leraning action
+//   MPCController mpc_controller_;
+//   std::vector<float> control_{0., 0., 0., 0.};
+
   // PID controller for reinforcement learning action
   VelocityController velocity_controller_;
   bool save_flag_{true};
@@ -112,7 +118,8 @@ class TrackerQuadrotor : ObjectBase {
   const Scalar torque_max_{7.9355}, torque_min_{0.0};
 
   // Save controller output
-  ControllerSave controller_save_;
+  PIDControllerSave controller_save_;
+//   MPCControllerSave controller_save_;
 
   // auxiliar variablers
   Vector<4> motor_omega_;
