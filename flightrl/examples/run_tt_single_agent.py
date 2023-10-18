@@ -45,7 +45,7 @@ def main():
     parser.add_argument("--use_z_score_normalization", type=bool, default=False, help="Z score normalization to observation")
 
     # Learning parameters
-    parser.add_argument('--max_training_timesteps', default=1000000, type=int, help='Number of training timesteps')
+    parser.add_argument('--max_training_timesteps', default=int(1e6), type=int, help='Number of training timesteps')
     parser.add_argument('--max_episode_steps', default=1000, type=int, help='Number of steps per episode')
     parser.add_argument('--evaluation_time_steps', default=5000, type=int, help='Number of steps for evaluation')
     parser.add_argument("--evaluation_times", type=int, default=5, help="Evaluate times")

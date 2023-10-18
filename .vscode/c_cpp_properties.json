@@ -3,7 +3,9 @@
         {
             "name": "Linux",
             "includePath": [
-                "${workspaceFolder}/**"
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/flightlib/include/**",
+                "/usr/local/include/acado"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",

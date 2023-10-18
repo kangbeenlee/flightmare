@@ -213,6 +213,45 @@ def main():
         tracker_cov_list.append(tracker_cov)
         time_list.append(time)
 
+
+    # Compute average target covariance norm graph
+    min_avg_cov = np.zeros([time.shape[0]])
+    for t in range(time.shape[0]):
+        for j in range(args.targets):
+            min_cov = np.inf
+            for i in range(args.trackers):
+                cov = np.sqrt(target_cov_list[i][j, 0, t]**2 + target_cov_list[i][j, 1, t]**2 + target_cov_list[i][j, 2, t]**2)
+                if cov < min_cov:
+                    min_cov = cov
+            min_avg_cov[t] += min_cov
+
+    min_avg_cov /= args.trackers
+    min_avg_cov = np.log(min_avg_cov)
+    plt.figure(figsize=(10, 5))
+    plt.plot(min_avg_cov)
+    plt.title('Average Covariance from multi tracker')
+    plt.xlabel('time')
+    plt.ylabel('average covariance')
+    # plt.show()
+
+
+
+    # t_ = 270
+    # print(time_list[0][t_])
+
+
+    # # Choose minimum covariance
+    # norm_list = []
+    # for i in range(args.trackers):
+    #     norm_list.append(np.linalg.norm(target_cov_list[i][j, :, t_]))
+
+    # idx = np.argmin(norm_list)
+    # print(norm_list)
+    # print('idx:', idx)
+
+    # sys.exit()
+
+
     # Show animation
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
@@ -232,24 +271,21 @@ def main():
             # Choose minimum covariance
             norm_list = []
             for i in range(args.trackers):
-                norm_list.append(np.sqrt(target_cov_list[i][j, 0, t]**2 + target_cov_list[i][j, 1, t]**2 + target_cov_list[i][j, 2, t]**2))
+                norm_list.append(np.linalg.norm(target_cov_list[i][j, :, t]))
 
-            idx, _ = min(enumerate(norm_list), key=lambda x: x[1])
+            idx = np.argmin(norm_list)
+            # print(norm_list)
+            # print('idx:', idx)
 
-            print(norm_list)
-            print(idx)
 
             ax.plot(target_estim_list[idx][j, 0, t], target_estim_list[idx][j, 1, t], target_estim_list[idx][j, 2, t], 'o', color='#ff7575', markersize=3, label='estimate')
             plot_3d_ellipsoid(target_estim_list[idx][j, 0, t], target_estim_list[idx][j, 1, t], target_estim_list[idx][j, 2, t],
-                              3*target_cov_list[idx][i, 0, t], 3*target_cov_list[idx][j, 1, t], 3*target_cov_list[idx][j, 2, t], ax)
-            # norm = np.sqrt(target_cov[i, 0, t] ** 2 + target_cov[i, 1, t] ** 2 + target_cov[i, 2, t] ** 2)
-            # print(f"Target {i} norm :", norm)
-            # total_norm += norm
+                              3*target_cov_list[idx][j, 0, t], 3*target_cov_list[idx][j, 1, t], 3*target_cov_list[idx][j, 2, t], ax)
 
-        # # Check target error covariance norm
-        # # state norm
-        # print("Total state norm :", total_norm)
-        # print("Average state norm :", total_norm / 4)
+            # for i in range(args.trackers):
+            #     ax.plot(target_estim_list[i][j, 0, t], target_estim_list[i][j, 1, t], target_estim_list[i][j, 2, t], 'o', color='#ff7575', markersize=3, label='estimate')
+            #     plot_3d_ellipsoid(target_estim_list[i][j, 0, t], target_estim_list[i][j, 1, t], target_estim_list[i][j, 2, t],
+            #                       3*target_cov_list[i][j, 0, t], 3*target_cov_list[i][j, 1, t], 3*target_cov_list[i][j, 2, t], ax)
 
 
         ax.axes.set_xlim3d(left=-10, right=10)
@@ -262,14 +298,14 @@ def main():
         ax.set_title("Time[s]:" + str(round(time_list[0][t], 2)))
 
     # Set up the animation
-    ani = FuncAnimation(fig, update, frames=len(time_list[0]), interval=10, repeat=False)
+    ani = FuncAnimation(fig, update, frames=500, interval=10, repeat=False)
 
     # Connect key event to figure
     fig.canvas.mpl_connect('key_press_event', lambda event: [exit(0) if event.key == 'escape' else None])
 
-    # # Save as GIF
-    # writer = PillowWriter(fps=20)  # Adjust fps (frames per second) as needed
-    # ani.save(args.data_dir + 'animation.gif', writer=writer)
+    # Save as GIF
+    writer = PillowWriter(fps=20)  # Adjust fps (frames per second) as needed
+    ani.save(args.data_dir + 'multi.gif', writer=writer)
 
     plt.show()
 
