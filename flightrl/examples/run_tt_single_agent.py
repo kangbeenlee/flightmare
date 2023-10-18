@@ -51,13 +51,13 @@ def main():
     parser.add_argument("--evaluation_times", type=int, default=5, help="Evaluate times")
     parser.add_argument('--memory_capacity', default=100000, type=int, help='Replay memory capacity')
     parser.add_argument('--training_start', default=2000, type=int, help='The number of timestep when training start')
+    parser.add_argument("--batch_size", default=128, type=int, help="Batch size")
     
     args = parser.parse_args()
     
     # Model hyperparameters
     if args.policy == "ddpg":
         hyperparameters = parser.add_argument_group('ddpg_hyperparameters')
-        hyperparameters.add_argument('--batch_size', default=256, type=int, help='Batch size')
         hyperparameters.add_argument("--gamma", type=float, default=0.99, help="Discount factor")
         hyperparameters.add_argument("--lr_actor", type=float, default=3e-4, help="Actor learning rate")
         hyperparameters.add_argument("--lr_critic", type=float, default=3e-4, help="Critic learning rate")
@@ -65,7 +65,6 @@ def main():
         hyperparameters.add_argument("--expl_noise", default=0.1, type=float, help="Std of Gaussian exploration noise")
     elif args.policy == "td3":
         hyperparameters = parser.add_argument_group('td3_hyperparameters')
-        hyperparameters.add_argument('--batch_size', default=256, type=int, help='Batch size')
         hyperparameters.add_argument("--gamma", default=0.99, type=float, help="Discount factor")
         hyperparameters.add_argument("--lr_actor", default=3e-4, type=float, help="Actor learning rate")
         hyperparameters.add_argument("--lr_critic", default=3e-4, type=float, help="Critic learning rate")
@@ -81,7 +80,7 @@ def main():
         hyperparameters.add_argument("--gae_lambda", default=0.95, type=float, help="Factor for trade-off of bias vs variance for Generalized Advantage Estimator")
         hyperparameters.add_argument("--learning_rate", default=3e-4, type=float, help="Actor learning rate")
         hyperparameters.add_argument("--n_epochs", default=15, type=int, help="Update policy for K epochs in one PPO update")
-        hyperparameters.add_argument("--batch_size", default=64, type=int, help="Batch size")
+        
         hyperparameters.add_argument("--ent_coef", default=0.0, type=float, help="Weight of entropy loss for exploration")
         hyperparameters.add_argument("--vf_coef", default=0.5, type=float, help="Weight of value loss")
         hyperparameters.add_argument("--max_grad_norm", default=0.5, type=float, help="Maximum gradient norm")

@@ -222,14 +222,14 @@ class Trainer:
         self.evaluation_time_steps = evaluation_time_steps
         self.evaluation_times = evaluation_times
         self.training_start = training_start
-        self.save_dir = os.path.join(save_dir, "model", "ddpg")
+        self.save_dir = os.path.join(save_dir, "model", "batch_{}_ddpg".format(batch_size))
         self.action_dim = action_dim
         self.max_action = max_action
         self.expl_noise = expl_noise
         self.replay_buffer = ReplayBuffer(obs_dim=obs_dim, action_dim=action_dim, memory_capacity=memory_capacity, batch_size=batch_size)
 
         # Tensorboard results
-        self.writer = SummaryWriter(log_dir="runs/single/ddpg/")
+        self.writer = SummaryWriter(log_dir="runs/single/batch_{}_ddpg/".format(batch_size))
 
     def evaluate_policy(self, env, policy, max_episode_steps, eval_episodes=10):
         avg_reward = 0.
