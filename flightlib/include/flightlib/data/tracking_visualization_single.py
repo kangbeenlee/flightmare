@@ -191,37 +191,25 @@ def main():
     parser.add_argument('--data_dir', type=str, default="/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/tracking_output/")
     parser.add_argument('--targets', type=int, default=4, help="The number of targets")
     parser.add_argument('--trackers', type=int, default=2, help="The number of trackers except itself (total # of tracker - 1)")
-    parser.add_argument('--tracker_id', type=int, default=2, help="The id of ego tracker (agent)")
+    parser.add_argument('--tracker_id', type=int, default=0, help="The id of ego tracker (agent)")
     args = parser.parse_args()
 
     data_path = os.path.join(args.data_dir, 'tracker_'+ str(args.tracker_id) + '/')
     ego_pos, ego_orien, target_gt, target_estim, target_cov, tracker_gt, tracker_estim, tracker_cov, time = load_data(data_path, args.targets, args.trackers)
 
+    # Compute average target covariance norm graph
+    avg_cov = np.zeros([time.shape[0]])
+    for i in range(args.targets):
+        avg_cov += np.sqrt(target_cov[i, 0, :] ** 2 + target_cov[i, 1, :] ** 2 + target_cov[i, 2, :] ** 2)
+    avg_cov /= args.targets
+    avg_cov = np.log(avg_cov)
 
-    # # Plot: position estimate
-    # fig = plt.figure(figsize=(6,6))
-    # ax = fig.add_subplot(projection='3d')
-
-    # # Ego drone
-    # ax.plot(ego_pos[0,:], ego_pos[1,:], ego_pos[2,:], 'kx', linewidth=3)
-
-    # # Targets and trackers
-    # for i in range(args.targets):
-    #     ax.plot(target_gt[i,0,:], target_gt[i,1,:], target_gt[i,2,:], '.', color='#6e0000', markersize=3, label='true', alpha=0.1)
-    #     ax.plot(target_estim[i,0,:], target_estim[i,1,:], target_estim[i,2,:], '.', color='#ff7575', markersize=3, label='estimate')
-    #     ax.plot(target_gt[i,0,0], target_gt[i,1,0], target_gt[i,2,0], '.', color='red', markersize=5, label='true initial position')
-    # for i in range(args.trackers):
-    #     ax.plot(tracker_gt[i,0,:], tracker_gt[i,1,:], tracker_gt[i,2,:], '.', color='#07006e', markersize=3, label='true', alpha=0.1)
-    #     ax.plot(tracker_estim[i,0,:], tracker_estim[i,1,:], tracker_estim[i,2,:], '.', color='#7a70ff', markersize=3, label='estimate')
-    #     ax.plot(tracker_gt[i,0,0], tracker_gt[i,1,0], tracker_gt[i,2,0], '.', color='blue', markersize=5, label='true initial position')
-    
-    # ax.set_xlabel('x, m')
-    # ax.set_ylabel('y, m')
-    # ax.set_zlabel('z, m')
-    # plt.title('Position Estimate')
-    # # plt.savefig(args.data_dir + 'position_estimation.png')
-    # plt.axis('equal')
-    # plt.show()
+    plt.figure(figsize=(10, 5))
+    plt.plot(avg_cov)
+    plt.title('Average Covariance from tracker {}'.format(args.tracker_id))
+    plt.xlabel('time')
+    plt.ylabel('average covariance')
+    plt.show()
 
     # Show animation
     fig = plt.figure()
@@ -233,10 +221,6 @@ def main():
         
         # Ego drone
         plot_ego(ego_pos[0, t], ego_pos[1, t], ego_pos[2, t], ego_orien[0, t], ego_orien[1, t], ego_orien[2, t], ego_orien[3, t], ax)
-
-        # #
-        # print("-------------------------------------")
-        # total_norm = 0.0
 
         # Targets and trackers
         for i in range(args.targets):
@@ -269,14 +253,14 @@ def main():
         ax.set_title("Time[s]:" + str(round(time[t], 2)))
 
     # Set up the animation
-    ani = FuncAnimation(fig, update, frames=len(time), interval=10, repeat=False)
+    ani = FuncAnimation(fig, update, frames=500, interval=10, repeat=False)
 
     # Connect key event to figure
     fig.canvas.mpl_connect('key_press_event', lambda event: [exit(0) if event.key == 'escape' else None])
 
-    # # Save as GIF
-    # writer = PillowWriter(fps=20)  # Adjust fps (frames per second) as needed
-    # ani.save(args.data_dir + 'animation.gif', writer=writer)
+    # Save as GIF
+    writer = PillowWriter(fps=20)  # Adjust fps (frames per second) as needed
+    ani.save(args.data_dir + 'ego_{}.gif'.format(args.tracker_id), writer=writer)
 
     plt.show()
 
