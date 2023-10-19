@@ -76,7 +76,9 @@ class TargetTrackingEnv {
   Scalar computeGlobalReward();
 
   // Random initialization
-  std::uniform_real_distribution<Scalar> uniform_dist_{-1.0, 1.0};
+  std::uniform_real_distribution<Scalar> uniform_plane_{0.0, 10.0}; // Uniform spawn 2d plane (10.0 ~ 20.0 m)
+  std::uniform_real_distribution<Scalar> uniform_altitude_{2.0, 8.0}; // Uniform spawn altitude (2.0 ~ 8.0 m)
+  std::uniform_real_distribution<Scalar> binary_dis_{0.0, 1.0}; // Uniform spawn altitude (2.0 ~ 8.0 m)
   std::random_device rd_;
   std::mt19937 random_gen_{rd_()};
 

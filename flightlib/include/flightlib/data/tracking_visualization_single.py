@@ -190,26 +190,26 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_dir', type=str, default="/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/tracking_output/")
     parser.add_argument('--targets', type=int, default=4, help="The number of targets")
-    parser.add_argument('--trackers', type=int, default=2, help="The number of trackers except itself (total # of tracker - 1)")
+    parser.add_argument('--trackers', type=int, default=0, help="The number of trackers except itself (total # of tracker - 1)")
     parser.add_argument('--tracker_id', type=int, default=0, help="The id of ego tracker (agent)")
     args = parser.parse_args()
 
     data_path = os.path.join(args.data_dir, 'tracker_'+ str(args.tracker_id) + '/')
     ego_pos, ego_orien, target_gt, target_estim, target_cov, tracker_gt, tracker_estim, tracker_cov, time = load_data(data_path, args.targets, args.trackers)
 
-    # Compute average target covariance norm graph
-    avg_cov = np.zeros([time.shape[0]])
-    for i in range(args.targets):
-        avg_cov += np.sqrt(target_cov[i, 0, :] ** 2 + target_cov[i, 1, :] ** 2 + target_cov[i, 2, :] ** 2)
-    avg_cov /= args.targets
-    avg_cov = np.log(avg_cov)
+    # # Compute average target covariance norm graph
+    # avg_cov = np.zeros([time.shape[0]])
+    # for i in range(args.targets):
+    #     avg_cov += np.sqrt(target_cov[i, 0, :] ** 2 + target_cov[i, 1, :] ** 2 + target_cov[i, 2, :] ** 2)
+    # avg_cov /= args.targets
+    # avg_cov = np.log(avg_cov)
 
-    plt.figure(figsize=(10, 5))
-    plt.plot(avg_cov)
-    plt.title('Average Covariance from tracker {}'.format(args.tracker_id))
-    plt.xlabel('time')
-    plt.ylabel('average covariance')
-    plt.show()
+    # plt.figure(figsize=(10, 5))
+    # plt.plot(avg_cov)
+    # plt.title('Average Covariance from tracker {}'.format(args.tracker_id))
+    # plt.xlabel('time')
+    # plt.ylabel('average covariance')
+    # plt.show()
 
     # Show animation
     fig = plt.figure()
@@ -243,8 +243,8 @@ def main():
             plot_3d_ellipsoid(tracker_estim[i, 0, t], tracker_estim[i, 1, t], tracker_estim[i, 2, t],
                               3*tracker_cov[i, 0, t], 3*tracker_cov[i, 1, t], 3*tracker_cov[i, 2, t], ax, target=False)
 
-        ax.axes.set_xlim3d(left=-10, right=10)
-        ax.axes.set_ylim3d(bottom=-10, top=10)
+        ax.axes.set_xlim3d(left=-20, right=20)
+        ax.axes.set_ylim3d(bottom=-20, top=20)
         ax.axes.set_zlim3d(bottom=0, top=10)
         ax.set_aspect('equal')
         ax.set_xlabel('x')
@@ -258,9 +258,9 @@ def main():
     # Connect key event to figure
     fig.canvas.mpl_connect('key_press_event', lambda event: [exit(0) if event.key == 'escape' else None])
 
-    # Save as GIF
-    writer = PillowWriter(fps=20)  # Adjust fps (frames per second) as needed
-    ani.save(args.data_dir + 'ego_{}.gif'.format(args.tracker_id), writer=writer)
+    # # Save as GIF
+    # writer = PillowWriter(fps=20)  # Adjust fps (frames per second) as needed
+    # ani.save(args.data_dir + 'ego_{}.gif'.format(args.tracker_id), writer=writer)
 
     plt.show()
 
