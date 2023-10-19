@@ -3,7 +3,7 @@ import numpy as np
 
 
 def test_model(env, model=None, render=False, max_episode_steps=500):
-    num_rollouts = 1001
+    num_rollouts = 601
 
     if render:
         env.connectUnity()

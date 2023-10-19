@@ -22,6 +22,9 @@ class KalmanFilter {
   void predict(void);
   void update(const Ref<Vector<3>> z, const Ref<Vector<3>> ego);
 
+  // Sensor noise equation
+  Scalar computeSensorNoise(const Scalar x);
+
   // Public get functions
   inline bool isInitialized(void) const { return initialized_; };
   inline Vector<3> getEstimatedPosition(void) const { return Vector<3>(x_[0], x_[2], x_[4]); };

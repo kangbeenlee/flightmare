@@ -71,6 +71,22 @@ void KalmanFilter::update(const Ref<Vector<3>> z, const Ref<Vector<3>> ego)
         R_ = rel.asDiagonal();
     }
 
+    // // Adaptive sensor noise
+    // if (adaptive_) {
+    //     Vector<3> rel = Vector<3>(abs(z[0] - ego[0]), abs(z[1] - ego[1]), abs(z[2] - ego[2]));
+    //     std::cout << "Before scaled std : " << rel[0] << ", " << rel[1] << ", " << rel[2] << std::endl;
+    //     Scalar scale = 1.0;
+
+    //     Scalar noise_x = scale * computeSensorNoise(rel[0]);
+    //     Scalar noise_y = scale * computeSensorNoise(rel[1]);
+    //     Scalar noise_z = scale * computeSensorNoise(rel[2]);
+    //     Vector<3> sigma_v(noise_x, noise_y, noise_z);
+
+    //     std::cout << "Adaptive sensor std : " << sigma_v[0] << ", " << sigma_v[1] << ", " << sigma_v[2] << std::endl;
+    //     R_ = rel.asDiagonal();
+    // }
+
+
     // Innovationf
     Matrix<3, 3> S = H_ * P_ * H_.transpose() + R_;
     // Kalman gain
@@ -79,6 +95,10 @@ void KalmanFilter::update(const Ref<Vector<3>> z, const Ref<Vector<3>> ego)
     x_ = x_ + K_ * (z - H_ * x_);
     // Covariance update
     P_ = (I_ - K_ * H_) * P_;
+}
+
+Scalar KalmanFilter::computeSensorNoise(const Scalar x) {
+    return 1 - exp(-0.005 * pow(x, 2)); // Get close to 1.0 when x gets close to 30.0 (m)
 }
 
 Matrix<3, 3> KalmanFilter::getPositionErrorCovariance() const
