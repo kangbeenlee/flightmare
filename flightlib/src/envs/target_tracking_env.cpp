@@ -122,7 +122,7 @@ bool TargetTrackingEnv<EnvBase>::reset(Ref<MatrixRowMajor<>> obs, Ref<MatrixRowM
   
   // tracker_positions.push_back(Vector<3>{0.0, -8.0, 5.0});
   for (int i = 0; i < num_envs_; i++) {
-    tracker_positions.push_back(Vector<3>{uniform_dist_(random_gen_) * 17.0, uniform_dist_(random_gen_) * 17.0, uniform_dist_(random_gen_) + 5});
+    tracker_positions.push_back(Vector<3>{uniform_dist_(random_gen_) * 30.0, uniform_dist_(random_gen_) * 30.0, uniform_dist_(random_gen_) + 5});
   }
   tracker_positions_ = tracker_positions;
 
