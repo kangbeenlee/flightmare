@@ -61,30 +61,30 @@ void KalmanFilter::update(const Ref<Vector<3>> z, const Ref<Vector<3>> ego)
 {
     if (!initialized_) throw std::runtime_error("Kalman filter is not initialized!");
 
-    // // Adaptive sensor noise
-    // if (adaptive_) {
-    //     Vector<3> rel = Vector<3>(abs(z[0] - ego[0]), abs(z[1] - ego[1]), abs(z[2] - ego[2]));
-    //     // std::cout << "Before scaled std : " << rel[0] << ", " << rel[1] << ", " << rel[2] << std::endl;
-    //     Scalar scale = 5.0;
-    //     Vector<3> sigma_v = rel * scale;
-    //     // std::cout << "Adaptive sensor std : " << sigma_v[0] << ", " << sigma_v[1] << ", " << sigma_v[2] << std::endl;
-    //     R_ = rel.asDiagonal();
-    // }
-
     // Adaptive sensor noise
     if (adaptive_) {
         Vector<3> rel = Vector<3>(abs(z[0] - ego[0]), abs(z[1] - ego[1]), abs(z[2] - ego[2]));
         // std::cout << "Before scaled std : " << rel[0] << ", " << rel[1] << ", " << rel[2] << std::endl;
-        Scalar scale = 0.1;
-
-        Scalar noise_x = scale * computeSensorNoise(rel[0]);
-        Scalar noise_y = scale * computeSensorNoise(rel[1]);
-        Scalar noise_z = scale * computeSensorNoise(rel[2]);
-        Vector<3> sigma_v(noise_x, noise_y, noise_z);
-
+        Scalar scale = 0.01;
+        Vector<3> sigma_v = rel * scale;
         // std::cout << "Adaptive sensor std : " << sigma_v[0] << ", " << sigma_v[1] << ", " << sigma_v[2] << std::endl;
         R_ = rel.asDiagonal();
     }
+
+    // // Adaptive sensor noise
+    // if (adaptive_) {
+    //     Vector<3> rel = Vector<3>(abs(z[0] - ego[0]), abs(z[1] - ego[1]), abs(z[2] - ego[2]));
+    //     // std::cout << "Before scaled std : " << rel[0] << ", " << rel[1] << ", " << rel[2] << std::endl;
+    //     Scalar scale = 0.1;
+
+    //     Scalar noise_x = scale * computeSensorNoise(rel[0]);
+    //     Scalar noise_y = scale * computeSensorNoise(rel[1]);
+    //     Scalar noise_z = scale * computeSensorNoise(rel[2]);
+    //     Vector<3> sigma_v(noise_x, noise_y, noise_z);
+
+    //     // std::cout << "Adaptive sensor std : " << sigma_v[0] << ", " << sigma_v[1] << ", " << sigma_v[2] << std::endl;
+    //     R_ = rel.asDiagonal();
+    // }
 
 
     // Innovationf

@@ -235,7 +235,7 @@ def main():
             plot_3d_ellipsoid(tracker_estim[i, 0, t], tracker_estim[i, 1, t], tracker_estim[i, 2, t],
                               3*tracker_cov[i, 0, t], 3*tracker_cov[i, 1, t], 3*tracker_cov[i, 2, t], ax, target=False)
 
-        # plot_3d_ellipsoid(0, 0, 0, 15, 15, 15, ax, target=True)
+        # plot_3d_ellipsoid(0, 0, 0, 15, 15, 15, ax, target=False)
 
         ax.axes.set_xlim3d(left=-20, right=20)
         ax.axes.set_ylim3d(bottom=-20, top=20)
