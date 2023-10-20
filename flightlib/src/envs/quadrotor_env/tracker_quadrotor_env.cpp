@@ -552,7 +552,7 @@ Scalar TrackerQuadrotorEnv::rewardFunction()
   for (int i = 0; i < num_targets_; ++i) {
     Vector<3> position = target_kalman_filters_[i]->getEstimatedPosition();
     Scalar distance = computeEuclideanDistance(quad_state_.p, position);
-    Scalar elem = exp(-distance * 0.6);
+    Scalar elem = exp(-distance * 1.5);
     numerator.push_back(elem);
     denominator += elem;
   }
@@ -620,10 +620,12 @@ Scalar TrackerQuadrotorEnv::rewardFunction()
   Scalar cov_reward = 0.0;
   for (int i = 0; i < num_targets_; ++i) {
     Matrix<3, 3> cov = target_kalman_filters_[i]->getPositionErrorCovariance();
-    // std::cout << i << " target cov norm : " << cov.norm() << std::endl;
-
     Scalar target_cov_norm = cov.norm();
-    Scalar target_cov_reward = exp(-0.01 * pow(target_cov_norm, 3));
+    Scalar target_cov_reward = exp(-0.01 * pow(target_cov_norm, 2));
+
+    // std::cout << i << " target cov norm   : " << cov.norm() << std::endl;
+    // std::cout << i << " target cov reward : " << target_cov_reward << std::endl;
+
     cov_reward += heading_weight[i] * target_cov_reward;
   }
 
@@ -637,11 +639,11 @@ Scalar TrackerQuadrotorEnv::rewardFunction()
 
   Scalar total_reward = c1 * heading_reward + c2 * cov_reward + c3 * cmd_reward;
 
-  std::cout << "-------------------------------------" << std::endl;
-  std::cout << "heading reward : " << c1 * heading_reward << std::endl;
-  std::cout << "cov reward     : " << c2 * cov_reward << std::endl;
-  std::cout << "cmd reward     : " << c3 * cmd_reward << std::endl;
-  std::cout << "total reward   : " << total_reward << std::endl;
+  // std::cout << "-------------------------------------" << std::endl;
+  // std::cout << "heading reward : " << c1 * heading_reward << std::endl;
+  // std::cout << "cov reward     : " << c2 * cov_reward << std::endl;
+  // std::cout << "cmd reward     : " << c3 * cmd_reward << std::endl;
+  // std::cout << "total reward   : " << total_reward << std::endl;
 
   return total_reward;
 }

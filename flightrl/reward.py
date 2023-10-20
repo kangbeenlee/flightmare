@@ -4,14 +4,17 @@ import matplotlib.pyplot as plt
 
 
 
+# def func(x):
+#     return 1 - np.exp(-0.005 * (x ** 2))
+
 def func(x):
-    return 1 - np.exp(-0.005 * (x ** 2))
+    return np.exp(-0.01 * (x ** 3))
+    # return np.exp(-0.01 * (x ** 3))
 
 # Scalar cov_reward = exp(-0.1 * pow(avg_position_cov_norm, 5));
+# Scalar target_cov_reward = exp(-0.01 * pow(target_cov_norm, 3));
 
 x1 = np.linspace(0, 30, 100)
-# x2 = np.linspace(1.5, 10, 100)
-# y1 = np.exp(-10. * x1 ** 3)
 
 # alpha = -0.01
 # beta = 5
@@ -32,6 +35,5 @@ print(func(20.0))
 print(func(30.0))
 
 plt.plot(x1, y1)
-# plt.plot(x2, y2)
 # plt.axis('equal')
 plt.show()
