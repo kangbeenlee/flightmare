@@ -13,8 +13,10 @@ def func(x):
 
 # Scalar cov_reward = exp(-0.1 * pow(avg_position_cov_norm, 5));
 # Scalar target_cov_reward = exp(-0.01 * pow(target_cov_norm, 3));
+# exp(-0.01 * pow(target_cov_norm, 3));
+# exp(-10.0 * pow(theta, 3));
 
-x1 = np.linspace(0, 30, 100)
+x1 = np.linspace(0, 50, 100)
 
 # alpha = -0.01
 # beta = 5
