@@ -347,28 +347,28 @@ Scalar TrackerQuadrotorEnv::trackerStep(const Ref<Vector<>> act, Ref<Vector<>> o
   //*************************** Data Recoder *******************************
   //************************************************************************
   
-  // Record tracking data
-  std::vector<Vector<3>> target_estim_pos, tracker_estim_pos;
-  std::vector<Matrix<6, 6>> target_cov, tracker_cov;
+  // // Record tracking data
+  // std::vector<Vector<3>> target_estim_pos, tracker_estim_pos;
+  // std::vector<Matrix<6, 6>> target_cov, tracker_cov;
 
-  for (int i = 0; i < num_targets_; i++) {
-    target_estim_pos.push_back(target_kalman_filters_[i]->getEstimatedPosition());
-    target_cov.push_back(target_kalman_filters_[i]->getErrorCovariance());
-  }
-  for (int i = 0; i < num_trackers_; i++) {
-    tracker_estim_pos.push_back(tracker_kalman_filters_[i]->getEstimatedPosition());
-    tracker_cov.push_back(tracker_kalman_filters_[i]->getErrorCovariance());;
-  }
+  // for (int i = 0; i < num_targets_; i++) {
+  //   target_estim_pos.push_back(target_kalman_filters_[i]->getEstimatedPosition());
+  //   target_cov.push_back(target_kalman_filters_[i]->getErrorCovariance());
+  // }
+  // for (int i = 0; i < num_trackers_; i++) {
+  //   tracker_estim_pos.push_back(tracker_kalman_filters_[i]->getEstimatedPosition());
+  //   tracker_cov.push_back(tracker_kalman_filters_[i]->getErrorCovariance());;
+  // }
 
-  if (!tracking_save_->isFull()) {
-    Vector<4> quadternion(quad_state_.x(QS::ATTW), quad_state_.x(QS::ATTX), quad_state_.x(QS::ATTY), quad_state_.x(QS::ATTZ));
-    tracking_save_->store(quad_state_.p, quadternion, gt_target_positions_, target_estim_pos, target_cov, gt_tracker_positions_, tracker_estim_pos, tracker_cov, sim_dt_);
-  }
-  else if (tracking_flag_ && tracking_save_->isFull()) {
-    tracking_save_->save();
-    tracking_flag_ = false;
-    std::cout << ">>> Tracker " << agent_id_ << "'s tracking output save is done" << std::endl;
-  }
+  // if (!tracking_save_->isFull()) {
+  //   Vector<4> quadternion(quad_state_.x(QS::ATTW), quad_state_.x(QS::ATTX), quad_state_.x(QS::ATTY), quad_state_.x(QS::ATTZ));
+  //   tracking_save_->store(quad_state_.p, quadternion, gt_target_positions_, target_estim_pos, target_cov, gt_tracker_positions_, tracker_estim_pos, tracker_cov, sim_dt_);
+  // }
+  // else if (tracking_flag_ && tracking_save_->isFull()) {
+  //   tracking_save_->save();
+  //   tracking_flag_ = false;
+  //   std::cout << ">>> Tracker " << agent_id_ << "'s tracking output save is done" << std::endl;
+  // }
 
   // // Record sensor data, just for one target case
   // for (int i = 0; i < target_positions.size(); i++) {
