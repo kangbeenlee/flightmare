@@ -115,8 +115,10 @@ Scalar TargetQuadrotorEnv::targetStep(Ref<Vector<>> obs)
   Eigen::VectorXf desPosVelAcc = trajectory_.getDesiredPosVelAcc(sim_time_);
   // std::cout << ">>> sim time: " << sim_time_ << std::endl;
   // std::cout << ">>> desPosVelAcc: " << desPosVelAcc[0] << ", " << desPosVelAcc[1] << ", " << desPosVelAcc[2] << std::endl;
-  quad_state_.x[QS::POSX] = desPosVelAcc[0] + init_position_[0];
-  quad_state_.x[QS::POSY] = desPosVelAcc[1] + init_position_[1];
+  // quad_state_.x[QS::POSX] = desPosVelAcc[0] + init_position_[0];
+  // quad_state_.x[QS::POSY] = desPosVelAcc[1] + init_position_[1];
+  quad_state_.x[QS::POSX] = desPosVelAcc[0];
+  quad_state_.x[QS::POSY] = desPosVelAcc[1];  
   quad_state_.x[QS::POSZ] = desPosVelAcc[2];
   target_ptr_->setState(quad_state_);
 

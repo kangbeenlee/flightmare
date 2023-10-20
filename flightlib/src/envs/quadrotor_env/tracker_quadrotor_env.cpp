@@ -601,7 +601,6 @@ Scalar TrackerQuadrotorEnv::rewardFunction()
       exit(0);
     }
 
-
     Scalar target_heading_reward = exp(-10.0 * pow(theta, 3));
     heading_reward += heading_weight[i] * target_heading_reward;
   }
@@ -638,11 +637,11 @@ Scalar TrackerQuadrotorEnv::rewardFunction()
 
   Scalar total_reward = c1 * heading_reward + c2 * cov_reward + c3 * cmd_reward;
 
-  // std::cout << "-------------------------------------" << std::endl;
-  // std::cout << "heading reward : " << c1 * heading_reward << std::endl;
-  // std::cout << "cov reward     : " << c2 * cov_reward << std::endl;
-  // std::cout << "cmd reward     : " << c3 * cmd_reward << std::endl;
-  // std::cout << "total reward   : " << total_reward << std::endl;
+  std::cout << "-------------------------------------" << std::endl;
+  std::cout << "heading reward : " << c1 * heading_reward << std::endl;
+  std::cout << "cov reward     : " << c2 * cov_reward << std::endl;
+  std::cout << "cmd reward     : " << c3 * cmd_reward << std::endl;
+  std::cout << "total reward   : " << total_reward << std::endl;
 
   return total_reward;
 }

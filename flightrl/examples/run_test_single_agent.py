@@ -32,19 +32,19 @@ def test_model(env, render=False):
         while not (done or (epi_step > max_episode_steps)):
             epi_step += 1
             
-            # # vx, vy, vz, wz (m/s, m/s, m/s, rad/s)
-            # act = np.array([[0.0, 0.0, 0.0, 0.0]], dtype=np.float32)
+            # vx, vy, vz, wz (m/s, m/s, m/s, rad/s)
+            act = np.array([[0.0, 0.0, 0.0, 0.0]], dtype=np.float32)
             
-            # Step input response test
-            vx = 0.0
-            vy = 3.0
-            vz = 0.0
-            wz = 0.0
+            # # Step input response test
+            # vx = 0.0
+            # vy = 3.0
+            # vz = 0.0
+            # wz = 0.0
 
-            if ((epi_step // 150) % 2 == 0): # 3secs
-                act = np.array([[vx, vy, vz, wz]], dtype=np.float32)
-            else:
-                act = np.array([[-vx, -vy, -vz, -wz]], dtype=np.float32)
+            # if ((epi_step // 150) % 2 == 0): # 3secs
+            #     act = np.array([[vx, vy, vz, wz]], dtype=np.float32)
+            # else:
+            #     act = np.array([[-vx, -vy, -vz, -wz]], dtype=np.float32)
 
             obs, rew, done, infos = env.step(act)
 

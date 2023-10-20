@@ -258,9 +258,9 @@ def main():
     # Connect key event to figure
     fig.canvas.mpl_connect('key_press_event', lambda event: [exit(0) if event.key == 'escape' else None])
 
-    # # Save as GIF
-    # writer = PillowWriter(fps=20)  # Adjust fps (frames per second) as needed
-    # ani.save(args.data_dir + 'ego_{}.gif'.format(args.tracker_id), writer=writer)
+    # Save as GIF
+    writer = PillowWriter(fps=20)  # Adjust fps (frames per second) as needed
+    ani.save(args.data_dir + 'ego_{}.gif'.format(args.tracker_id), writer=writer)
 
     plt.show()
 
