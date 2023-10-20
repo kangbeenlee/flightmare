@@ -113,6 +113,26 @@ void TargetTrackingEnv<EnvBase>::init(void)
   trajectories_.push_back(trajectory3);
   trajectories_.push_back(trajectory4);
 
+  // target_positions_.push_back(Vector<3>{-7.0, 14.0, 5.0});
+  // target_positions_.push_back(Vector<3>{7.0, 0.0, 5.0});
+
+  // // Target minimum snap trajectory
+  // Eigen::MatrixXf way_points(5, 3); // Should be n
+  // Eigen::VectorXf segment_times(4); // Should be n-1
+
+  // way_points << -7, 14, 5,   -14, 7, 5,   -7, 0, 5,   0, 7, 5,   -7, 14, 5;
+  // segment_times << 4.0, 4.0, 4.0, 4.0;
+  // MinimumSnapTrajectory trajectory1 = MinimumSnapTrajectory();
+  // trajectory1.setMinimumSnapTrajectory(way_points, segment_times);
+
+  // way_points << 7, 0, 5,   0, 7, 5,   7, 14, 5,   14, 7, 5,   7, 0, 5;
+  // segment_times << 4.0, 4.0, 4.0, 4.0;
+  // MinimumSnapTrajectory trajectory2 = MinimumSnapTrajectory();
+  // trajectory2.setMinimumSnapTrajectory(way_points, segment_times);
+
+  // trajectories_.push_back(trajectory1);
+  // trajectories_.push_back(trajectory2);
+
   // Set Unity
   setUnity(unity_render_);
 

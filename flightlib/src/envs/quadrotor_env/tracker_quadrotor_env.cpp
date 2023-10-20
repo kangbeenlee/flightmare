@@ -476,7 +476,7 @@ Scalar TrackerQuadrotorEnv::getIndividualHeadingReward() {
 
 
   // Compute negative softmax
-  std::vector<Scalar> heading_weight;
+  std::vector<Scalar> range_weight;
   for (int i = 0; i < num_targets_; ++i) {
     Scalar weight = numerator[i] / denominator;
 
@@ -486,7 +486,7 @@ Scalar TrackerQuadrotorEnv::getIndividualHeadingReward() {
       exit(0);
     }
 
-    heading_weight.push_back(weight);
+    range_weight.push_back(weight);
   }  
 
   // Compute heading reward
@@ -515,7 +515,7 @@ Scalar TrackerQuadrotorEnv::getIndividualHeadingReward() {
 
 
     Scalar target_heading_reward = exp(-10.0 * pow(theta, 3));
-    heading_reward += heading_weight[i] * target_heading_reward;
+    heading_reward += range_weight[i] * target_heading_reward;
   }
 
   if (std::isnan(heading_reward)) {
@@ -542,17 +542,16 @@ Scalar TrackerQuadrotorEnv::getTargetPositionCovNorm(const int i) {
 Scalar TrackerQuadrotorEnv::rewardFunction()
 {
   // Outter coefficient
-  Scalar c1 = 0.0;
-  Scalar c2 = 1.0;
-  Scalar c3 = -1e-4;
+  Scalar c1 = 1.0;
+  Scalar c2 = -1e-4;
 
-  // 1. Heading reward
+  // Range based weight
   std::vector<Scalar> numerator;
   Scalar denominator = 0.0;
   for (int i = 0; i < num_targets_; ++i) {
     Vector<3> position = target_kalman_filters_[i]->getEstimatedPosition();
     Scalar distance = computeEuclideanDistance(quad_state_.p, position);
-    Scalar elem = exp(-distance * 1.5);
+    Scalar elem = exp(-distance * 0.6);
     numerator.push_back(elem);
     denominator += elem;
   }
@@ -564,7 +563,7 @@ Scalar TrackerQuadrotorEnv::rewardFunction()
   }
 
   // Compute negative softmax
-  std::vector<Scalar> heading_weight;
+  std::vector<Scalar> range_weight;
   for (int i = 0; i < num_targets_; ++i) {
     Scalar weight = numerator[i] / denominator;
 
@@ -574,79 +573,152 @@ Scalar TrackerQuadrotorEnv::rewardFunction()
       exit(0);
     }
 
-    heading_weight.push_back(weight);
+    range_weight.push_back(weight);
   }
 
-  // Compute heading reward
-  Scalar heading_reward = 0.0;
-  Vector<3> h = quad_state_.q().toRotationMatrix() * Vector<3>(1, 0, 0); // Ego tracker heading vector
-  h = h / (h.norm() + 1e-8);
-  for (int i = 0; i < num_targets_; ++i) {
-    Vector<3> target_position = target_kalman_filters_[i]->getEstimatedPosition();
-    Vector<3> d = target_position - quad_state_.p; // Relative distance to target
-    d = d / (d.norm() + 1e-8);
-    // Scalar theta = acos(h.dot(d));
-
-    Scalar dot_value = h.dot(d);
-    dot_value = std::max(static_cast<Scalar>(-1.0), std::min(static_cast<Scalar>(1.0), dot_value));
-    Scalar theta = acos(dot_value);
-
-
-    if (std::isnan(theta)) {
-      std::cout << "nan occurs from individual theta" << std::endl;
-      std::cout << "theta : " << theta << std::endl;
-      std::cout << "dot_value : " << dot_value << std::endl;
-      std::cout << "h : " << h << std::endl;
-      std::cout << "d : " << d << std::endl;
-      exit(0);
-    }
-
-    Scalar target_heading_reward = exp(-10.0 * pow(theta, 3));
-    heading_reward += heading_weight[i] * target_heading_reward;
-  }
-
-
-  // // 2. Target Covariance reward
-  // Scalar avg_position_cov_norm = 0.0;
-  // for (int i = 0; i < num_targets_; ++i) {
-  //   Matrix<3, 3> position_cov = target_kalman_filters_[i]->getPositionErrorCovariance();
-  //   avg_position_cov_norm += position_cov.norm();
-  // }
-  // avg_position_cov_norm /= num_targets_;
-  // Scalar cov_reward = exp(-0.1 * pow(avg_position_cov_norm, 5));
-
-
-  // 2. New Covariance reward
+  // 1. New Covariance reward
   Scalar cov_reward = 0.0;
+  std::vector<Scalar> cov_list;
   for (int i = 0; i < num_targets_; ++i) {
     Matrix<3, 3> cov = target_kalman_filters_[i]->getPositionErrorCovariance();
     Scalar target_cov_norm = cov.norm();
-    Scalar target_cov_reward = exp(-0.01 * pow(target_cov_norm, 2));
+    Scalar target_cov_reward = exp(-0.01 * pow(target_cov_norm, 3));
 
     // std::cout << i << " target cov norm   : " << cov.norm() << std::endl;
     // std::cout << i << " target cov reward : " << target_cov_reward << std::endl;
+    cov_list.push_back(target_cov_reward);
 
-    cov_reward += heading_weight[i] * target_cov_reward;
+    cov_reward += range_weight[i] * target_cov_reward;
   }
-
-  // std::cout << "cov reward : " << cov_reward << std::endl;
-
-
 
   // 3. Smooth action reward (penalty)
   Scalar cmd_reward = pow((quad_act_ - prev_act_).norm(), 2);
   prev_act_ = quad_act_;
 
-  Scalar total_reward = c1 * heading_reward + c2 * cov_reward + c3 * cmd_reward;
+  Scalar total_reward = c1 * cov_reward + c2 * cmd_reward;
 
   // std::cout << "-------------------------------------" << std::endl;
-  // std::cout << "heading reward : " << c1 * heading_reward << std::endl;
-  // std::cout << "cov reward     : " << c2 * cov_reward << std::endl;
-  // std::cout << "cmd reward     : " << c3 * cmd_reward << std::endl;
+  // std::cout << "cov reward     : " << c1 * cov_reward << std::endl;
+  // std::cout << "cmd reward     : " << c2 * cmd_reward << std::endl;
   // std::cout << "total reward   : " << total_reward << std::endl;
 
   return total_reward;
 }
+
+// Scalar TrackerQuadrotorEnv::rewardFunction()
+// {
+//   // Range based weight
+//   std::vector<Scalar> numerator;
+//   Scalar denominator = 0.0;
+//   for (int i = 0; i < num_targets_; ++i) {
+//     Vector<3> position = target_kalman_filters_[i]->getEstimatedPosition();
+//     Scalar distance = computeEuclideanDistance(quad_state_.p, position);
+//     Scalar elem = exp(-distance * 1.5);
+//     numerator.push_back(elem);
+//     denominator += elem;
+//   }
+
+//   if (std::isnan(denominator)) {
+//     std::cout << "nan occurs from individual denominator" << std::endl;
+//     std::cout << "denominator : " << denominator << std::endl;
+//     exit(0);
+//   }
+
+//   // Compute negative softmax
+//   std::vector<Scalar> range_weight;
+//   for (int i = 0; i < num_targets_; ++i) {
+//     Scalar weight = numerator[i] / denominator;
+//     if (std::isnan(weight)) {
+//       std::cout << "nan occurs from individual weight" << std::endl;
+//       std::cout << "weight : " << weight << std::endl;
+//       exit(0);
+//     }
+//     range_weight.push_back(weight);
+//   }
+
+
+//   // 1. New Covariance reward
+//   Scalar cov_reward = 0.0;
+//   for (int i = 0; i < num_targets_; ++i) {
+//     Matrix<3, 3> cov = target_kalman_filters_[i]->getPositionErrorCovariance();
+//     Scalar target_cov_norm = cov.norm();
+//     Scalar target_cov_reward = exp(-0.01 * pow(target_cov_norm, 2));
+
+//     // std::cout << i << " target cov norm   : " << cov.norm() << std::endl;
+//     // std::cout << i << " target cov reward : " << target_cov_reward << std::endl;
+
+//     cov_reward += range_weight[i] * target_cov_reward;
+//   }
+
+//   // 2. Uncertainty target reward
+//   // 2.1. Find max covariance norm target
+//   Scalar max_cov = 0.0;
+//   int max_cov_target_id = -1;
+//   for (int i = 0; i < num_targets_; ++i) {
+//     Matrix<3, 3> cov = target_kalman_filters_[i]->getPositionErrorCovariance();
+//     Scalar target_cov_norm = cov.norm();
+//     if (max_cov < target_cov_norm) {
+//       max_cov = target_cov_norm;
+//       max_cov_target_id = i;
+//     }
+//   }
+
+//   if (max_cov_target_id == -1) {
+//     std::cout << "Impossible to find max cov target" << d << std::endl;
+//     exit(0);
+//   }
+
+//   // 2.2. Compute weight (coefficient c2)
+//   Scalar c2 = 0.0;
+//   Scalar c1 = 1.0 - c2;
+//   Scalar c3 = -1e-4;
+
+//   // 2.3. Compute heading reward to max cov target
+//   Scalar heading_reward = 0.0;
+//   Vector<3> h = quad_state_.q().toRotationMatrix() * Vector<3>(1, 0, 0); // Ego tracker heading vector
+//   h = h / (h.norm() + 1e-8);
+
+//   Vector<3> target_position = target_kalman_filters_[max_cov_target_id]->getEstimatedPosition();
+//   Vector<3> d = target_position - quad_state_.p; // Relative distance to target
+//   d = d / (d.norm() + 1e-8);
+
+//   Scalar dot_value = h.dot(d);
+//   dot_value = std::max(static_cast<Scalar>(-1.0), std::min(static_cast<Scalar>(1.0), dot_value));
+//   Scalar theta = acos(dot_value);
+
+//   if (std::isnan(theta)) {
+//     std::cout << "nan occurs from individual theta" << std::endl;
+//     std::cout << "theta : " << theta << std::endl;
+//     std::cout << "dot_value : " << dot_value << std::endl;
+//     std::cout << "h : " << h << std::endl;
+//     std::cout << "d : " << d << std::endl;
+//     exit(0);
+//   }
+//   heading_reward = exp(-10.0 * pow(theta, 3));
+
+//   // 2.4. Compute range reward to max cov target
+//   Scalar range = 0.0;
+//   Scalar range_reward = exp(-0.003 * pow(range, 2));
+
+//   // 2.5. Uncertainty target reward
+//   Scalar uncertainty_reward = (heading_reward + range_reward) / 2.0;
+
+//   // 3. Smooth action reward (penalty)
+//   Scalar cmd_reward = pow((quad_act_ - prev_act_).norm(), 2);
+//   prev_act_ = quad_act_;
+
+//   Scalar total_reward = c1 * cov_reward + c2 * uncertainty_reward + c3 * cmd_reward;
+
+//   // std::cout << "-------------------------------------" << std::endl;
+//   // std::cout << "c1 and c2               : " << c1 << ", " << c2 << std::endl;
+//   // std::cout << "cov reward              : " << cov_reward << std::endl;
+//   // std::cout << "uncertainty reward      : " << uncertainty_reward << std::endl;
+//   // std::cout << "c1 * cov reward         : " << c1 * cov_reward << std::endl;
+//   // std::cout << "c2 * uncertainty reward : " << c2 * uncertainty_reward << std::endl;
+//   // std::cout << "total reward            : " << total_reward << std::endl;
+
+//   return total_reward;
+// }
 
 Scalar TrackerQuadrotorEnv::computeEuclideanDistance(Ref<Vector<3>> p1, Ref<Vector<3>> p2) {
   return sqrt(pow(p1[0] - p2[0], 2) + pow(p1[1] - p2[1], 2) + pow(p1[2] - p2[2], 2));

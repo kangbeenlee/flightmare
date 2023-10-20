@@ -228,20 +228,14 @@ def main():
             ax.plot(target_estim[i, 0, t], target_estim[i, 1, t], target_estim[i, 2, t], 'o', color='#ff7575', markersize=3, label='estimate')
             plot_3d_ellipsoid(target_estim[i, 0, t], target_estim[i, 1, t], target_estim[i, 2, t],
                               3*target_cov[i, 0, t], 3*target_cov[i, 1, t], 3*target_cov[i, 2, t], ax)
-            # norm = np.sqrt(target_cov[i, 0, t] ** 2 + target_cov[i, 1, t] ** 2 + target_cov[i, 2, t] ** 2)
-            # print(f"Target {i} norm :", norm)
-            # total_norm += norm
-
-        # # Check target error covariance norm
-        # # state norm
-        # print("Total state norm :", total_norm)
-        # print("Average state norm :", total_norm / 4)
 
         for i in range(args.trackers):
             ax.plot(tracker_gt[i, 0, t], tracker_gt[i, 1, t], tracker_gt[i, 2, t], 'o', color='#1100fa', markersize=3, label='true')
             ax.plot(tracker_estim[i, 0, t], tracker_estim[i, 1, t], tracker_estim[i, 2, t], 'o', color='#7a70ff', markersize=3, label='estimate')
             plot_3d_ellipsoid(tracker_estim[i, 0, t], tracker_estim[i, 1, t], tracker_estim[i, 2, t],
                               3*tracker_cov[i, 0, t], 3*tracker_cov[i, 1, t], 3*tracker_cov[i, 2, t], ax, target=False)
+
+        # plot_3d_ellipsoid(0, 0, 0, 15, 15, 15, ax, target=True)
 
         ax.axes.set_xlim3d(left=-20, right=20)
         ax.axes.set_ylim3d(bottom=-20, top=20)
@@ -258,9 +252,9 @@ def main():
     # Connect key event to figure
     fig.canvas.mpl_connect('key_press_event', lambda event: [exit(0) if event.key == 'escape' else None])
 
-    # Save as GIF
-    writer = PillowWriter(fps=20)  # Adjust fps (frames per second) as needed
-    ani.save(args.data_dir + 'ego_{}.gif'.format(args.tracker_id), writer=writer)
+    # # Save as GIF
+    # writer = PillowWriter(fps=20)  # Adjust fps (frames per second) as needed
+    # ani.save(args.data_dir + 'ego_{}.gif'.format(args.tracker_id), writer=writer)
 
     plt.show()
 
