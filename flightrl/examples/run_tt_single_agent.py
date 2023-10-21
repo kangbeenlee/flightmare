@@ -113,7 +113,7 @@ def main():
     else:
         cfg["env"]["num_envs"] = 1
         cfg["env"]["num_threads"] = 10
-        cfg["env"]["num_targets"] = 2
+        cfg["env"]["num_targets"] = 4
         cfg["env"]["scene_id"] = 0
     if args.render:
         cfg["env"]["render"] = "yes"
