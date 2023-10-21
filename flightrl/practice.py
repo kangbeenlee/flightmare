@@ -7,7 +7,7 @@ a = np.array([10., 10.5, 12.])
 # print(np.exp(a))
 
 # softmax
-a = a * 0.6
+a = a * 1.0
 b = np.exp(-a) / np.sum(np.exp(-a))
 print(b)
 print(np.sum(b))

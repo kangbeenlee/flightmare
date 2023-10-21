@@ -58,67 +58,32 @@ void TargetTrackingEnv<EnvBase>::init(void)
     targets_.push_back(std::make_unique<TargetQuadrotorEnv>());
   }
 
-  // Set initial start position
-  target_positions_.push_back(Vector<3>{-4.0, 8.0, 5.0});
-  target_positions_.push_back(Vector<3>{4.0, 0.0, 5.0});
-  target_positions_.push_back(Vector<3>{-4.0, 0.0, 5.0});
-  target_positions_.push_back(Vector<3>{4.0, -8.0, 5.0});
-
-  // Target minimum snap trajectory
-  Eigen::MatrixXf way_points(5, 3); // Should be n
-  Eigen::VectorXf segment_times(4); // Should be n-1
-
-  way_points << -4, 8, 5,   -8, 4, 5,   -8, 0, 5,   0, 8, 5,   -4, 8, 5; // 8m x 8m circle
-  segment_times << 2.0, 2.0, 2.0, 2.0;
-  MinimumSnapTrajectory trajectory1 = MinimumSnapTrajectory();
-  trajectory1.setMinimumSnapTrajectory(way_points, segment_times);
-
-  way_points << 4, 0, 5,   0, 4, 5,   4, 8, 5,   8, 4, 5,   4, 0, 5; // 8m x 8m circle
-  segment_times << 2.0, 2.0, 2.0, 2.0;
-  MinimumSnapTrajectory trajectory2 = MinimumSnapTrajectory();
-  trajectory2.setMinimumSnapTrajectory(way_points, segment_times);
-
-  way_points << -4, 0, 5,   0, -4, 5,   -4, -8, 5,   -8, -4, 0,   -4, 0, 5; // 8m x 8m circle
-  segment_times << 2.0, 2.0, 2.0, 2.0;
-  MinimumSnapTrajectory trajectory3 = MinimumSnapTrajectory();
-  trajectory3.setMinimumSnapTrajectory(way_points, segment_times);
-
-  way_points << 4, -8, 5,   8, -4, 5,   4, 0, 5,   0, -4, 5,   4, -8, 5; // 8m x 8m circle
-  segment_times << 2.0, 2.0, 2.0, 2.0;
-  MinimumSnapTrajectory trajectory4 = MinimumSnapTrajectory();
-  trajectory4.setMinimumSnapTrajectory(way_points, segment_times);
-
-  trajectories_.push_back(trajectory1);
-  trajectories_.push_back(trajectory2);
-  trajectories_.push_back(trajectory3);
-  trajectories_.push_back(trajectory4);
-
-
-  // target_positions_.push_back(Vector<3>{-7.0, 14.0, 5.0});
-  // target_positions_.push_back(Vector<3>{7.0, 0.0, 5.0});
-  // target_positions_.push_back(Vector<3>{-7.0, 0.0, 5.0});
-  // target_positions_.push_back(Vector<3>{7.0, -14.0, 5.0});
+  // // Set initial start position
+  // target_positions_.push_back(Vector<3>{-4.0, 8.0, 5.0});
+  // target_positions_.push_back(Vector<3>{4.0, 0.0, 5.0});
+  // target_positions_.push_back(Vector<3>{-4.0, 0.0, 5.0});
+  // target_positions_.push_back(Vector<3>{4.0, -8.0, 5.0});
 
   // // Target minimum snap trajectory
   // Eigen::MatrixXf way_points(5, 3); // Should be n
   // Eigen::VectorXf segment_times(4); // Should be n-1
 
-  // way_points << -7, 14, 5,   -14, 7, 5,   -7, 0, 5,   0, 7, 5,   -7, 14, 5;
+  // way_points << -4, 8, 5,   -8, 4, 5,   -8, 0, 5,   0, 8, 5,   -4, 8, 5; // 8m x 8m circle
   // segment_times << 3.0, 3.0, 3.0, 3.0;
   // MinimumSnapTrajectory trajectory1 = MinimumSnapTrajectory();
   // trajectory1.setMinimumSnapTrajectory(way_points, segment_times);
 
-  // way_points << 7, 0, 5,   0, 7, 5,   7, 14, 5,   14, 7, 5,   7, 0, 5;
+  // way_points << 4, 0, 5,   0, 4, 5,   4, 8, 5,   8, 4, 5,   4, 0, 5;
   // segment_times << 3.0, 3.0, 3.0, 3.0;
   // MinimumSnapTrajectory trajectory2 = MinimumSnapTrajectory();
   // trajectory2.setMinimumSnapTrajectory(way_points, segment_times);
 
-  // way_points << -7, 0, 5,   0, -7, 5,   -7, -14, 5,   -14, -7, 5,   -7, 0, 5;
+  // way_points << -4, 0, 5,   0, -4, 5,   -4, -8, 5,   -8, -4, 0,   -4, 0, 5;
   // segment_times << 3.0, 3.0, 3.0, 3.0;
   // MinimumSnapTrajectory trajectory3 = MinimumSnapTrajectory();
   // trajectory3.setMinimumSnapTrajectory(way_points, segment_times);
 
-  // way_points << 7, -14, 5,   14, -7, 5,   7, 0, 5,   0, -7, 5,   7, -14, 5;
+  // way_points << 4, -8, 5,   8, -4, 5,   4, 0, 5,   0, -4, 5,   4, -8, 5;
   // segment_times << 3.0, 3.0, 3.0, 3.0;
   // MinimumSnapTrajectory trajectory4 = MinimumSnapTrajectory();
   // trajectory4.setMinimumSnapTrajectory(way_points, segment_times);
@@ -129,6 +94,41 @@ void TargetTrackingEnv<EnvBase>::init(void)
   // trajectories_.push_back(trajectory4);
 
 
+  target_positions_.push_back(Vector<3>{-7.0, 14.0, 5.0});
+  target_positions_.push_back(Vector<3>{7.0, 0.0, 5.0});
+  target_positions_.push_back(Vector<3>{-7.0, 0.0, 5.0});
+  target_positions_.push_back(Vector<3>{7.0, -14.0, 5.0});
+
+  // Target minimum snap trajectory
+  Eigen::MatrixXf way_points(5, 3); // Should be n
+  Eigen::VectorXf segment_times(4); // Should be n-1
+
+  way_points << -7, 14, 5,   -14, 7, 5,   -7, 0, 5,   0, 7, 5,   -7, 14, 5; // 14m x 14m circle
+  segment_times << 5.0, 5.0, 5.0, 5.0;
+  MinimumSnapTrajectory trajectory1 = MinimumSnapTrajectory();
+  trajectory1.setMinimumSnapTrajectory(way_points, segment_times);
+
+  way_points << 7, 0, 5,   0, 7, 5,   7, 14, 5,   14, 7, 5,   7, 0, 5;
+  segment_times << 5.0, 5.0, 5.0, 5.0;
+  MinimumSnapTrajectory trajectory2 = MinimumSnapTrajectory();
+  trajectory2.setMinimumSnapTrajectory(way_points, segment_times);
+
+  way_points << -7, 0, 5,   0, -7, 5,   -7, -14, 5,   -14, -7, 5,   -7, 0, 5;
+  segment_times << 5.0, 5.0, 5.0, 5.0;
+  MinimumSnapTrajectory trajectory3 = MinimumSnapTrajectory();
+  trajectory3.setMinimumSnapTrajectory(way_points, segment_times);
+
+  way_points << 7, -14, 5,   14, -7, 5,   7, 0, 5,   0, -7, 5,   7, -14, 5;
+  segment_times << 5.0, 5.0, 5.0, 5.0;
+  MinimumSnapTrajectory trajectory4 = MinimumSnapTrajectory();
+  trajectory4.setMinimumSnapTrajectory(way_points, segment_times);
+
+  trajectories_.push_back(trajectory1);
+  trajectories_.push_back(trajectory2);
+  trajectories_.push_back(trajectory3);
+  trajectories_.push_back(trajectory4);
+
+
   // target_positions_.push_back(Vector<3>{15.0, 0.0, 5.0});
   // target_positions_.push_back(Vector<3>{-15.0, 0.0, 5.0});
 
@@ -137,12 +137,12 @@ void TargetTrackingEnv<EnvBase>::init(void)
   // Eigen::VectorXf segment_times(4); // Should be n-1
 
   // way_points << 15, 0, 5,   0, 15, 5,   -15, 0, 5,   0, -15, 5,   15, 0, 5;
-  // segment_times << 4.0, 4.0, 4.0, 4.0;
+  // segment_times << 5.0, 5.0, 5.0, 5.0;
   // MinimumSnapTrajectory trajectory1 = MinimumSnapTrajectory();
   // trajectory1.setMinimumSnapTrajectory(way_points, segment_times);
 
   // way_points << -15, 0, 5,   0, -15, 5,   15, 0, 5,   0, 15, 5,   -15, 0, 5;
-  // segment_times << 4.0, 4.0, 4.0, 4.0;
+  // segment_times << 5.0, 5.0, 5.0, 5.0;
   // MinimumSnapTrajectory trajectory2 = MinimumSnapTrajectory();
   // trajectory2.setMinimumSnapTrajectory(way_points, segment_times);
 
