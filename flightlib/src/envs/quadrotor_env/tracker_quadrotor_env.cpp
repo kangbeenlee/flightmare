@@ -347,28 +347,28 @@ Scalar TrackerQuadrotorEnv::trackerStep(const Ref<Vector<>> act, Ref<Vector<>> o
   //*************************** Data Recoder *******************************
   //************************************************************************
   
-  // // Record tracking data
-  // std::vector<Vector<3>> target_estim_pos, tracker_estim_pos;
-  // std::vector<Matrix<6, 6>> target_cov, tracker_cov;
+  // Record tracking data
+  std::vector<Vector<3>> target_estim_pos, tracker_estim_pos;
+  std::vector<Matrix<6, 6>> target_cov, tracker_cov;
 
-  // for (int i = 0; i < num_targets_; i++) {
-  //   target_estim_pos.push_back(target_kalman_filters_[i]->getEstimatedPosition());
-  //   target_cov.push_back(target_kalman_filters_[i]->getErrorCovariance());
-  // }
-  // for (int i = 0; i < num_trackers_; i++) {
-  //   tracker_estim_pos.push_back(tracker_kalman_filters_[i]->getEstimatedPosition());
-  //   tracker_cov.push_back(tracker_kalman_filters_[i]->getErrorCovariance());;
-  // }
+  for (int i = 0; i < num_targets_; i++) {
+    target_estim_pos.push_back(target_kalman_filters_[i]->getEstimatedPosition());
+    target_cov.push_back(target_kalman_filters_[i]->getErrorCovariance());
+  }
+  for (int i = 0; i < num_trackers_; i++) {
+    tracker_estim_pos.push_back(tracker_kalman_filters_[i]->getEstimatedPosition());
+    tracker_cov.push_back(tracker_kalman_filters_[i]->getErrorCovariance());;
+  }
 
-  // if (!tracking_save_->isFull()) {
-  //   Vector<4> quadternion(quad_state_.x(QS::ATTW), quad_state_.x(QS::ATTX), quad_state_.x(QS::ATTY), quad_state_.x(QS::ATTZ));
-  //   tracking_save_->store(quad_state_.p, quadternion, gt_target_positions_, target_estim_pos, target_cov, gt_tracker_positions_, tracker_estim_pos, tracker_cov, sim_dt_);
-  // }
-  // else if (tracking_flag_ && tracking_save_->isFull()) {
-  //   tracking_save_->save();
-  //   tracking_flag_ = false;
-  //   std::cout << ">>> Tracker " << agent_id_ << "'s tracking output save is done" << std::endl;
-  // }
+  if (!tracking_save_->isFull()) {
+    Vector<4> quadternion(quad_state_.x(QS::ATTW), quad_state_.x(QS::ATTX), quad_state_.x(QS::ATTY), quad_state_.x(QS::ATTZ));
+    tracking_save_->store(quad_state_.p, quadternion, gt_target_positions_, target_estim_pos, target_cov, gt_tracker_positions_, tracker_estim_pos, tracker_cov, sim_dt_);
+  }
+  else if (tracking_flag_ && tracking_save_->isFull()) {
+    tracking_save_->save();
+    tracking_flag_ = false;
+    std::cout << ">>> Tracker " << agent_id_ << "'s tracking output save is done" << std::endl;
+  }
 
   // // Record sensor data, just for one target case
   // for (int i = 0; i < target_positions.size(); i++) {
@@ -441,16 +441,16 @@ bool TrackerQuadrotorEnv::getObs(Ref<Vector<>> obs)
 
 
   // quad_obs_ << quad_state_.p, quad_state_.v, ori, quad_state_.w, radius_,
-  //              estimated_target_positions_[0], estimated_target_velocities_[0], radius_, estimated_target_ranges_[0], radius_ * 2, 
-  //              estimated_target_positions_[1], estimated_target_velocities_[1], radius_, estimated_target_ranges_[1], radius_ * 2,
-  //              estimated_target_positions_[2], estimated_target_velocities_[2], radius_, estimated_target_ranges_[2], radius_ * 2,
-  //              estimated_target_positions_[3], estimated_target_velocities_[3], radius_, estimated_target_ranges_[3], radius_ * 2,
+  //              estimated_target_positions_[0], estimated_target_velocities_[0], radius_, estimated_target_ranges_[0], radius_ * 2, 0,
+  //              estimated_target_positions_[1], estimated_target_velocities_[1], radius_, estimated_target_ranges_[1], radius_ * 2, 0,
+  //              estimated_target_positions_[2], estimated_target_velocities_[2], radius_, estimated_target_ranges_[2], radius_ * 2, 0,
+  //              estimated_target_positions_[3], estimated_target_velocities_[3], radius_, estimated_target_ranges_[3], radius_ * 2, 0,
                
-  //              estimated_tracker_positions_[0], estimated_tracker_velocities_[3], radius_, estimated_tracker_ranges_[3], radius_ * 2,
-  //              estimated_tracker_positions_[1], estimated_tracker_velocities_[3], radius_, estimated_tracker_ranges_[3], radius_ * 2;
+  //              estimated_tracker_positions_[0], estimated_tracker_velocities_[3], radius_, estimated_tracker_ranges_[3], radius_ * 2, 1,
+  //              estimated_tracker_positions_[1], estimated_tracker_velocities_[3], radius_, estimated_tracker_ranges_[3], radius_ * 2, 1;
 
   obs.segment<55>(0) = quad_obs_;
-  // obs.segment<73>(0) = quad_obs_;
+  // obs.segment<79>(0) = quad_obs_;
 
   return true;
 }
@@ -551,7 +551,7 @@ Scalar TrackerQuadrotorEnv::rewardFunction()
   for (int i = 0; i < num_targets_; ++i) {
     Vector<3> position = target_kalman_filters_[i]->getEstimatedPosition();
     Scalar distance = computeEuclideanDistance(quad_state_.p, position);
-    Scalar elem = exp(-distance * 0.6);
+    Scalar elem = exp(-distance * 1.0);
     numerator.push_back(elem);
     denominator += elem;
   }
@@ -579,14 +579,16 @@ Scalar TrackerQuadrotorEnv::rewardFunction()
   // 1. New Covariance reward
   Scalar cov_reward = 0.0;
   std::vector<Scalar> cov_list;
+  std::vector<Scalar> cov_reward_list;
   for (int i = 0; i < num_targets_; ++i) {
     Matrix<3, 3> cov = target_kalman_filters_[i]->getPositionErrorCovariance();
     Scalar target_cov_norm = cov.norm();
-    Scalar target_cov_reward = exp(-0.01 * pow(target_cov_norm, 2));
+    Scalar target_cov_reward = exp(-0.01 * pow(target_cov_norm, 3));
 
     // std::cout << i << " target cov norm   : " << cov.norm() << std::endl;
     // std::cout << i << " target cov reward : " << target_cov_reward << std::endl;
-    cov_list.push_back(target_cov_reward);
+    cov_list.push_back(target_cov_norm);
+    cov_reward_list.push_back(target_cov_reward);
 
     cov_reward += range_weight[i] * target_cov_reward;
   }
@@ -610,9 +612,12 @@ Scalar TrackerQuadrotorEnv::rewardFunction()
 
   Scalar total_reward = c1 * cov_reward + c2 * cmd_reward;
 
-  // // std::cout << "-------------------------------------" << std::endl;
-  // std::cout << "weighted cov   : " << cov_list[0] << ", " << cov_list[1] << ", "
-  //                                  << cov_list[2] << ", " << cov_list[3] << std::endl;
+  // std::cout << "-------------------------------------" << std::endl;
+  // std::cout << "cov   : " << cov_list[0] << ", " << cov_list[1] << ", " << cov_list[2] << ", " << cov_list[3] << std::endl;
+  // std::cout << "reward cov   : " << cov_reward_list[0] << ", " << cov_reward_list[1] << ", "
+  //                                  << cov_reward_list[2] << ", " << cov_reward_list[3] << std::endl;
+  // std::cout << "weighted cov   : " << range_weight[0] * cov_list[0] << ", " << range_weight[1] * cov_list[1] << ", "
+  //                                  << range_weight[2] * cov_list[2] << ", " << range_weight[3] * cov_list[3] << std::endl;
   // std::cout << "cov reward     : " << c1 * cov_reward << std::endl;
   // std::cout << "cmd reward     : " << c2 * cmd_reward << std::endl;
   // std::cout << "total reward   : " << total_reward << std::endl;
