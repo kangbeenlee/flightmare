@@ -21,7 +21,7 @@ def configure_random_seed(seed, env=None):
 
 def test_model(env, render=False):
     num_rollouts = 20
-    max_episode_steps = 601
+    max_episode_steps = 1001
 
     if render:
         env.connectUnity()
