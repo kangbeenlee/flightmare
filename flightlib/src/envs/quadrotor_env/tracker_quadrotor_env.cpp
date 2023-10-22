@@ -633,7 +633,7 @@ Scalar TrackerQuadrotorEnv::rewardFunction()
     avg_cov_norm += cov_norm;
   }
   avg_cov_norm /= num_targets_;
-  Scalar cov_reward = exp(-0.01 * pow(avg_cov_norm, 3));
+  Scalar cov_reward = exp(-0.1 * pow(avg_cov_norm, 5));
 
   // Smooth action reward (penalty)
   Scalar cmd_reward = pow((quad_act_ - prev_act_).norm(), 2);
