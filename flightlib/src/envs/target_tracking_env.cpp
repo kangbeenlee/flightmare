@@ -59,32 +59,32 @@ void TargetTrackingEnv<EnvBase>::init(void)
   }
 
   // Set initial start position
-  target_positions_.push_back(Vector<3>{-4.0, 8.0, 5.0});
-  target_positions_.push_back(Vector<3>{4.0, 0.0, 5.0});
-  target_positions_.push_back(Vector<3>{-4.0, 0.0, 5.0});
-  target_positions_.push_back(Vector<3>{4.0, -8.0, 5.0});
+  target_positions_.push_back(Vector<3>{-3.0, 6.0, 5.0});
+  target_positions_.push_back(Vector<3>{3.0, 0.0, 5.0});
+  target_positions_.push_back(Vector<3>{-3.0, 0.0, 5.0});
+  target_positions_.push_back(Vector<3>{3.0, -6.0, 5.0});
 
   // Target minimum snap trajectory
   Eigen::MatrixXf way_points(5, 3); // Should be n
   Eigen::VectorXf segment_times(4); // Should be n-1
 
-  way_points << -4, 8, 5,   -8, 4, 5,   -8, 0, 5,   0, 8, 5,   -4, 8, 5; // 8m x 8m circle
-  segment_times << 3.0, 3.0, 3.0, 3.0;
+  way_points << -3, 6, 5,   -6, 3, 5,   -3, 0, 5,   0, 3, 5,   -3, 6, 5; // 6m x 6m circle
+  segment_times << 2.0, 2.0, 2.0, 2.0;
   MinimumSnapTrajectory trajectory1 = MinimumSnapTrajectory();
   trajectory1.setMinimumSnapTrajectory(way_points, segment_times);
 
-  way_points << 4, 0, 5,   0, 4, 5,   4, 8, 5,   8, 4, 5,   4, 0, 5;
-  segment_times << 3.0, 3.0, 3.0, 3.0;
+  way_points << 3, 0, 5,   0, 3, 5,   3, 6, 5,   6, 3, 5,   3, 0, 5;
+  segment_times << 2.0, 2.0, 2.0, 2.0;
   MinimumSnapTrajectory trajectory2 = MinimumSnapTrajectory();
   trajectory2.setMinimumSnapTrajectory(way_points, segment_times);
 
-  way_points << -4, 0, 5,   0, -4, 5,   -4, -8, 5,   -8, -4, 0,   -4, 0, 5;
-  segment_times << 3.0, 3.0, 3.0, 3.0;
+  way_points << -3, 0, 5,   0, -3, 5,   -3, -6, 5,   -6, -3, 5,   -3, 0, 5;
+  segment_times << 2.0, 2.0, 2.0, 2.0;
   MinimumSnapTrajectory trajectory3 = MinimumSnapTrajectory();
   trajectory3.setMinimumSnapTrajectory(way_points, segment_times);
 
-  way_points << 4, -8, 5,   8, -4, 5,   4, 0, 5,   0, -4, 5,   4, -8, 5;
-  segment_times << 3.0, 3.0, 3.0, 3.0;
+  way_points << 3, -6, 5,   6, -3, 5,   3, 0, 5,   0, -3, 5,   3, -6, 5;
+  segment_times << 2.0, 2.0, 2.0, 2.0;
   MinimumSnapTrajectory trajectory4 = MinimumSnapTrajectory();
   trajectory4.setMinimumSnapTrajectory(way_points, segment_times);
 
@@ -187,13 +187,17 @@ bool TargetTrackingEnv<EnvBase>::reset(Ref<MatrixRowMajor<>> obs, Ref<MatrixRowM
   
   // tracker_positions.push_back(Vector<3>{0.0, -8.0, 5.0});
   for (int i = 0; i < num_envs_; i++) {
-    Scalar binary_x = binary_dis_(random_gen_);
-    Scalar binary_y = binary_dis_(random_gen_);
-    Scalar sign_x = (binary_x < 0.5) ? -1.0 : 1.0;
-    Scalar sign_y = (binary_y < 0.5) ? -1.0 : 1.0;
+    // Scalar binary_x = binary_dis_(random_gen_);
+    // Scalar binary_y = binary_dis_(random_gen_);
+    // Scalar sign_x = (binary_x < 0.5) ? -1.0 : 1.0;
+    // Scalar sign_y = (binary_y < 0.5) ? -1.0 : 1.0;
 
-    Scalar random_x = (uniform_plane_(random_gen_) + 10.0) * sign_x;
-    Scalar random_y = (uniform_plane_(random_gen_) + 10.0) * sign_y;
+    // Scalar random_x = (uniform_plane_(random_gen_) + 10.0) * sign_x;
+    // Scalar random_y = (uniform_plane_(random_gen_) + 10.0) * sign_y;
+    // Scalar random_z = uniform_altitude_(random_gen_);
+
+    Scalar random_x = uniform_plane_(random_gen_);
+    Scalar random_y = uniform_plane_(random_gen_);
     Scalar random_z = uniform_altitude_(random_gen_);
 
     tracker_positions.push_back(Vector<3>{random_x, random_y, random_z});
