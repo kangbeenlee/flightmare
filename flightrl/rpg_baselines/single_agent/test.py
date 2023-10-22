@@ -13,6 +13,7 @@ def test_model(env, model=None, render=False, max_episode_steps=500):
         obs, done, epi_step = env.reset(), False, 0
         
         while not (done or (epi_step > max_episode_steps)):
+            # print(obs[0, 3:6])
             epi_step += 1
             action = model.select_action(obs)
   
