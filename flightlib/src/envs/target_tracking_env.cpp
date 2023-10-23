@@ -187,17 +187,7 @@ bool TargetTrackingEnv<EnvBase>::reset(Ref<MatrixRowMajor<>> obs, Ref<MatrixRowM
   
   // tracker_positions.push_back(Vector<3>{-8.0, 0.0, 5.0});
   for (int i = 0; i < num_envs_; i++) {
-    // Scalar binary_x = binary_dis_(random_gen_);
-    // Scalar binary_y = binary_dis_(random_gen_);
-    // Scalar sign_x = (binary_x < 0.5) ? -1.0 : 1.0;
-    // Scalar sign_y = (binary_y < 0.5) ? -1.0 : 1.0;
-
-    // Scalar random_x = (uniform_plane_(random_gen_) + 10.0) * sign_x;
-    // Scalar random_y = (uniform_plane_(random_gen_) + 10.0) * sign_y;
-    // Scalar random_z = uniform_altitude_(random_gen_);
-
-
-    Scalar yaw = uniform_yaw(random_gen_) * M_PI;
+    Scalar yaw = uniform_yaw_(random_gen_) * M_PI;
     Scalar radius = 17.0;
     Scalar random_x = radius * cos(yaw);
     Scalar random_y = radius * sin(yaw);
