@@ -44,7 +44,7 @@ TrackerQuadrotorEnv::TrackerQuadrotorEnv(const std::string &cfg_path) : EnvBase(
   tracker_ptr_->setVelocityPIDGain(kp_vxy_, ki_vxy_, kd_vxy_, kp_vz_, ki_vz_, kd_vz_, kp_angle_, ki_angle_, kd_angle_, kp_wz_, ki_wz_, kd_wz_);
 
   // define a bounding box
-  world_box_ << -40, 40, -40, 40, 0, 40;
+  world_box_ << -50, 50, -50, 50, 0, 50;
   if (!tracker_ptr_->setWorldBox(world_box_))
   {
     logger_.error("cannot set wolrd box");
@@ -543,65 +543,66 @@ Scalar TrackerQuadrotorEnv::rewardFunction()
 {
   // Outter coefficient
   Scalar c1 = 1.0;
-  Scalar c2 = -1e-4;
+  Scalar c2 = 0.5;
+  Scalar c3 = -1e-4;
 
-  // // Range based weight
-  // std::vector<Scalar> numerator;
-  // Scalar denominator = 0.0;
-  // for (int i = 0; i < num_targets_; ++i) {
-  //   Vector<3> position = target_kalman_filters_[i]->getEstimatedPosition();
-  //   Scalar distance = computeEuclideanDistance(quad_state_.p, position);
-  //   Scalar elem = exp(-distance * 0.6);
-  //   numerator.push_back(elem);
-  //   denominator += elem;
-  // }
+  // Range based weight
+  std::vector<Scalar> numerator;
+  Scalar denominator = 0.0;
+  for (int i = 0; i < num_targets_; ++i) {
+    Vector<3> position = target_kalman_filters_[i]->getEstimatedPosition();
+    Scalar distance = computeEuclideanDistance(quad_state_.p, position);
+    Scalar elem = exp(-distance * 0.6);
+    numerator.push_back(elem);
+    denominator += elem;
+  }
 
-  // if (std::isnan(denominator)) {
-  //   std::cout << "nan occurs from individual denominator" << std::endl;
-  //   std::cout << "denominator : " << denominator << std::endl;
-  //   exit(0);
-  // }
+  if (std::isnan(denominator)) {
+    std::cout << "nan occurs from individual denominator" << std::endl;
+    std::cout << "denominator : " << denominator << std::endl;
+    exit(0);
+  }
 
-  // // Compute negative softmax
-  // std::vector<Scalar> range_weight;
-  // for (int i = 0; i < num_targets_; ++i) {
-  //   Scalar weight = numerator[i] / denominator;
+  // Compute negative softmax
+  std::vector<Scalar> range_weight;
+  for (int i = 0; i < num_targets_; ++i) {
+    Scalar weight = numerator[i] / denominator;
 
-  //   if (std::isnan(weight)) {
-  //     std::cout << "nan occurs from individual weight" << std::endl;
-  //     std::cout << "weight : " << weight << std::endl;
-  //     exit(0);
-  //   }
+    if (std::isnan(weight)) {
+      std::cout << "nan occurs from individual weight" << std::endl;
+      std::cout << "weight : " << weight << std::endl;
+      exit(0);
+    }
 
-  //   range_weight.push_back(weight);
-  // }
+    range_weight.push_back(weight);
+  }
 
-  // // Heading reward
-  // Scalar heading_reward = 0.0;
-  // Vector<3> h = quad_state_.q().toRotationMatrix() * Vector<3>(1, 0, 0); // Ego tracker heading vector
-  // h = h / (h.norm() + 1e-8);
-  // for (int i = 0; i < num_targets_; ++i) {
-  //   Vector<3> target_position = target_kalman_filters_[i]->getEstimatedPosition();
-  //   Vector<3> d = target_position - quad_state_.p; // Relative distance to target
-  //   d = d / (d.norm() + 1e-8);
-  //   // Scalar theta = acos(h.dot(d));
+  // Heading reward
+  Scalar heading_reward = 0.0;
+  Vector<3> h = quad_state_.q().toRotationMatrix() * Vector<3>(1, 0, 0); // Ego tracker heading vector
+  h = h / (h.norm() + 1e-8);
+  for (int i = 0; i < num_targets_; ++i) {
+    Vector<3> target_position = target_kalman_filters_[i]->getEstimatedPosition();
+    Vector<3> d = target_position - quad_state_.p; // Relative distance to target
+    d = d / (d.norm() + 1e-8);
+    // Scalar theta = acos(h.dot(d));
 
-  //   Scalar dot_value = h.dot(d);
-  //   dot_value = std::max(static_cast<Scalar>(-1.0), std::min(static_cast<Scalar>(1.0), dot_value));
-  //   Scalar theta = acos(dot_value);
+    Scalar dot_value = h.dot(d);
+    dot_value = std::max(static_cast<Scalar>(-1.0), std::min(static_cast<Scalar>(1.0), dot_value));
+    Scalar theta = acos(dot_value);
 
-  //   if (std::isnan(theta)) {
-  //     std::cout << "nan occurs from individual theta" << std::endl;
-  //     std::cout << "theta : " << theta << std::endl;
-  //     std::cout << "dot_value : " << dot_value << std::endl;
-  //     std::cout << "h : " << h << std::endl;
-  //     std::cout << "d : " << d << std::endl;
-  //     exit(0);
-  //   }
+    if (std::isnan(theta)) {
+      std::cout << "nan occurs from individual theta" << std::endl;
+      std::cout << "theta : " << theta << std::endl;
+      std::cout << "dot_value : " << dot_value << std::endl;
+      std::cout << "h : " << h << std::endl;
+      std::cout << "d : " << d << std::endl;
+      exit(0);
+    }
 
-  //   Scalar target_heading_reward = exp(-10.0 * pow(theta, 3));
-  //   heading_reward += range_weight[i] * target_heading_reward;
-  // }
+    Scalar target_heading_reward = exp(-10.0 * pow(theta, 3));
+    heading_reward += range_weight[i] * target_heading_reward;
+  }
 
   // // Range weighted Covariance reward
   // Scalar cov_reward = 0.0;
@@ -639,13 +640,14 @@ Scalar TrackerQuadrotorEnv::rewardFunction()
   Scalar cmd_reward = pow((quad_act_ - prev_act_).norm(), 2);
   prev_act_ = quad_act_;
 
-  Scalar total_reward = c1 * cov_reward + c2 * cmd_reward;
+  Scalar total_reward = c1 * cov_reward + c2 * heading_reward + c3 * cmd_reward;
 
   // std::cout << "-------------------------------------" << std::endl;
   // std::cout << "cov norm       : " << cov_list[0] << ", " << cov_list[1] << ", " << cov_list[2] << ", " << cov_list[3] << std::endl;
   // std::cout << "avg cov        : " << avg_cov_norm << std::endl;
   // std::cout << "cov reward     : " << c1 * cov_reward << std::endl;
-  // std::cout << "cmd reward     : " << c2 * cmd_reward << std::endl;
+  // std::cout << "cov reward     : " << c2 * heading_reward << std::endl;
+  // std::cout << "cmd reward     : " << c3 * cmd_reward << std::endl;
   // std::cout << "total reward   : " << total_reward << std::endl;
 
   return total_reward;
@@ -773,9 +775,9 @@ Scalar TrackerQuadrotorEnv::computeEuclideanDistance(Ref<Vector<3>> p1, Ref<Vect
 
 bool TrackerQuadrotorEnv::isTerminalState(Scalar &reward) {
   // Out of the world
-  if (quad_state_.x(QS::POSZ) <= 0.02  || quad_state_.x(QS::POSZ) >= 39.0 ||
-      quad_state_.x(QS::POSX) <= -39.0 || quad_state_.x(QS::POSX) >= 39.0 ||
-      quad_state_.x(QS::POSY) <= -39.0 || quad_state_.x(QS::POSY) >= 39.0) {
+  if (quad_state_.x(QS::POSZ) <= 0.02  || quad_state_.x(QS::POSZ) >= 49.0 ||
+      quad_state_.x(QS::POSX) <= -49.0 || quad_state_.x(QS::POSX) >= 49.0 ||
+      quad_state_.x(QS::POSY) <= -49.0 || quad_state_.x(QS::POSY) >= 49.0) {
     reward = -10.0;
     return true;
   }

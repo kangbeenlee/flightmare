@@ -48,7 +48,7 @@ def main():
     parser.add_argument('--max_training_timesteps', default=int(1e6), type=int, help='Number of training timesteps')
     parser.add_argument('--max_episode_steps', default=1000, type=int, help='Number of steps per episode')
     parser.add_argument('--evaluation_time_steps', default=5000, type=int, help='Number of steps for evaluation')
-    parser.add_argument("--evaluation_times", type=int, default=5, help="Evaluate times")
+    parser.add_argument("--evaluation_times", type=int, default=10, help="Evaluate times")
     parser.add_argument('--memory_capacity', default=100000, type=int, help='Replay memory capacity')
     parser.add_argument('--training_start', default=2000, type=int, help='The number of timestep when training start')
     parser.add_argument("--batch_size", default=128, type=int, help="Batch size")
