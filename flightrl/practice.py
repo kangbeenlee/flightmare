@@ -3,11 +3,11 @@ import numpy.linalg
 import os
 import torch
 
-a = np.array([10., 10.5, 12.])
+a = np.array([7., 8., 12., 15., 20.])
 # print(np.exp(a))
 
 # softmax
-a = a * 0.6
+a = a * 0.1
 b = np.exp(-a) / np.sum(np.exp(-a))
 print(b)
 print(np.sum(b))

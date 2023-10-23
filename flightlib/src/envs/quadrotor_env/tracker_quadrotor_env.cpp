@@ -546,36 +546,19 @@ Scalar TrackerQuadrotorEnv::rewardFunction()
   Scalar c2 = 0.5;
   Scalar c3 = -1e-4;
 
-  // Range based weight
-  std::vector<Scalar> numerator;
-  Scalar denominator = 0.0;
+  // Average covariance reward
+  Scalar avg_cov_norm = 0.0;
+  std::vector<Scalar> cov_list;
   for (int i = 0; i < num_targets_; ++i) {
-    Vector<3> position = target_kalman_filters_[i]->getEstimatedPosition();
-    Scalar distance = computeEuclideanDistance(quad_state_.p, position);
-    Scalar elem = exp(-distance * 0.6);
-    numerator.push_back(elem);
-    denominator += elem;
+    Matrix<3, 3> cov = target_kalman_filters_[i]->getPositionErrorCovariance();
+    Scalar cov_norm = cov.norm();
+
+    cov_list.push_back(cov_norm);
+
+    avg_cov_norm += cov_norm;
   }
-
-  if (std::isnan(denominator)) {
-    std::cout << "nan occurs from individual denominator" << std::endl;
-    std::cout << "denominator : " << denominator << std::endl;
-    exit(0);
-  }
-
-  // Compute negative softmax
-  std::vector<Scalar> range_weight;
-  for (int i = 0; i < num_targets_; ++i) {
-    Scalar weight = numerator[i] / denominator;
-
-    if (std::isnan(weight)) {
-      std::cout << "nan occurs from individual weight" << std::endl;
-      std::cout << "weight : " << weight << std::endl;
-      exit(0);
-    }
-
-    range_weight.push_back(weight);
-  }
+  avg_cov_norm /= num_targets_;
+  Scalar cov_reward = exp(-0.1 * pow(avg_cov_norm, 5));
 
   // Heading reward
   Scalar heading_reward = 0.0;
@@ -601,40 +584,9 @@ Scalar TrackerQuadrotorEnv::rewardFunction()
     }
 
     Scalar target_heading_reward = exp(-10.0 * pow(theta, 3));
-    heading_reward += range_weight[i] * target_heading_reward;
+    heading_reward += target_heading_reward;
   }
-
-  // // Range weighted Covariance reward
-  // Scalar cov_reward = 0.0;
-  // std::vector<Scalar> cov_list;
-  // std::vector<Scalar> cov_reward_list;
-  // for (int i = 0; i < num_targets_; ++i) {
-  //   Matrix<3, 3> cov = target_kalman_filters_[i]->getPositionErrorCovariance();
-  //   Scalar target_cov_norm = cov.norm();
-  //   Scalar target_cov_reward = exp(-0.01 * pow(target_cov_norm, 3));
-
-  //   cov_list.push_back(target_cov_norm);
-  //   cov_reward_list.push_back(target_cov_reward);
-
-  //   // std::cout << i << " target cov norm   : " << cov.norm() << std::endl;
-  //   // std::cout << i << " target cov reward : " << target_cov_reward << std::endl;
-
-  //   cov_reward += range_weight[i] * target_cov_reward;
-  // }
-
-  // Average covariance reward
-  Scalar avg_cov_norm = 0.0;
-  std::vector<Scalar> cov_list;
-  for (int i = 0; i < num_targets_; ++i) {
-    Matrix<3, 3> cov = target_kalman_filters_[i]->getPositionErrorCovariance();
-    Scalar cov_norm = cov.norm();
-
-    cov_list.push_back(cov_norm);
-
-    avg_cov_norm += cov_norm;
-  }
-  avg_cov_norm /= num_targets_;
-  Scalar cov_reward = exp(-0.1 * pow(avg_cov_norm, 5));
+  heading_reward /= num_targets_;
 
   // Smooth action reward (penalty)
   Scalar cmd_reward = pow((quad_act_ - prev_act_).norm(), 2);
@@ -646,7 +598,7 @@ Scalar TrackerQuadrotorEnv::rewardFunction()
   // std::cout << "cov norm       : " << cov_list[0] << ", " << cov_list[1] << ", " << cov_list[2] << ", " << cov_list[3] << std::endl;
   // std::cout << "avg cov        : " << avg_cov_norm << std::endl;
   // std::cout << "cov reward     : " << c1 * cov_reward << std::endl;
-  // std::cout << "cov reward     : " << c2 * heading_reward << std::endl;
+  // std::cout << "heading reward : " << c2 * heading_reward << std::endl;
   // std::cout << "cmd reward     : " << c3 * cmd_reward << std::endl;
   // std::cout << "total reward   : " << total_reward << std::endl;
 
