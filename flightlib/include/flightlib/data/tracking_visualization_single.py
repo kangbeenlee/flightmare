@@ -222,7 +222,8 @@ def main():
         # Ego drone
         plot_ego(ego_pos[0, t], ego_pos[1, t], ego_pos[2, t], ego_orien[0, t], ego_orien[1, t], ego_orien[2, t], ego_orien[3, t], ax)
 
-        total_cov = 0.0
+        total_cov = []
+        range_lst = []
 
         # Targets and trackers
         for i in range(args.targets):
@@ -231,12 +232,22 @@ def main():
             plot_3d_ellipsoid(target_estim[i, 0, t], target_estim[i, 1, t], target_estim[i, 2, t],
                               3*target_cov[i, 0, t], 3*target_cov[i, 1, t], 3*target_cov[i, 2, t], ax)
 
-            total_cov += np.sqrt(target_cov[i, 0, t]**2 + target_cov[i, 1, t]**2 + target_cov[i, 2, t]**2)
+            total_cov.append(np.sqrt(target_cov[i, 0, t]**2 + target_cov[i, 1, t]**2 + target_cov[i, 2, t]**2))
+            range_lst.append(np.sqrt((target_estim[i, 0, t] - ego_pos[0, t])**2
+                                   + (target_estim[i, 1, t] - ego_pos[1, t])**2
+                                   + (target_estim[i, 2, t] - ego_pos[2, t])**2))
 
-        avg_cov = total_cov/args.targets
+        avg_cov = np.sum(total_cov)/args.targets
         cov_reward = np.exp(-0.1 * (avg_cov ** 5))
-        print("avg_cov    :", avg_cov)
-        print("cov_reward :", cov_reward)
+        range_arr = np.array(range_lst) * 0.6
+        range_weight = np.exp(-range_arr) / np.sum(np.exp(-range_arr))
+        range_weight = np.around(range_weight, 3)
+        print("all cov      :", np.around(np.array(total_cov), 3))
+        print("avg cov      :", avg_cov)
+        print("cov_reward   :", cov_reward)
+        print("range        :", np.around(np.array(range_lst), 3))
+        print("range weight :", range_weight)
+
 
         for i in range(args.trackers):
             ax.plot(tracker_gt[i, 0, t], tracker_gt[i, 1, t], tracker_gt[i, 2, t], 'o', color='#1100fa', markersize=3, label='true')
