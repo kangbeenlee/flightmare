@@ -263,9 +263,6 @@ class Trainer:
                 # Select action randomly or according to policy
                 if time_step < self.training_start:
                     action = np.random.uniform(-self.max_action, self.max_action, self.action_dim).reshape(1, -1).astype(np.float32)
-                elif time_step < int(2e5):
-                    action = (self.model.select_action(np.array(obs)) + 
-                              np.random.normal(0, self.max_action * self.expl_noise, size=self.action_dim)).clip(-self.max_action, self.max_action).reshape(1, -1).astype(np.float32)
                 else:
                     action = self.model.select_action(np.array(obs))
 
