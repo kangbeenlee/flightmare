@@ -104,22 +104,22 @@ void TargetTrackingEnv<EnvBase>::init(void)
   // Eigen::VectorXf segment_times(4); // Should be n-1
 
   // way_points << -7, 14, 5,   -14, 7, 5,   -7, 0, 5,   0, 7, 5,   -7, 14, 5; // 14m x 14m circle
-  // segment_times << 5.0, 5.0, 5.0, 5.0;
+  // segment_times << 3.0, 3.0, 3.0, 3.0;
   // MinimumSnapTrajectory trajectory1 = MinimumSnapTrajectory();
   // trajectory1.setMinimumSnapTrajectory(way_points, segment_times);
 
   // way_points << 7, 0, 5,   0, 7, 5,   7, 14, 5,   14, 7, 5,   7, 0, 5;
-  // segment_times << 5.0, 5.0, 5.0, 5.0;
+  // segment_times << 3.0, 3.0, 3.0, 3.0;
   // MinimumSnapTrajectory trajectory2 = MinimumSnapTrajectory();
   // trajectory2.setMinimumSnapTrajectory(way_points, segment_times);
 
   // way_points << -7, 0, 5,   0, -7, 5,   -7, -14, 5,   -14, -7, 5,   -7, 0, 5;
-  // segment_times << 5.0, 5.0, 5.0, 5.0;
+  // segment_times << 3.0, 3.0, 3.0, 3.0;
   // MinimumSnapTrajectory trajectory3 = MinimumSnapTrajectory();
   // trajectory3.setMinimumSnapTrajectory(way_points, segment_times);
 
   // way_points << 7, -14, 5,   14, -7, 5,   7, 0, 5,   0, -7, 5,   7, -14, 5;
-  // segment_times << 5.0, 5.0, 5.0, 5.0;
+  // segment_times << 3.0, 3.0, 3.0, 3.0;
   // MinimumSnapTrajectory trajectory4 = MinimumSnapTrajectory();
   // trajectory4.setMinimumSnapTrajectory(way_points, segment_times);
 
@@ -185,7 +185,7 @@ bool TargetTrackingEnv<EnvBase>::reset(Ref<MatrixRowMajor<>> obs, Ref<MatrixRowM
   // Initial target position
   std::vector<Vector<3>> tracker_positions;
   
-  // tracker_positions.push_back(Vector<3>{0.0, -8.0, 5.0});
+  // tracker_positions.push_back(Vector<3>{-8.0, 0.0, 5.0});
   for (int i = 0; i < num_envs_; i++) {
     // Scalar binary_x = binary_dis_(random_gen_);
     // Scalar binary_y = binary_dis_(random_gen_);
@@ -196,9 +196,12 @@ bool TargetTrackingEnv<EnvBase>::reset(Ref<MatrixRowMajor<>> obs, Ref<MatrixRowM
     // Scalar random_y = (uniform_plane_(random_gen_) + 10.0) * sign_y;
     // Scalar random_z = uniform_altitude_(random_gen_);
 
-    Scalar random_x = uniform_plane_(random_gen_);
-    Scalar random_y = uniform_plane_(random_gen_);
-    Scalar random_z = uniform_altitude_(random_gen_);
+
+    Scalar yaw = uniform_yaw(random_gen_) * M_PI;
+    Scalar radius = 17.0;
+    Scalar random_x = radius * cos(yaw);
+    Scalar random_y = radius * sin(yaw);
+    Scalar random_z = 5.0;
 
     tracker_positions.push_back(Vector<3>{random_x, random_y, random_z});
   }

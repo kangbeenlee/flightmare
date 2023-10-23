@@ -65,7 +65,7 @@ void KalmanFilter::update(const Ref<Vector<3>> z, const Ref<Vector<3>> ego)
     if (adaptive_) {
         Vector<3> rel = Vector<3>(abs(z[0] - ego[0]), abs(z[1] - ego[1]), abs(z[2] - ego[2]));
         // std::cout << "Before scaled std : " << rel[0] << ", " << rel[1] << ", " << rel[2] << std::endl;
-        Scalar scale = 0.1;
+        Scalar scale = 1.0;
         Vector<3> sigma_v = rel * scale;
         // std::cout << "Adaptive sensor std : " << sigma_v[0] << ", " << sigma_v[1] << ", " << sigma_v[2] << std::endl;
         R_ = rel.asDiagonal();
