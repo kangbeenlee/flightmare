@@ -189,7 +189,7 @@ def plot_ego(x, y, z, qw, qx, qy, qz, ax):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_dir', type=str, default="/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/tracking_output/")
-    parser.add_argument('--targets', type=int, default=4, help="The number of targets")
+    parser.add_argument('--targets', type=int, default=2, help="The number of targets")
     parser.add_argument('--trackers', type=int, default=0, help="The number of trackers except itself (total # of tracker - 1)")
     parser.add_argument('--tracker_id', type=int, default=0, help="The id of ego tracker (agent)")
     args = parser.parse_args()
@@ -233,18 +233,18 @@ def main():
 
             total_cov.append(np.sqrt(target_cov[i, 0, t]**2 + target_cov[i, 1, t]**2 + target_cov[i, 2, t]**2))
 
-        avg_cov = np.sum(total_cov)/args.targets
-        cov_reward = np.exp(-0.1 * (avg_cov ** 5))
-        print("all cov      :", np.around(np.array(total_cov), 3))
-        print("avg cov      :", avg_cov)
-        print("cov_reward   :", cov_reward)
+        # avg_cov = np.sum(total_cov)/args.targets
+        # cov_reward = np.exp(-0.1 * (avg_cov ** 5))
+        # print("all cov      :", np.around(np.array(total_cov), 3))
+        # print("avg cov      :", avg_cov)
+        # print("cov_reward   :", cov_reward)
 
 
-        for i in range(args.trackers):
-            ax.plot(tracker_gt[i, 0, t], tracker_gt[i, 1, t], tracker_gt[i, 2, t], 'o', color='#1100fa', markersize=3, label='true')
-            ax.plot(tracker_estim[i, 0, t], tracker_estim[i, 1, t], tracker_estim[i, 2, t], 'o', color='#7a70ff', markersize=3, label='estimate')
-            plot_3d_ellipsoid(tracker_estim[i, 0, t], tracker_estim[i, 1, t], tracker_estim[i, 2, t],
-                              3*tracker_cov[i, 0, t], 3*tracker_cov[i, 1, t], 3*tracker_cov[i, 2, t], ax, target=False)
+        # for i in range(args.trackers):
+        #     ax.plot(tracker_gt[i, 0, t], tracker_gt[i, 1, t], tracker_gt[i, 2, t], 'o', color='#1100fa', markersize=3, label='true')
+        #     ax.plot(tracker_estim[i, 0, t], tracker_estim[i, 1, t], tracker_estim[i, 2, t], 'o', color='#7a70ff', markersize=3, label='estimate')
+        #     plot_3d_ellipsoid(tracker_estim[i, 0, t], tracker_estim[i, 1, t], tracker_estim[i, 2, t],
+        #                       3*tracker_cov[i, 0, t], 3*tracker_cov[i, 1, t], 3*tracker_cov[i, 2, t], ax, target=False)
 
         # plot_3d_ellipsoid(0, 0, 0, 15, 15, 15, ax, target=False)
 
