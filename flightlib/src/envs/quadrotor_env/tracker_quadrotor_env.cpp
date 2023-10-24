@@ -543,7 +543,7 @@ Scalar TrackerQuadrotorEnv::rewardFunction()
 {
   // Outter coefficient
   Scalar c1 = 1.0;
-  Scalar c2 = 0.5;
+  Scalar c2 = 0.0;
   Scalar c3 = -1e-4;
 
   // Average covariance reward
