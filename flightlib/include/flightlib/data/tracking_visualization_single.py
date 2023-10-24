@@ -189,7 +189,7 @@ def plot_ego(x, y, z, qw, qx, qy, qz, ax):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_dir', type=str, default="/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/tracking_output/")
-    parser.add_argument('--targets', type=int, default=2, help="The number of targets")
+    parser.add_argument('--targets', type=int, default=4, help="The number of targets")
     parser.add_argument('--trackers', type=int, default=0, help="The number of trackers except itself (total # of tracker - 1)")
     parser.add_argument('--tracker_id', type=int, default=0, help="The id of ego tracker (agent)")
     args = parser.parse_args()

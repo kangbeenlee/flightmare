@@ -5,7 +5,7 @@ Scalar TrackerQuadrotorEnv::rewardFunction()
   Scalar c2 = 1.0;
   Scalar c3 = -1e-4;
 
-  // 1. Heading reward
+  // Range weight
   std::vector<Scalar> numerator;
   Scalar denominator = 0.0;
   for (int i = 0; i < num_targets_; ++i) {
@@ -23,7 +23,7 @@ Scalar TrackerQuadrotorEnv::rewardFunction()
   }
 
   // Compute negative softmax
-  std::vector<Scalar> heading_weight;
+  std::vector<Scalar> range_weight;
   for (int i = 0; i < num_targets_; ++i) {
     Scalar weight = numerator[i] / denominator;
 
@@ -33,10 +33,10 @@ Scalar TrackerQuadrotorEnv::rewardFunction()
       exit(0);
     }
 
-    heading_weight.push_back(weight);
+    range_weight.push_back(weight);
   }
 
-  // Compute heading reward
+  // Heading reward
   Scalar heading_reward = 0.0;
   Vector<3> h = quad_state_.q().toRotationMatrix() * Vector<3>(1, 0, 0); // Ego tracker heading vector
   h = h / (h.norm() + 1e-8);
@@ -61,7 +61,7 @@ Scalar TrackerQuadrotorEnv::rewardFunction()
     }
 
     Scalar target_heading_reward = exp(-10.0 * pow(theta, 3));
-    heading_reward += heading_weight[i] * target_heading_reward;
+    heading_reward += range_weight[i] * target_heading_reward;
   }
 
 
@@ -85,7 +85,7 @@ Scalar TrackerQuadrotorEnv::rewardFunction()
     // std::cout << i << " target cov norm   : " << cov.norm() << std::endl;
     // std::cout << i << " target cov reward : " << target_cov_reward << std::endl;
 
-    cov_reward += heading_weight[i] * target_cov_reward;
+    cov_reward += range_weight[i] * target_cov_reward;
   }
 
   // std::cout << "cov reward : " << cov_reward << std::endl;

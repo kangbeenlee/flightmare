@@ -191,7 +191,7 @@ bool TargetTrackingEnv<EnvBase>::reset(Ref<MatrixRowMajor<>> obs, Ref<MatrixRowM
     Scalar radius = 17.0;
     Scalar random_x = radius * cos(yaw);
     Scalar random_y = radius * sin(yaw);
-    Scalar random_z = 5.0;
+    Scalar random_z = uniform_altitude_(random_gen_);
 
     tracker_positions.push_back(Vector<3>{random_x, random_y, random_z});
   }
