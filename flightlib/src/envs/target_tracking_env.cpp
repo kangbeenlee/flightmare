@@ -233,12 +233,23 @@ bool TargetTrackingEnv<EnvBase>::step(Ref<MatrixRowMajor<>> act, Ref<MatrixRowMa
   //*************************** Global Reward ******************************
   //************************************************************************
 
-  // Scalar global_reward = computeGlobalReward();
-  
-  // for (int i = 0; i < num_envs_; i++)
-  // {
-  //   reward(i) = global_reward;
-  // }
+  Scalar w = 2.0;
+  Scalar individual_reward = 0.0;
+  Scalar cooperative_reward = computeGlobalReward();
+  Scalar terminal_reward = 0.0;
+
+  for (int i = 0; i < num_envs_; i++)
+  {
+    individual_reward += envs_[i]->rewardFunction();
+    terminal_reward += reward(i); // Store agent terminal reward
+  }
+
+  Scalar global_reward = individual_reward + w * cooperative_reward + terminal_reward;
+
+  for (int i = 0; i < num_envs_; i++)
+  {
+    reward(i) = global_reward;
+  }
 
   //************************************************************************
   //*************************** Global Reward ******************************
@@ -323,6 +334,7 @@ void TargetTrackingEnv<EnvBase>::perTrackerStep(int agent_id, Ref<MatrixRowMajor
     target_positions.push_back(targets_[i]->getPosition());
   }
 
+  // Get 0 reward when multi-agent setting
   reward(agent_id) = envs_[agent_id]->trackerStep(act.row(agent_id), obs.row(agent_id), target_positions, other_tracker_positions);
 
   Scalar terminal_reward = 0;
@@ -341,31 +353,12 @@ void TargetTrackingEnv<EnvBase>::perTrackerStep(int agent_id, Ref<MatrixRowMajor
 
 template<typename EnvBase>
 Scalar TargetTrackingEnv<EnvBase>::computeGlobalReward() {
-  // Reward coefficient
-  Scalar c1 = 0.5;
-  Scalar c2 = 1.0;
-  Scalar c3 = -1e-4;
-
   // Reward type
-  Scalar global_heading_reward = 0.0;
-  Scalar global_cov_reward = 0.0;
-  Scalar global_cmd_reward = 0.0;
-  Scalar global_terminal_reward = 0.0;
-
-  // Total heading reward & total command reward (penalty)
-  for (int i = 0; i < num_envs_; ++i) {
-    Scalar terminal_reward = 0;
-    global_heading_reward += envs_[i]->getIndividualHeadingReward();
-    global_cmd_reward += envs_[i]->getIndividualCmdReward();
-    envs_[i]->isTerminalState(terminal_reward);
-    global_terminal_reward += terminal_reward;
-  }
-  global_heading_reward /= num_envs_;
-  global_cmd_reward /= num_envs_;
-  global_terminal_reward /= num_envs_;
+  Scalar min_cov_reward = 0.0;
+  std::vector<Scalar> min_cov_list;
 
   // Choose minimum target covariance among targets
-  Scalar avg_cov_norm = 0.0;
+  Scalar avg_min_cov_norm = 0.0;
   for (int target_id = 0; target_id < num_targets_; ++target_id) {
     Scalar min_cov_norm = std::numeric_limits<Scalar>::infinity();
     for (int i = 0; i < num_envs_; ++i) {
@@ -373,41 +366,19 @@ Scalar TargetTrackingEnv<EnvBase>::computeGlobalReward() {
       if (cov_norm < min_cov_norm)
         min_cov_norm = cov_norm;
     }
-    avg_cov_norm += min_cov_norm;
+    min_cov_list.push_back(min_cov_norm); ////
+    avg_min_cov_norm += min_cov_norm;
   }
-  avg_cov_norm /= num_targets_;
-  global_cov_reward = exp(-0.1 * pow(avg_cov_norm, 5));
+  avg_min_cov_norm /= num_targets_;
+  min_cov_reward = exp(-0.1 * pow(avg_min_cov_norm, 5));
 
-  // Global reward (team reward)
-  Scalar global_reward = c1 * global_heading_reward + c2 * global_cov_reward + c3 * global_cmd_reward + global_terminal_reward;
+  // std::cout << "-----------------------------------------" << std::endl;
+  // std::cout << "min cov norm   : " << min_cov_list[0] << ", " << min_cov_list[1] << ", " << min_cov_list[2] << ", " << min_cov_list[3] << std::endl;
+  // std::cout << "min avg cov    : " << avg_min_cov_norm << std::endl;
+  // std::cout << "min cov reward : " << min_cov_reward << std::endl;
+  // std::cout << "-----------------------------------------" << std::endl;
 
-
-  // std::cout << "--------------- global reward ---------------" << std::endl;
-  // std::cout << "heading : " << global_heading_reward << std::endl;
-  // std::cout << "cov     : " << global_cov_reward << std::endl;
-  // std::cout << "cmd     : " << global_cmd_reward << std::endl;
-  // std::cout << "global  : " << global_reward << std::endl;
-
-
-  if (std::isnan(global_reward)) {
-    std::cout << "--------- Check nan reward ---------" << std::endl;
-    std::cout << "heading : " << global_heading_reward << std::endl;
-    std::cout << "cov     : " << global_cov_reward << std::endl;
-    std::cout << "cmd     : " << global_cmd_reward << std::endl;
-    if (std::isnan(global_heading_reward))
-      std::cout << "nan occurs from heading reward" << std::endl;
-    if (std::isnan(global_cov_reward)) {
-      std::cout << "nan occurs from cov reward" << std::endl;
-      std::cout << "avg_cov_norm : " << avg_cov_norm << std::endl;
-    }
-    if (std::isnan(global_cmd_reward))
-      std::cout << "nan occurs from cmd reward" << std::endl;
-
-
-    exit(0);
-  }
-
-  return global_reward;
+  return min_cov_reward;
 }
 
 template<typename EnvBase>

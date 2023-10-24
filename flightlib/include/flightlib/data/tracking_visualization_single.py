@@ -190,8 +190,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_dir', type=str, default="/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/tracking_output/")
     parser.add_argument('--targets', type=int, default=4, help="The number of targets")
-    parser.add_argument('--trackers', type=int, default=0, help="The number of trackers except itself (total # of tracker - 1)")
-    parser.add_argument('--tracker_id', type=int, default=0, help="The id of ego tracker (agent)")
+    parser.add_argument('--trackers', type=int, default=2, help="The number of other trackers except itself (total # of tracker - 1)")
+    parser.add_argument('--tracker_id', type=int, default=2, help="The id of ego tracker (agent)")
     args = parser.parse_args()
 
     data_path = os.path.join(args.data_dir, 'tracker_'+ str(args.tracker_id) + '/')
@@ -239,22 +239,20 @@ def main():
         # print("avg cov      :", avg_cov)
         # print("cov_reward   :", cov_reward)
 
+        for i in range(args.trackers):
+            ax.plot(tracker_gt[i, 0, t], tracker_gt[i, 1, t], tracker_gt[i, 2, t], 'o', color='#1100fa', markersize=3, label='true')
+            ax.plot(tracker_estim[i, 0, t], tracker_estim[i, 1, t], tracker_estim[i, 2, t], 'o', color='#7a70ff', markersize=3, label='estimate')
+            plot_3d_ellipsoid(tracker_estim[i, 0, t], tracker_estim[i, 1, t], tracker_estim[i, 2, t],
+                              3*tracker_cov[i, 0, t], 3*tracker_cov[i, 1, t], 3*tracker_cov[i, 2, t], ax, target=False)
 
-        # for i in range(args.trackers):
-        #     ax.plot(tracker_gt[i, 0, t], tracker_gt[i, 1, t], tracker_gt[i, 2, t], 'o', color='#1100fa', markersize=3, label='true')
-        #     ax.plot(tracker_estim[i, 0, t], tracker_estim[i, 1, t], tracker_estim[i, 2, t], 'o', color='#7a70ff', markersize=3, label='estimate')
-        #     plot_3d_ellipsoid(tracker_estim[i, 0, t], tracker_estim[i, 1, t], tracker_estim[i, 2, t],
-        #                       3*tracker_cov[i, 0, t], 3*tracker_cov[i, 1, t], 3*tracker_cov[i, 2, t], ax, target=False)
-
-        # plot_3d_ellipsoid(0, 0, 0, 15, 15, 15, ax, target=False)
-
-        ax.axes.set_xlim3d(left=-20, right=20)
-        ax.axes.set_ylim3d(bottom=-20, top=20)
+        ax.axes.set_xlim3d(left=-30, right=30)
+        ax.axes.set_ylim3d(bottom=-30, top=30)
         ax.axes.set_zlim3d(bottom=0, top=10)
         ax.set_aspect('equal')
         ax.set_xlabel('x')
         ax.set_ylabel('y')
         ax.set_zlabel('z')
+        ax.view_init(90, -90)  # 90 degrees elevation for top-down view, -90 degrees azimuth for proper orientation
         ax.set_title("Time[s]:" + str(round(time[t], 2)))
 
     # Set up the animation
@@ -263,9 +261,9 @@ def main():
     # Connect key event to figure
     fig.canvas.mpl_connect('key_press_event', lambda event: [exit(0) if event.key == 'escape' else None])
 
-    # # Save as GIF
-    # writer = PillowWriter(fps=20)  # Adjust fps (frames per second) as needed
-    # ani.save(args.data_dir + 'ego_{}.gif'.format(args.tracker_id), writer=writer)
+    # Save as GIF
+    writer = PillowWriter(fps=20)  # Adjust fps (frames per second) as needed
+    ani.save(args.data_dir + 'ego_{}.gif'.format(args.tracker_id), writer=writer)
 
     plt.show()
 
