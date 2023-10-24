@@ -235,7 +235,6 @@ def main():
     # plt.show()
 
 
-
     # t_ = 270
     # print(time_list[0][t_])
 
@@ -288,13 +287,14 @@ def main():
             #                       3*target_cov_list[i][j, 0, t], 3*target_cov_list[i][j, 1, t], 3*target_cov_list[i][j, 2, t], ax)
 
 
-        ax.axes.set_xlim3d(left=-10, right=10)
-        ax.axes.set_ylim3d(bottom=-10, top=10)
+        ax.axes.set_xlim3d(left=-30, right=30)
+        ax.axes.set_ylim3d(bottom=-30, top=30)
         ax.axes.set_zlim3d(bottom=0, top=10)
         ax.set_aspect('equal')
         ax.set_xlabel('x')
         ax.set_ylabel('y')
         ax.set_zlabel('z')
+        ax.view_init(90, -90)  # 90 degrees elevation for top-down view, -90 degrees azimuth for proper orientation
         ax.set_title("Time[s]:" + str(round(time_list[0][t], 2)))
 
     # Set up the animation
@@ -303,9 +303,9 @@ def main():
     # Connect key event to figure
     fig.canvas.mpl_connect('key_press_event', lambda event: [exit(0) if event.key == 'escape' else None])
 
-    # Save as GIF
-    writer = PillowWriter(fps=20)  # Adjust fps (frames per second) as needed
-    ani.save(args.data_dir + 'multi.gif', writer=writer)
+    # # Save as GIF
+    # writer = PillowWriter(fps=20)  # Adjust fps (frames per second) as needed
+    # ani.save(args.data_dir + 'multi.gif', writer=writer)
 
     plt.show()
 
