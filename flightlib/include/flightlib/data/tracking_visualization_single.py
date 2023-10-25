@@ -190,8 +190,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_dir', type=str, default="/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/tracking_output/")
     parser.add_argument('--targets', type=int, default=4, help="The number of targets")
-    parser.add_argument('--trackers', type=int, default=2, help="The number of other trackers except itself (total # of tracker - 1)")
-    parser.add_argument('--tracker_id', type=int, default=2, help="The id of ego tracker (agent)")
+    parser.add_argument('--trackers', type=int, default=0, help="The number of other trackers except itself (total # of tracker - 1)")
+    parser.add_argument('--tracker_id', type=int, default=0, help="The id of ego tracker (agent)")
     args = parser.parse_args()
 
     data_path = os.path.join(args.data_dir, 'tracker_'+ str(args.tracker_id) + '/')
@@ -245,9 +245,9 @@ def main():
             plot_3d_ellipsoid(tracker_estim[i, 0, t], tracker_estim[i, 1, t], tracker_estim[i, 2, t],
                               3*tracker_cov[i, 0, t], 3*tracker_cov[i, 1, t], 3*tracker_cov[i, 2, t], ax, target=False)
 
-        ax.axes.set_xlim3d(left=-30, right=30)
-        ax.axes.set_ylim3d(bottom=-30, top=30)
-        ax.axes.set_zlim3d(bottom=0, top=10)
+        ax.axes.set_xlim3d(left=-40, right=40)
+        ax.axes.set_ylim3d(bottom=-40, top=40)
+        ax.axes.set_zlim3d(bottom=0, top=20)
         ax.set_aspect('equal')
         ax.set_xlabel('x')
         ax.set_ylabel('y')
@@ -261,9 +261,9 @@ def main():
     # Connect key event to figure
     fig.canvas.mpl_connect('key_press_event', lambda event: [exit(0) if event.key == 'escape' else None])
 
-    # Save as GIF
-    writer = PillowWriter(fps=20)  # Adjust fps (frames per second) as needed
-    ani.save(args.data_dir + 'ego_{}.gif'.format(args.tracker_id), writer=writer)
+    # # Save as GIF
+    # writer = PillowWriter(fps=20)  # Adjust fps (frames per second) as needed
+    # ani.save(args.data_dir + 'ego_{}.gif'.format(args.tracker_id), writer=writer)
 
     plt.show()
 

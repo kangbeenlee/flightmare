@@ -191,7 +191,7 @@ def main():
     parser.add_argument('--data_dir', type=str, default="/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/tracking_output/")
     parser.add_argument('--targets', type=int, default=4, help="The number of targets")
     parser.add_argument('--trackers', type=int, default=3, help="The number of trackers")
-    parser.add_argument('--other_trackers', type=int, default=2, help="The number of trackers")
+    parser.add_argument('--other_trackers', type=int, default=2, help="The number of other trackers")
     args = parser.parse_args()
 
 
@@ -229,15 +229,14 @@ def main():
     min_avg_cov = np.log(min_avg_cov)
     plt.figure(figsize=(10, 5))
     plt.plot(min_avg_cov)
-    plt.title('Average Covariance from multi tracker')
+    plt.title('Average Minimum Covariance from multi tracker')
     plt.xlabel('time')
     plt.ylabel('average covariance')
-    # plt.show()
+    plt.show()
 
 
     # t_ = 270
     # print(time_list[0][t_])
-
 
     # # Choose minimum covariance
     # norm_list = []
@@ -276,7 +275,6 @@ def main():
             # print(norm_list)
             # print('idx:', idx)
 
-
             ax.plot(target_estim_list[idx][j, 0, t], target_estim_list[idx][j, 1, t], target_estim_list[idx][j, 2, t], 'o', color='#ff7575', markersize=3, label='estimate')
             plot_3d_ellipsoid(target_estim_list[idx][j, 0, t], target_estim_list[idx][j, 1, t], target_estim_list[idx][j, 2, t],
                               3*target_cov_list[idx][j, 0, t], 3*target_cov_list[idx][j, 1, t], 3*target_cov_list[idx][j, 2, t], ax)
@@ -287,9 +285,9 @@ def main():
             #                       3*target_cov_list[i][j, 0, t], 3*target_cov_list[i][j, 1, t], 3*target_cov_list[i][j, 2, t], ax)
 
 
-        ax.axes.set_xlim3d(left=-30, right=30)
-        ax.axes.set_ylim3d(bottom=-30, top=30)
-        ax.axes.set_zlim3d(bottom=0, top=10)
+        ax.axes.set_xlim3d(left=-40, right=40)
+        ax.axes.set_ylim3d(bottom=-40, top=40)
+        ax.axes.set_zlim3d(bottom=0, top=20)
         ax.set_aspect('equal')
         ax.set_xlabel('x')
         ax.set_ylabel('y')
@@ -303,9 +301,9 @@ def main():
     # Connect key event to figure
     fig.canvas.mpl_connect('key_press_event', lambda event: [exit(0) if event.key == 'escape' else None])
 
-    # # Save as GIF
-    # writer = PillowWriter(fps=20)  # Adjust fps (frames per second) as needed
-    # ani.save(args.data_dir + 'multi.gif', writer=writer)
+    # Save as GIF
+    writer = PillowWriter(fps=20)  # Adjust fps (frames per second) as needed
+    ani.save(args.data_dir + 'multi.gif', writer=writer)
 
     plt.show()
 
