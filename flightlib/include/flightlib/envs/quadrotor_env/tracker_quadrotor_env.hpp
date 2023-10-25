@@ -86,6 +86,9 @@ class TrackerQuadrotorEnv final : public EnvBase {
 
   Scalar computeEuclideanDistance(Ref<Vector<3>> p1, Ref<Vector<3>> p2);
 
+  //
+  // inline Vector<3> getEstimatedPosition()
+
   // - public set functions
   bool loadParam(const YAML::Node &cfg);
 
@@ -141,8 +144,8 @@ class TrackerQuadrotorEnv final : public EnvBase {
 
   // Observations and actions (for RL)
   // Vector<trackerquadenv::kNObs> quad_obs_;
-  // Vector<55> quad_obs_;
-  Vector<79> quad_obs_;
+  Vector<55> quad_obs_;
+  // Vector<79> quad_obs_;
   Vector<trackerquadenv::kNAct> quad_act_;
 
   YAML::Node cfg_;

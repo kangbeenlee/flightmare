@@ -58,33 +58,69 @@ void TargetTrackingEnv<EnvBase>::init(void)
     targets_.push_back(std::make_unique<TargetQuadrotorEnv>());
   }
 
-  // Set initial start position
-  target_positions_.push_back(Vector<3>{-3.0, 6.0, 5.0});
-  target_positions_.push_back(Vector<3>{3.0, 0.0, 5.0});
-  target_positions_.push_back(Vector<3>{-3.0, 0.0, 5.0});
-  target_positions_.push_back(Vector<3>{3.0, -6.0, 5.0});
+  // // Set initial start position
+  // target_positions_.push_back(Vector<3>{-5.0, 8.0, 5.0});
+  // target_positions_.push_back(Vector<3>{5.0, 2.0, 5.0});
+  // target_positions_.push_back(Vector<3>{-5.0, -2.0, 5.0});
+  // target_positions_.push_back(Vector<3>{5.0, -8.0, 5.0});
+
+  // // Target minimum snap trajectory
+  // Eigen::MatrixXf way_points(5, 3); // Should be n
+  // Eigen::VectorXf segment_times(4); // Should be n-1
+
+  // way_points << -5, 8, 5,   -8, 5, 5,   -5, 2, 5,   -2, 5, 5,   -5, 8, 5; // 6m x 6m circle
+  // segment_times << 2.0, 2.0, 2.0, 2.0;
+  // MinimumSnapTrajectory trajectory1 = MinimumSnapTrajectory();
+  // trajectory1.setMinimumSnapTrajectory(way_points, segment_times);
+
+  // way_points << 5, 2, 5,   2, 5, 5,   5, 8, 5,   8, 5, 5,   5, 2, 5;
+  // segment_times << 2.0, 2.0, 2.0, 2.0;
+  // MinimumSnapTrajectory trajectory2 = MinimumSnapTrajectory();
+  // trajectory2.setMinimumSnapTrajectory(way_points, segment_times);
+
+  // way_points << -5, -2, 5,   -2, -5, 5,   -5, -8, 5,   -8, -5, 5,   -5, -2, 5;
+  // segment_times << 2.0, 2.0, 2.0, 2.0;
+  // MinimumSnapTrajectory trajectory3 = MinimumSnapTrajectory();
+  // trajectory3.setMinimumSnapTrajectory(way_points, segment_times);
+
+  // way_points << 5, -8, 5,   8, -5, 5,   5, -2, 5,   2, -5, 5,   5, -8, 5;
+  // segment_times << 2.0, 2.0, 2.0, 2.0;
+  // MinimumSnapTrajectory trajectory4 = MinimumSnapTrajectory();
+  // trajectory4.setMinimumSnapTrajectory(way_points, segment_times);
+
+  // trajectories_.push_back(trajectory1);
+  // trajectories_.push_back(trajectory2);
+  // trajectories_.push_back(trajectory3);
+  // trajectories_.push_back(trajectory4);
+
+
+ // Set initial start position
+  target_positions_.push_back(Vector<3>{-12.0, 20.0, 10.0});
+  target_positions_.push_back(Vector<3>{12.0, 4.0, 10.0});
+  target_positions_.push_back(Vector<3>{-12.0, -4.0, 10.0});
+  target_positions_.push_back(Vector<3>{12.0, -20.0, 10.0});
 
   // Target minimum snap trajectory
   Eigen::MatrixXf way_points(5, 3); // Should be n
   Eigen::VectorXf segment_times(4); // Should be n-1
 
-  way_points << -3, 6, 5,   -6, 3, 5,   -3, 0, 5,   0, 3, 5,   -3, 6, 5; // 6m x 6m circle
-  segment_times << 2.0, 2.0, 2.0, 2.0;
+  way_points << -12, 20, 10,   -20, 12, 10,   -12, 4, 10,   -4, 12, 10,   -12, 20, 10; // 6m x 6m circle
+  segment_times << 3.0, 3.0, 3.0, 3.0;
   MinimumSnapTrajectory trajectory1 = MinimumSnapTrajectory();
   trajectory1.setMinimumSnapTrajectory(way_points, segment_times);
 
-  way_points << 3, 0, 5,   0, 3, 5,   3, 6, 5,   6, 3, 5,   3, 0, 5;
-  segment_times << 2.0, 2.0, 2.0, 2.0;
+  way_points << 12, 4, 10,   4, 12, 10,   12, 20, 10,   20, 12, 10,   12, 4, 10;
+  segment_times << 3.0, 3.0, 3.0, 3.0;
   MinimumSnapTrajectory trajectory2 = MinimumSnapTrajectory();
   trajectory2.setMinimumSnapTrajectory(way_points, segment_times);
 
-  way_points << -3, 0, 5,   0, -3, 5,   -3, -6, 5,   -6, -3, 5,   -3, 0, 5;
-  segment_times << 2.0, 2.0, 2.0, 2.0;
+  way_points << -12, -4, 10,   -4, -12, 10,   -12, -20, 10,   -20, -12, 10,   -12, -4, 10;
+  segment_times << 3.0, 3.0, 3.0, 3.0;
   MinimumSnapTrajectory trajectory3 = MinimumSnapTrajectory();
   trajectory3.setMinimumSnapTrajectory(way_points, segment_times);
 
-  way_points << 3, -6, 5,   6, -3, 5,   3, 0, 5,   0, -3, 5,   3, -6, 5;
-  segment_times << 2.0, 2.0, 2.0, 2.0;
+  way_points << 12, -20, 10,   20, -12, 10,   12, -4, 10,   4, -12, 10,   12, -20, 10;
+  segment_times << 3.0, 3.0, 3.0, 3.0;
   MinimumSnapTrajectory trajectory4 = MinimumSnapTrajectory();
   trajectory4.setMinimumSnapTrajectory(way_points, segment_times);
 
@@ -129,26 +165,6 @@ void TargetTrackingEnv<EnvBase>::init(void)
   // trajectories_.push_back(trajectory4);
 
 
-  // target_positions_.push_back(Vector<3>{15.0, 0.0, 5.0});
-  // target_positions_.push_back(Vector<3>{-15.0, 0.0, 5.0});
-
-  // // Target minimum snap trajectory
-  // Eigen::MatrixXf way_points(5, 3); // Should be n
-  // Eigen::VectorXf segment_times(4); // Should be n-1
-
-  // way_points << 15, 0, 5,   0, 15, 5,   -15, 0, 5,   0, -15, 5,   15, 0, 5;
-  // segment_times << 5.0, 5.0, 5.0, 5.0;
-  // MinimumSnapTrajectory trajectory1 = MinimumSnapTrajectory();
-  // trajectory1.setMinimumSnapTrajectory(way_points, segment_times);
-
-  // way_points << -15, 0, 5,   0, -15, 5,   15, 0, 5,   0, 15, 5,   -15, 0, 5;
-  // segment_times << 5.0, 5.0, 5.0, 5.0;
-  // MinimumSnapTrajectory trajectory2 = MinimumSnapTrajectory();
-  // trajectory2.setMinimumSnapTrajectory(way_points, segment_times);
-
-  // trajectories_.push_back(trajectory1);
-  // trajectories_.push_back(trajectory2);
-
   // Set Unity
   setUnity(unity_render_);
 
@@ -184,11 +200,23 @@ bool TargetTrackingEnv<EnvBase>::reset(Ref<MatrixRowMajor<>> obs, Ref<MatrixRowM
 
   // Initial target position
   std::vector<Vector<3>> tracker_positions;
-  
-  // tracker_positions.push_back(Vector<3>{-8.0, 0.0, 5.0});
+
+  // // Single position
+  // tracker_positions.push_back(Vector<3>{0.0, -35.0, 10.0});
+
+  // // Ideal multi position
+  // tracker_positions.push_back(Vector<3>{0.0, 35.0, 10.0});
+  // tracker_positions.push_back(Vector<3>{-25.0, -25.0, 10.0});
+  // tracker_positions.push_back(Vector<3>{25.0, -25.0, 10.0});
+
+  // // Unideal multi position
+  // tracker_positions.push_back(Vector<3>{-5.0, -35.0, 5.0});
+  // tracker_positions.push_back(Vector<3>{0.0, -35.0, 5.0});
+  // tracker_positions.push_back(Vector<3>{5.0, -35.0, 5.0});
+
   for (int i = 0; i < num_envs_; i++) {
     Scalar yaw = uniform_yaw_(random_gen_) * M_PI;
-    Scalar radius = 17.0;
+    Scalar radius = 37.0;
     Scalar random_x = radius * cos(yaw);
     Scalar random_y = radius * sin(yaw);
     Scalar random_z = uniform_altitude_(random_gen_);
@@ -229,27 +257,28 @@ bool TargetTrackingEnv<EnvBase>::step(Ref<MatrixRowMajor<>> act, Ref<MatrixRowMa
   }
 
 
+
   //************************************************************************
   //*************************** Global Reward ******************************
   //************************************************************************
 
-  Scalar w = 2.0;
-  Scalar individual_reward = 0.0;
-  Scalar cooperative_reward = computeGlobalReward();
-  Scalar terminal_reward = 0.0;
+  // Scalar w = 2.0;
+  // Scalar individual_reward = 0.0;
+  // Scalar cooperative_reward = computeGlobalReward();
+  // Scalar terminal_reward = 0.0;
 
-  for (int i = 0; i < num_envs_; i++)
-  {
-    individual_reward += envs_[i]->rewardFunction();
-    terminal_reward += reward(i); // Store agent terminal reward
-  }
+  // for (int i = 0; i < num_envs_; i++)
+  // {
+  //   individual_reward += envs_[i]->rewardFunction();
+  //   terminal_reward += reward(i); // Store agent terminal reward
+  // }
 
-  Scalar global_reward = individual_reward + w * cooperative_reward + terminal_reward;
+  // Scalar global_reward = individual_reward + w * cooperative_reward + terminal_reward;
 
-  for (int i = 0; i < num_envs_; i++)
-  {
-    reward(i) = global_reward;
-  }
+  // for (int i = 0; i < num_envs_; i++)
+  // {
+  //   reward(i) = global_reward;
+  // }
 
   //************************************************************************
   //*************************** Global Reward ******************************
@@ -372,11 +401,11 @@ Scalar TargetTrackingEnv<EnvBase>::computeGlobalReward() {
   avg_min_cov_norm /= num_targets_;
   min_cov_reward = exp(-0.1 * pow(avg_min_cov_norm, 5));
 
-  // std::cout << "-----------------------------------------" << std::endl;
-  // std::cout << "min cov norm   : " << min_cov_list[0] << ", " << min_cov_list[1] << ", " << min_cov_list[2] << ", " << min_cov_list[3] << std::endl;
-  // std::cout << "min avg cov    : " << avg_min_cov_norm << std::endl;
-  // std::cout << "min cov reward : " << min_cov_reward << std::endl;
-  // std::cout << "-----------------------------------------" << std::endl;
+  std::cout << "-----------------------------------------" << std::endl;
+  std::cout << "min cov norm   : " << min_cov_list[0] << ", " << min_cov_list[1] << ", " << min_cov_list[2] << ", " << min_cov_list[3] << std::endl;
+  std::cout << "min avg cov    : " << avg_min_cov_norm << std::endl;
+  std::cout << "min cov reward : " << min_cov_reward << std::endl;
+  std::cout << "-----------------------------------------" << std::endl;
 
   return min_cov_reward;
 }

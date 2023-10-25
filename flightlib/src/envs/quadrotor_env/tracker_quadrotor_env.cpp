@@ -52,8 +52,8 @@ TrackerQuadrotorEnv::TrackerQuadrotorEnv(const std::string &cfg_path) : EnvBase(
 
   // define input and output dimension for the environment
   // obs_dim_ = trackerquadenv::kNObs;
-  // obs_dim_ = 55; // Three targets & ego
-  obs_dim_ = 79; // Three targets & two other trackers & ego
+  obs_dim_ = 55; // Three targets & ego
+  // obs_dim_ = 79; // Three targets & two other trackers & ego
   act_dim_ = trackerquadenv::kNAct;
 }
 
@@ -406,8 +406,8 @@ Scalar TrackerQuadrotorEnv::trackerStep(const Ref<Vector<>> act, Ref<Vector<>> o
   getObs(obs);
 
   // Reward function of tracker
-  // Scalar reward = rewardFunction();
-  Scalar reward = 0.0;
+  Scalar reward = rewardFunction();
+  // Scalar reward = 0.0;
 
   return reward;
 }
@@ -433,24 +433,24 @@ bool TrackerQuadrotorEnv::getObs(Ref<Vector<>> obs)
   // Ego oservation dim: 3 + 3 + 9 + 3 + 1 = 19
   // Target observation dim: 3 + 3 + 1 + 1 + 1 = 9
   // Other tracker observations 3 + 3 + 1 + 1 + 1 = 9
-  // quad_obs_ << quad_state_.p, quad_state_.v, ori, quad_state_.w, radius_,
-  //              estimated_target_positions_[0], estimated_target_velocities_[0], radius_, estimated_target_ranges_[0], radius_ * 2, 
-  //              estimated_target_positions_[1], estimated_target_velocities_[1], radius_, estimated_target_ranges_[1], radius_ * 2,
-  //              estimated_target_positions_[2], estimated_target_velocities_[2], radius_, estimated_target_ranges_[2], radius_ * 2,
-  //              estimated_target_positions_[3], estimated_target_velocities_[3], radius_, estimated_target_ranges_[3], radius_ * 2;
-
-
   quad_obs_ << quad_state_.p, quad_state_.v, ori, quad_state_.w, radius_,
-               estimated_target_positions_[0], estimated_target_velocities_[0], radius_, estimated_target_ranges_[0], radius_ * 2, 0,
-               estimated_target_positions_[1], estimated_target_velocities_[1], radius_, estimated_target_ranges_[1], radius_ * 2, 0,
-               estimated_target_positions_[2], estimated_target_velocities_[2], radius_, estimated_target_ranges_[2], radius_ * 2, 0,
-               estimated_target_positions_[3], estimated_target_velocities_[3], radius_, estimated_target_ranges_[3], radius_ * 2, 0,
-               
-               estimated_tracker_positions_[0], estimated_tracker_velocities_[0], radius_, estimated_tracker_ranges_[0], radius_ * 2, 1,
-               estimated_tracker_positions_[1], estimated_tracker_velocities_[1], radius_, estimated_tracker_ranges_[1], radius_ * 2, 1;
+               estimated_target_positions_[0], estimated_target_velocities_[0], radius_, estimated_target_ranges_[0], radius_ * 2, 
+               estimated_target_positions_[1], estimated_target_velocities_[1], radius_, estimated_target_ranges_[1], radius_ * 2,
+               estimated_target_positions_[2], estimated_target_velocities_[2], radius_, estimated_target_ranges_[2], radius_ * 2,
+               estimated_target_positions_[3], estimated_target_velocities_[3], radius_, estimated_target_ranges_[3], radius_ * 2;
 
-  // obs.segment<55>(0) = quad_obs_;
-  obs.segment<79>(0) = quad_obs_;
+
+  // quad_obs_ << quad_state_.p, quad_state_.v, ori, quad_state_.w, radius_,
+  //              estimated_target_positions_[0], estimated_target_velocities_[0], radius_, estimated_target_ranges_[0], radius_ * 2, 0,
+  //              estimated_target_positions_[1], estimated_target_velocities_[1], radius_, estimated_target_ranges_[1], radius_ * 2, 0,
+  //              estimated_target_positions_[2], estimated_target_velocities_[2], radius_, estimated_target_ranges_[2], radius_ * 2, 0,
+  //              estimated_target_positions_[3], estimated_target_velocities_[3], radius_, estimated_target_ranges_[3], radius_ * 2, 0,
+               
+  //              estimated_tracker_positions_[0], estimated_tracker_velocities_[0], radius_, estimated_tracker_ranges_[0], radius_ * 2, 1,
+  //              estimated_tracker_positions_[1], estimated_tracker_velocities_[1], radius_, estimated_tracker_ranges_[1], radius_ * 2, 1;
+
+  obs.segment<55>(0) = quad_obs_;
+  // obs.segment<79>(0) = quad_obs_;
 
   return true;
 }
@@ -543,7 +543,7 @@ Scalar TrackerQuadrotorEnv::rewardFunction()
 {
   // Outter coefficient
   Scalar c1 = 1.0;
-  Scalar c2 = 0.5;
+  Scalar c2 = 0.3;
   Scalar c3 = -1e-4;
 
   // Range weight
@@ -552,7 +552,7 @@ Scalar TrackerQuadrotorEnv::rewardFunction()
   for (int i = 0; i < num_targets_; ++i) {
     Vector<3> position = target_kalman_filters_[i]->getEstimatedPosition();
     Scalar distance = computeEuclideanDistance(quad_state_.p, position);
-    Scalar elem = exp(-distance * 0.3);
+    Scalar elem = exp(-distance * 0.1);
     numerator.push_back(elem);
     denominator += elem;
   }
@@ -579,15 +579,18 @@ Scalar TrackerQuadrotorEnv::rewardFunction()
 
   // Covariance reward
   Scalar cov_reward = 0.0;
+  Scalar avg_cov_norm = 0.0;
   std::vector<Scalar> cov_list;
   for (int i = 0; i < num_targets_; ++i) {
     Matrix<3, 3> cov = target_kalman_filters_[i]->getPositionErrorCovariance();
     Scalar cov_norm = cov.norm();
     cov_list.push_back(cov_norm);
-    Scalar target_cov_reward = exp(-0.1 * pow(cov_norm, 5));
+    avg_cov_norm += cov_norm;
 
+    Scalar target_cov_reward = exp(-0.1 * pow(cov_norm, 5));
     cov_reward += range_weight[i] * target_cov_reward;
   }
+  avg_cov_norm /= num_targets_;
 
   // Heading reward
   Scalar heading_reward = 0.0;
@@ -624,6 +627,7 @@ Scalar TrackerQuadrotorEnv::rewardFunction()
   // std::cout << "-------------------------------------" << std::endl;
   // std::cout << "range weight   : " << range_weight[0] << ", " << range_weight[1] << ", " << range_weight[2] << ", " << range_weight[3] << std::endl;
   // std::cout << "cov norm       : " << cov_list[0] << ", " << cov_list[1] << ", " << cov_list[2] << ", " << cov_list[3] << std::endl;
+  // std::cout << "avg cov norm   : " << avg_cov_norm << std::endl;
   // std::cout << "cov reward     : " << c1 * cov_reward << std::endl;
   // std::cout << "heading reward : " << c2 * heading_reward << std::endl;
   // std::cout << "cmd reward     : " << c3 * cmd_reward << std::endl;
