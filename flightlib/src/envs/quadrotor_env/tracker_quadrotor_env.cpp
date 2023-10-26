@@ -473,7 +473,7 @@ Scalar TrackerQuadrotorEnv::rewardFunction()
   for (int i = 0; i < num_targets_; ++i) {
     Vector<3> position = target_kalman_filters_[i]->getEstimatedPosition();
     Scalar distance = computeEuclideanDistance(quad_state_.p, position);
-    Scalar elem = exp(-distance * 0.2);
+    Scalar elem = exp(-distance * 0.05);
     numerator.push_back(elem);
     denominator += elem;
   }
