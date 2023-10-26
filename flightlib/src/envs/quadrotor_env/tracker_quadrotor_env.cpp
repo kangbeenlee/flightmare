@@ -15,7 +15,7 @@ TrackerQuadrotorEnv::TrackerQuadrotorEnv(const std::string &cfg_path) : EnvBase(
   tracker_ptr_ = std::make_shared<TrackerQuadrotor>();
 
   //
-  num_cameras_ = 1;
+  num_cameras_ = 3;
 
   // Mount front, left, right stereo cameras
   for (int i = 0; i < num_cameras_; i++) {
@@ -25,13 +25,18 @@ TrackerQuadrotorEnv::TrackerQuadrotorEnv(const std::string &cfg_path) : EnvBase(
   Vector<3> d_l = Vector<3>(0.06, 0.0, -0.1); // body origin w.r.t. left camera
   Vector<3> d_r = Vector<3>(-0.06, 0.0, -0.1); // body origin w.r.t. right camera
   Matrix<3, 3> R_front = (Rot_x(-M_PI_2) * Rot_y(M_PI_2)).inverse();
-  Matrix<3, 3> R_left  = (Rot_z(2.0/3.0 * M_PI) * Rot_x(-M_PI_2) * Rot_y(M_PI_2)).inverse();
-  Matrix<3, 3> R_right = (Rot_z(-2.0/3.0 * M_PI) * Rot_x(-M_PI_2) * Rot_y(M_PI_2)).inverse();
 
+  // 90 & -90 angle
+  Matrix<3, 3> R_left  = (Rot_z(M_PI_2) * Rot_x(-M_PI_2) * Rot_y(M_PI_2)).inverse();
+  Matrix<3, 3> R_right = (Rot_z(-M_PI_2) * Rot_x(-M_PI_2) * Rot_y(M_PI_2)).inverse();
+
+  // // 120 & -120 angle
+  // Matrix<3, 3> R_left  = (Rot_z(2.0/3.0 * M_PI) * Rot_x(-M_PI_2) * Rot_y(M_PI_2)).inverse();
+  // Matrix<3, 3> R_right = (Rot_z(-2.0/3.0 * M_PI) * Rot_x(-M_PI_2) * Rot_y(M_PI_2)).inverse();
 
   multi_stereo_[0]->init(d_l, d_r, R_front); // front camera
-  // multi_stereo_[1]->init(d_l, d_r, R_left); // left back camera
-  // multi_stereo_[2]->init(d_l, d_r, R_right); // right back camera
+  multi_stereo_[1]->init(d_l, d_r, R_left); // left back camera
+  multi_stereo_[2]->init(d_l, d_r, R_right); // right back camera
 
   // Data recoder
   sensor_save_ = std::make_shared<SensorSave>();
@@ -543,7 +548,7 @@ Scalar TrackerQuadrotorEnv::rewardFunction()
 {
   // Outter coefficient
   Scalar c1 = 1.0;
-  Scalar c2 = 0.3;
+  Scalar c2 = 0.7;
   Scalar c3 = -1e-4;
 
   // Range weight
