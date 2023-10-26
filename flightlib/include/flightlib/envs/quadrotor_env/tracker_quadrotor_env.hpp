@@ -80,14 +80,15 @@ class TrackerQuadrotorEnv final : public EnvBase {
 
   // Reward function for RL
   Scalar rewardFunction();
-  Scalar getIndividualHeadingReward();
-  Scalar getIndividualCmdReward();
-  Scalar getTargetPositionCovNorm(const int i);
 
+  //
   Scalar computeEuclideanDistance(Ref<Vector<3>> p1, Ref<Vector<3>> p2);
 
   //
-  // inline Vector<3> getEstimatedPosition()
+  inline Vector<3> getEstimatedTargetPosition(const int i) { return target_kalman_filters_[i]->getEstimatedPosition(); };
+  inline Scalar getTargetPositionCovNorm(const int i) { return (target_kalman_filters_[i]->getPositionErrorCovariance()).norm(); };
+  inline Matrix<3, 3> getTargetPositionCov(const int i) { return target_kalman_filters_[i]->getPositionErrorCovariance(); };
+
 
   // - public set functions
   bool loadParam(const YAML::Node &cfg);

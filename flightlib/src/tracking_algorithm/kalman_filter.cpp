@@ -8,7 +8,7 @@ KalmanFilter::~KalmanFilter() {}
 void KalmanFilter::reset()
 {
     x_ = (Vector<6>() << 0, 0, 0, 0, 0, 0).finished(); // w.r.t. camera frame
-    P_ = Matrix<6, 6>::Identity();
+    P_ = Matrix<6, 6>::Identity() * 5.0;
 }
 
 void KalmanFilter::init(const Scalar Ts, Ref<Vector<6>> x0)
@@ -18,7 +18,7 @@ void KalmanFilter::init(const Scalar Ts, Ref<Vector<6>> x0)
 
     // Initial guess
     x_ = x0;
-    P_ = Matrix<6, 6>::Identity();
+    P_ = Matrix<6, 6>::Identity() * 5.0;
 
     // System matrix for constant acceleration model
     F_.setZero();

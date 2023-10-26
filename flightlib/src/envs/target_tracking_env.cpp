@@ -165,6 +165,10 @@ void TargetTrackingEnv<EnvBase>::init(void)
   // trajectories_.push_back(trajectory4);
 
 
+  // Data recoder
+  multi_save_ = std::make_shared<MultiAgentSave>();
+  multi_save_->init(num_targets_);
+
   // Set Unity
   setUnity(unity_render_);
 
@@ -382,30 +386,79 @@ void TargetTrackingEnv<EnvBase>::perTrackerStep(int agent_id, Ref<MatrixRowMajor
 
 template<typename EnvBase>
 Scalar TargetTrackingEnv<EnvBase>::computeGlobalReward() {
-  // Reward type
-  Scalar min_cov_reward = 0.0;
-  std::vector<Scalar> min_cov_list;
 
-  // Choose minimum target covariance among targets
-  Scalar avg_min_cov_norm = 0.0;
-  for (int target_id = 0; target_id < num_targets_; ++target_id) {
-    Scalar min_cov_norm = std::numeric_limits<Scalar>::infinity();
-    for (int i = 0; i < num_envs_; ++i) {
-      Scalar cov_norm = envs_[i]->getTargetPositionCovNorm(target_id);
-      if (cov_norm < min_cov_norm)
-        min_cov_norm = cov_norm;
+  //
+  std::vector<Scalar> min_cov_list = {std::numeric_limits<Scalar>::infinity(),
+                                      std::numeric_limits<Scalar>::infinity(),
+                                      std::numeric_limits<Scalar>::infinity(),
+                                      std::numeric_limits<Scalar>::infinity()};
+  std::vector<Vector<3>> min_position = {Vector<3>(), Vector<3>(), Vector<3>(), Vector<3>()};
+  std::vector<Matrix<3, 3>> min_cov = {Matrix<3, 3>(), Matrix<3, 3>(), Matrix<3, 3>(), Matrix<3, 3>()};
+
+  // Hungarian algorithm
+  std::vector<std::vector<Scalar>> cost_matrix;
+
+  for (int i = 0; i < num_envs_; ++i) {
+    // Initialize cost matrix
+    for (int i = 0; i < num_targets_; ++i) {
+      std::vector<Scalar> place_holder(num_targets_, 1000.0);
+      cost_matrix.push_back(place_holder);
+    }    
+    
+    // Compute cost
+    for (int j = 0; j < num_targets_; ++j) {
+      // agent i의 대상 k에 대한 추정치 - target j gt
+      for (int k = 0; k < num_targets_; ++k) {
+        Scalar cost = (envs_[i]->getEstimatedTargetPosition(k) - targets_[j]->getPosition()).norm();
+        cost_matrix[j][k] = cost;
+      }
     }
-    min_cov_list.push_back(min_cov_norm); ////
-    avg_min_cov_norm += min_cov_norm;
+
+    HungarianAlgorithm hungarian;
+    std::vector<int> assignment;
+    hungarian.Solve(cost_matrix, assignment);
+
+    for (int j = 0; j < num_targets_; ++j) {
+      // target j에 matching된 추정 대상
+      Scalar target_cov = envs_[i]->getTargetPositionCovNorm(assignment[j]);
+      if (target_cov < min_cov_list[j]) {
+        min_cov_list[j] = target_cov;
+        min_position[j] = envs_[i]->getEstimatedTargetPosition(assignment[j]);
+        min_cov[j] = envs_[i]->getTargetPositionCov(assignment[j]);
+      }
+    }
   }
-  avg_min_cov_norm /= num_targets_;
-  min_cov_reward = exp(-0.1 * pow(avg_min_cov_norm, 5));
+
+  Scalar avg_min_cov_norm = (min_cov_list[0] + min_cov_list[1] + min_cov_list[2] + min_cov_list[3]) / num_targets_;
+  Scalar min_cov_reward = exp(-0.1 * pow(avg_min_cov_norm, 5));
 
   std::cout << "-----------------------------------------" << std::endl;
   std::cout << "min cov norm   : " << min_cov_list[0] << ", " << min_cov_list[1] << ", " << min_cov_list[2] << ", " << min_cov_list[3] << std::endl;
   std::cout << "min avg cov    : " << avg_min_cov_norm << std::endl;
   std::cout << "min cov reward : " << min_cov_reward << std::endl;
   std::cout << "-----------------------------------------" << std::endl;
+
+
+
+  //************************************************************************
+  //*************************** Data Recoder *******************************
+  //************************************************************************
+
+  if (num_envs_ > 1) {
+    if (!multi_save_->isFull()) {
+      multi_save_->store(min_position, min_cov, 0.02);
+    }
+    else if (multi_flag_ && multi_save_->isFull()) {
+      multi_save_->save();
+      multi_flag_ = false;
+      std::cout << ">>> Multi-Agent output save is done" << std::endl;
+    }
+  }
+
+  //************************************************************************
+  //*************************** Data Recoder *******************************
+  //************************************************************************
+
 
   return min_cov_reward;
 }

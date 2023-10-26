@@ -61,6 +61,24 @@ def load_data(data_dir, num_targets, num_trackers):
 
     return ego_pos, ego_orien, target_gt, target_estim, target_cov, tracker_gt, tracker_estim, tracker_cov, time
 
+def load_multi_data(data_dir, num_targets):
+    # Load data from txt files
+    time = np.array([float(line.strip()) for line in open(data_dir + "time.txt")])
+    timesteps = time.shape[0]
+
+    target_estim = np.zeros([num_targets, 3, timesteps])
+    target_cov = np.zeros([num_targets, 3, timesteps])
+
+    for i in range(num_targets):
+        target_estim[i, 0, :] = np.array([float(value) for line in open(data_dir + "target_estim_x_" + str(i) + ".txt") for value in line.split()])
+        target_estim[i, 1, :] = np.array([float(value) for line in open(data_dir + "target_estim_y_" + str(i) + ".txt") for value in line.split()])
+        target_estim[i, 2, :] = np.array([float(value) for line in open(data_dir + "target_estim_z_" + str(i) + ".txt") for value in line.split()])
+
+        target_cov[i, 0, :] = np.array([float(value) for line in open(data_dir + "target_cov_x_" + str(i) + ".txt") for value in line.split()])
+        target_cov[i, 1, :] = np.array([float(value) for line in open(data_dir + "target_cov_y_" + str(i) + ".txt") for value in line.split()])
+        target_cov[i, 2, :] = np.array([float(value) for line in open(data_dir + "target_cov_z_" + str(i) + ".txt") for value in line.split()])
+
+    return target_estim, target_cov
 
 def plot_3d_ellipsoid(cx, cy, cz, x_axis, y_axis, z_axis, ax, target=True):
     """Plot the 3-d Ellipsoid ell on the Axes3D ax."""
@@ -125,51 +143,56 @@ def plot_ego(x, y, z, qw, qx, qy, qz, ax):
 
     # Image window cooridinates w.r.t. camera frame
     scale = 2.0
-    fov_scale = 10.0
-    corners = np.array([[0.32,  0.32,  0.32],
-                        [0.32,  0.32, -0.32],
-                        [0.32, -0.32,  0.32],
-                        [0.32, -0.32, -0.32]]) * scale
+    fov_scale = 4.0
+    # corners = np.array([[0.32,  0.32,  0.32],
+    #                     [0.32,  0.32, -0.32],
+    #                     [0.32, -0.32,  0.32],
+    #                     [0.32, -0.32, -0.32]]) * scale
+
+    corners = np.array([[1.4,  0.96,  0.54],
+                        [1.4,  0.96, -0.54],
+                        [1.4, -0.96,  0.54],
+                        [1.4, -0.96, -0.54]]) * scale
     front, left, right = np.zeros([4, 3]), np.zeros([4, 3]), np.zeros([4, 3])
     
     # Plot front camera field of view
     front_fov = np.zeros([4, 3])
-    left_fov = np.zeros([4, 3])
-    right_fov = np.zeros([4, 3])
+    # left_fov = np.zeros([4, 3])
+    # right_fov = np.zeros([4, 3])
     corners_fov = corners * fov_scale
 
     # From body frame origin to (left) camera frame origin
     t1 = np.array([0.1, 0.06, 0.0])
-    t2 = np.array(R_z(2/3*np.pi) @ t1).squeeze()
-    t3 = np.array(R_z(-2/3*np.pi) @ t1).squeeze()
+    # t2 = np.array(R_z(np.pi/2) @ t1).squeeze()
+    # t3 = np.array(R_z(-np.pi/2) @ t1).squeeze()
 
     R1 = np.eye(3)
-    R2 = R_z(np.pi/2)
-    R3 = R_z(-np.pi/2)
+    # R2 = R_z(np.pi/2)
+    # R3 = R_z(-np.pi/2)
     
     # from camera frame to body frame
     for i in range(4):
         front[i] = R1 @ corners[i] + t1
-        left[i] = R2 @ corners[i] + t2
-        right[i] = R3 @ corners[i] + t3
+        # left[i] = R2 @ corners[i] + t2
+        # right[i] = R3 @ corners[i] + t3
 
         front_fov[i] = R1 @ corners_fov[i] + t1
-        left_fov[i] = R2 @ corners_fov[i] + t2
-        right_fov[i] = R3 @ corners_fov[i] + t3
+        # left_fov[i] = R2 @ corners_fov[i] + t2
+        # right_fov[i] = R3 @ corners_fov[i] + t3
 
     # Plot camera image
     for i in range(4):
         front[i] = R_b @ front[i] + center # front camera image w.r.t. world
-        left[i] = R_b @ left[i] + center
-        right[i] = R_b @ right[i] + center
+        # left[i] = R_b @ left[i] + center
+        # right[i] = R_b @ right[i] + center
 
         front_fov[i] = R_b @ front_fov[i] + center
-        left_fov[i] = R_b @ left_fov[i] + center
-        right_fov[i] = R_b @ right_fov[i] + center
+        # left_fov[i] = R_b @ left_fov[i] + center
+        # right_fov[i] = R_b @ right_fov[i] + center
 
     t1 = R_b @ t1 + center # front camera origin w.r.t. world
-    t2 = R_b @ t2 + center
-    t3 = R_b @ t3 + center
+    # t2 = R_b @ t2 + center
+    # t3 = R_b @ t3 + center
 
     # Plot front camera field of view
     v = np.vstack((front_fov, t1))
@@ -177,19 +200,19 @@ def plot_ego(x, y, z, qw, qx, qy, qz, ax):
     for verts in vertices:
         ax.add_collection3d(Poly3DCollection([verts], alpha=.15, linewidths=1, edgecolors='#e8ebff'))
 
-    v = np.vstack((left_fov, t1))
-    vertices = [v[[0, 2, 4]], v[[2, 3, 4]], v[[3, 1, 4]], v[[1, 0, 4]]]
-    for verts in vertices:
-        ax.add_collection3d(Poly3DCollection([verts], alpha=.15, linewidths=1, edgecolors='#e8ebff'))
+    # v = np.vstack((left_fov, t1))
+    # vertices = [v[[0, 2, 4]], v[[2, 3, 4]], v[[3, 1, 4]], v[[1, 0, 4]]]
+    # for verts in vertices:
+    #     ax.add_collection3d(Poly3DCollection([verts], alpha=.15, linewidths=1, edgecolors='#e8ebff'))
 
-    v = np.vstack((right_fov, t1))
-    vertices = [v[[0, 2, 4]], v[[2, 3, 4]], v[[3, 1, 4]], v[[1, 0, 4]]]
-    for verts in vertices:
-        ax.add_collection3d(Poly3DCollection([verts], alpha=.15, linewidths=1, edgecolors='#e8ebff'))
+    # v = np.vstack((right_fov, t1))
+    # vertices = [v[[0, 2, 4]], v[[2, 3, 4]], v[[3, 1, 4]], v[[1, 0, 4]]]
+    # for verts in vertices:
+    #     ax.add_collection3d(Poly3DCollection([verts], alpha=.15, linewidths=1, edgecolors='#e8ebff'))
 
 
-    for origin, image in zip([t1, t2, t3], [front, left, right]):
-    # for origin, image in zip([t1], [front]):
+    # for origin, image in zip([t1, t2, t3], [front, left, right]):
+    for origin, image in zip([t1], [front]):
         t_l, t_r, b_l, b_r = image
         ax.plot(*zip(t_l, t_r), color='black', linewidth=0.5)
         ax.plot(*zip(t_l, b_l), color='black', linewidth=0.5)
@@ -200,6 +223,7 @@ def plot_ego(x, y, z, qw, qx, qy, qz, ax):
         ax.plot(*zip(origin, b_l), color='grey', linewidth=0.5)
         ax.plot(*zip(origin, b_r), color='grey', linewidth=0.5)
 
+        
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_dir', type=str, default="/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/tracking_output/")
@@ -213,56 +237,34 @@ def main():
     for i in range(args.trackers):
         data_path_list.append(os.path.join(args.data_dir, 'tracker_'+ str(i) + '/'))
 
-    ego_pos_list, ego_orien_list, target_gt_list, target_estim_list, target_cov_list, tracker_gt_list, tracker_estim_list, tracker_cov_list, time_list \
-        = [], [], [], [], [], [], [], [], []
+    ego_pos_list, ego_orien_list, target_gt_list, target_estim_list, target_cov_list, time_list = [], [], [], [], [], []
     for i in range(args.trackers):
-        ego_pos, ego_orien, target_gt, target_estim, target_cov, tracker_gt, tracker_estim, tracker_cov, time = load_data(data_path_list[i], args.targets, args.other_trackers)
+        ego_pos, ego_orien, target_gt, target_estim, target_cov, _, _, _, time = load_data(data_path_list[i], args.targets, args.other_trackers)
         ego_pos_list.append(ego_pos)
         ego_orien_list.append(ego_orien)
         target_gt_list.append(target_gt)
         target_estim_list.append(target_estim)
         target_cov_list.append(target_cov)
-        tracker_gt_list.append(tracker_gt)
-        tracker_estim_list.append(tracker_estim)
-        tracker_cov_list.append(tracker_cov)
         time_list.append(time)
 
+    target_estim, target_cov = load_multi_data(os.path.join(args.data_dir, 'multi/'), args.targets)
 
     # Compute average target covariance norm graph
     min_avg_cov = np.zeros([time.shape[0]])
     for t in range(time.shape[0]):
         for j in range(args.targets):
-            min_cov = np.inf
-            for i in range(args.trackers):
-                cov = np.sqrt(target_cov_list[i][j, 0, t]**2 + target_cov_list[i][j, 1, t]**2 + target_cov_list[i][j, 2, t]**2)
-                if cov < min_cov:
-                    min_cov = cov
-            min_avg_cov[t] += min_cov
-
-    min_avg_cov /= args.trackers
+            cov = np.sqrt(target_cov[j, 0, t]**2 + target_cov[j, 1, t]**2 + target_cov[j, 2, t]**2)
+            min_avg_cov[t] += cov
+            
+    min_avg_cov /= args.targets
     # min_avg_cov = np.log(min_avg_cov)
     plt.figure(figsize=(10, 5))
     plt.plot(min_avg_cov)
-    plt.title('Average Minimum Covariance from multi tracker')
+    plt.title('Average Minimum Covariance Norm from multi tracker')
     plt.xlabel('time')
-    plt.ylabel('average covariance')
+    plt.ylabel('average min covariance norm')
+    plt.ylim(0.0, 2.5)
     plt.show()
-
-
-    # t_ = 270
-    # print(time_list[0][t_])
-
-    # # Choose minimum covariance
-    # norm_list = []
-    # for i in range(args.trackers):
-    #     norm_list.append(np.linalg.norm(target_cov_list[i][j, :, t_]))
-
-    # idx = np.argmin(norm_list)
-    # print(norm_list)
-    # print('idx:', idx)
-
-    # sys.exit()
-
 
     # Show animation
     fig = plt.figure()
@@ -280,24 +282,10 @@ def main():
         for j in range(args.targets):
             ax.plot(target_gt_list[0][j, 0, t], target_gt_list[0][j, 1, t], target_gt_list[0][j, 2, t], 'o', color='#fa0000', markersize=3, label='true')
             
-            # Choose minimum covariance
-            norm_list = []
-            for i in range(args.trackers):
-                norm_list.append(np.linalg.norm(target_cov_list[i][j, :, t]))
-
-            idx = np.argmin(norm_list)
-            # print(norm_list)
-            # print('idx:', idx)
-
-            ax.plot(target_estim_list[idx][j, 0, t], target_estim_list[idx][j, 1, t], target_estim_list[idx][j, 2, t], 'o', color='#ff7575', markersize=3, label='estimate')
-            plot_3d_ellipsoid(target_estim_list[idx][j, 0, t], target_estim_list[idx][j, 1, t], target_estim_list[idx][j, 2, t],
-                              3*target_cov_list[idx][j, 0, t], 3*target_cov_list[idx][j, 1, t], 3*target_cov_list[idx][j, 2, t], ax)
-
-            # for i in range(args.trackers):
-            #     ax.plot(target_estim_list[i][j, 0, t], target_estim_list[i][j, 1, t], target_estim_list[i][j, 2, t], 'o', color='#ff7575', markersize=3, label='estimate')
-            #     plot_3d_ellipsoid(target_estim_list[i][j, 0, t], target_estim_list[i][j, 1, t], target_estim_list[i][j, 2, t],
-            #                       3*target_cov_list[i][j, 0, t], 3*target_cov_list[i][j, 1, t], 3*target_cov_list[i][j, 2, t], ax)
-
+            # Visualize minimum covariance
+            ax.plot(target_estim[j, 0, t], target_estim[j, 1, t], target_estim[j, 2, t], 'o', color='#ff7575', markersize=3, label='estimate')
+            plot_3d_ellipsoid(target_estim[j, 0, t], target_estim[j, 1, t], target_estim[j, 2, t],
+                              3*target_cov[j, 0, t], 3*target_cov[j, 1, t], 3*target_cov[j, 2, t], ax)
 
         ax.axes.set_xlim3d(left=-40, right=40)
         ax.axes.set_ylim3d(bottom=-40, top=40)

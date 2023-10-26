@@ -125,51 +125,56 @@ def plot_ego(x, y, z, qw, qx, qy, qz, ax):
 
     # Image window cooridinates w.r.t. camera frame
     scale = 2.0
-    fov_scale = 10.0
-    corners = np.array([[0.32,  0.32,  0.32],
-                        [0.32,  0.32, -0.32],
-                        [0.32, -0.32,  0.32],
-                        [0.32, -0.32, -0.32]]) * scale
+    fov_scale = 4.0
+    # corners = np.array([[0.32,  0.32,  0.32],
+    #                     [0.32,  0.32, -0.32],
+    #                     [0.32, -0.32,  0.32],
+    #                     [0.32, -0.32, -0.32]]) * scale
+
+    corners = np.array([[1.4,  0.96,  0.54],
+                        [1.4,  0.96, -0.54],
+                        [1.4, -0.96,  0.54],
+                        [1.4, -0.96, -0.54]]) * scale
     front, left, right = np.zeros([4, 3]), np.zeros([4, 3]), np.zeros([4, 3])
     
     # Plot front camera field of view
     front_fov = np.zeros([4, 3])
-    left_fov = np.zeros([4, 3])
-    right_fov = np.zeros([4, 3])
+    # left_fov = np.zeros([4, 3])
+    # right_fov = np.zeros([4, 3])
     corners_fov = corners * fov_scale
 
     # From body frame origin to (left) camera frame origin
     t1 = np.array([0.1, 0.06, 0.0])
-    t2 = np.array(R_z(np.pi/2) @ t1).squeeze()
-    t3 = np.array(R_z(-np.pi/2) @ t1).squeeze()
+    # t2 = np.array(R_z(np.pi/2) @ t1).squeeze()
+    # t3 = np.array(R_z(-np.pi/2) @ t1).squeeze()
 
     R1 = np.eye(3)
-    R2 = R_z(np.pi/2)
-    R3 = R_z(-np.pi/2)
+    # R2 = R_z(np.pi/2)
+    # R3 = R_z(-np.pi/2)
     
     # from camera frame to body frame
     for i in range(4):
         front[i] = R1 @ corners[i] + t1
-        left[i] = R2 @ corners[i] + t2
-        right[i] = R3 @ corners[i] + t3
+        # left[i] = R2 @ corners[i] + t2
+        # right[i] = R3 @ corners[i] + t3
 
         front_fov[i] = R1 @ corners_fov[i] + t1
-        left_fov[i] = R2 @ corners_fov[i] + t2
-        right_fov[i] = R3 @ corners_fov[i] + t3
+        # left_fov[i] = R2 @ corners_fov[i] + t2
+        # right_fov[i] = R3 @ corners_fov[i] + t3
 
     # Plot camera image
     for i in range(4):
         front[i] = R_b @ front[i] + center # front camera image w.r.t. world
-        left[i] = R_b @ left[i] + center
-        right[i] = R_b @ right[i] + center
+        # left[i] = R_b @ left[i] + center
+        # right[i] = R_b @ right[i] + center
 
         front_fov[i] = R_b @ front_fov[i] + center
-        left_fov[i] = R_b @ left_fov[i] + center
-        right_fov[i] = R_b @ right_fov[i] + center
+        # left_fov[i] = R_b @ left_fov[i] + center
+        # right_fov[i] = R_b @ right_fov[i] + center
 
     t1 = R_b @ t1 + center # front camera origin w.r.t. world
-    t2 = R_b @ t2 + center
-    t3 = R_b @ t3 + center
+    # t2 = R_b @ t2 + center
+    # t3 = R_b @ t3 + center
 
     # Plot front camera field of view
     v = np.vstack((front_fov, t1))
@@ -177,19 +182,19 @@ def plot_ego(x, y, z, qw, qx, qy, qz, ax):
     for verts in vertices:
         ax.add_collection3d(Poly3DCollection([verts], alpha=.15, linewidths=1, edgecolors='#e8ebff'))
 
-    v = np.vstack((left_fov, t1))
-    vertices = [v[[0, 2, 4]], v[[2, 3, 4]], v[[3, 1, 4]], v[[1, 0, 4]]]
-    for verts in vertices:
-        ax.add_collection3d(Poly3DCollection([verts], alpha=.15, linewidths=1, edgecolors='#e8ebff'))
+    # v = np.vstack((left_fov, t1))
+    # vertices = [v[[0, 2, 4]], v[[2, 3, 4]], v[[3, 1, 4]], v[[1, 0, 4]]]
+    # for verts in vertices:
+    #     ax.add_collection3d(Poly3DCollection([verts], alpha=.15, linewidths=1, edgecolors='#e8ebff'))
 
-    v = np.vstack((right_fov, t1))
-    vertices = [v[[0, 2, 4]], v[[2, 3, 4]], v[[3, 1, 4]], v[[1, 0, 4]]]
-    for verts in vertices:
-        ax.add_collection3d(Poly3DCollection([verts], alpha=.15, linewidths=1, edgecolors='#e8ebff'))
+    # v = np.vstack((right_fov, t1))
+    # vertices = [v[[0, 2, 4]], v[[2, 3, 4]], v[[3, 1, 4]], v[[1, 0, 4]]]
+    # for verts in vertices:
+    #     ax.add_collection3d(Poly3DCollection([verts], alpha=.15, linewidths=1, edgecolors='#e8ebff'))
 
 
-    for origin, image in zip([t1, t2, t3], [front, left, right]):
-    # for origin, image in zip([t1], [front]):
+    # for origin, image in zip([t1, t2, t3], [front, left, right]):
+    for origin, image in zip([t1], [front]):
         t_l, t_r, b_l, b_r = image
         ax.plot(*zip(t_l, t_r), color='black', linewidth=0.5)
         ax.plot(*zip(t_l, b_l), color='black', linewidth=0.5)
