@@ -1,10 +1,8 @@
 // #pragma once
 
 
-// namespace acadolibright {
-//     #include <acado_toolkit.hpp> // everything you really need
-// }
 
+// #include <acado_toolkit.hpp> // everything you really need
 // #include <stdlib.h>
 // #include <ctime>             // just for testing run-times
 // // #include <acado_gnuplot.hpp> // just for convenient plotting within C++

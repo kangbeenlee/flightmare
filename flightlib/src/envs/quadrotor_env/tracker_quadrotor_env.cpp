@@ -49,7 +49,7 @@ TrackerQuadrotorEnv::TrackerQuadrotorEnv(const std::string &cfg_path) : EnvBase(
   tracker_ptr_->setVelocityPIDGain(kp_vxy_, ki_vxy_, kd_vxy_, kp_vz_, ki_vz_, kd_vz_, kp_angle_, ki_angle_, kd_angle_, kp_wz_, ki_wz_, kd_wz_);
 
   // define a bounding box
-  world_box_ << -60, 60, -60, 60, 0, 60;
+  world_box_ << -70, 70, -70, 70, 0, 70;
   if (!tracker_ptr_->setWorldBox(world_box_))
   {
     logger_.error("cannot set wolrd box");
@@ -464,39 +464,8 @@ Scalar TrackerQuadrotorEnv::rewardFunction()
 {
   // Outter coefficient
   Scalar c1 = 1.0;
-  Scalar c2 = 0.7;
+  Scalar c2 = 0.2;
   Scalar c3 = -1e-4;
-
-  // Range weight
-  std::vector<Scalar> numerator;
-  Scalar denominator = 0.0;
-  for (int i = 0; i < num_targets_; ++i) {
-    Vector<3> position = target_kalman_filters_[i]->getEstimatedPosition();
-    Scalar distance = computeEuclideanDistance(quad_state_.p, position);
-    Scalar elem = exp(-distance * 0.05);
-    numerator.push_back(elem);
-    denominator += elem;
-  }
-
-  if (std::isnan(denominator)) {
-    std::cout << "nan occurs from individual denominator" << std::endl;
-    std::cout << "denominator : " << denominator << std::endl;
-    exit(0);
-  }
-
-  // Compute negative softmax
-  std::vector<Scalar> range_weight;
-  for (int i = 0; i < num_targets_; ++i) {
-    Scalar weight = numerator[i] / denominator;
-
-    if (std::isnan(weight)) {
-      std::cout << "nan occurs from individual weight" << std::endl;
-      std::cout << "weight : " << weight << std::endl;
-      exit(0);
-    }
-
-    range_weight.push_back(weight);
-  }
 
   // Covariance reward
   Scalar cov_reward = 0.0;
@@ -507,14 +476,13 @@ Scalar TrackerQuadrotorEnv::rewardFunction()
     Scalar cov_norm = cov.norm();
     cov_list.push_back(cov_norm);
     avg_cov_norm += cov_norm;
-
-    Scalar target_cov_reward = exp(-0.1 * pow(cov_norm, 5));
-    cov_reward += range_weight[i] * target_cov_reward;
   }
   avg_cov_norm /= num_targets_;
+  cov_reward = exp(-0.1 * pow(avg_cov_norm, 5));
 
   // Heading reward
   Scalar heading_reward = 0.0;
+  Scalar avg_heading = 0.0;
   Vector<3> h = quad_state_.q().toRotationMatrix() * Vector<3>(1, 0, 0); // Ego tracker heading vector
   h = h / (h.norm() + 1e-8);
   for (int i = 0; i < num_targets_; ++i) {
@@ -535,9 +503,10 @@ Scalar TrackerQuadrotorEnv::rewardFunction()
       exit(0);
     }
 
-    Scalar target_heading_reward = exp(-10.0 * pow(theta, 3));
-    heading_reward += range_weight[i] * target_heading_reward;
+    avg_heading += exp(-10.0 * pow(theta, 3));
   }
+  heading_reward = avg_heading / num_targets_;
+
 
   // Smooth action reward (penalty)
   Scalar cmd_reward = pow((quad_act_ - prev_act_).norm(), 2);
@@ -563,9 +532,9 @@ Scalar TrackerQuadrotorEnv::computeEuclideanDistance(Ref<Vector<3>> p1, Ref<Vect
 
 bool TrackerQuadrotorEnv::isTerminalState(Scalar &reward) {
   // Out of the world
-  if (quad_state_.x(QS::POSZ) <= 0.02  || quad_state_.x(QS::POSZ) >= 59.0 ||
-      quad_state_.x(QS::POSX) <= -59.0 || quad_state_.x(QS::POSX) >= 59.0 ||
-      quad_state_.x(QS::POSY) <= -59.0 || quad_state_.x(QS::POSY) >= 59.0) {
+  if (quad_state_.x(QS::POSZ) <= 0.02  || quad_state_.x(QS::POSZ) >= 69.0 ||
+      quad_state_.x(QS::POSX) <= -69.0 || quad_state_.x(QS::POSX) >= 69.0 ||
+      quad_state_.x(QS::POSY) <= -69.0 || quad_state_.x(QS::POSY) >= 69.0) {
     reward = -5.0;
     return true;
   }
