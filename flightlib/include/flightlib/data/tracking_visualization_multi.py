@@ -89,12 +89,6 @@ def plot_drone(ax, x, y, z, R_b):
     # Central body
     ax.scatter(x, y, z, c='k', s=10)
     
-    # Rotors
-    # rotor_1 = R_b @ np.array([x + rotor_distance, y + rotor_distance, z])
-    # rotor_2 = R_b @ np.array([x - rotor_distance, y + rotor_distance, z])
-    # rotor_3 = R_b @ np.array([x + rotor_distance, y - rotor_distance, z])
-    # rotor_4 = R_b @ np.array([x - rotor_distance, y - rotor_distance, z])
-
     rotor_1 = R_b @ np.array([ rotor_distance,  rotor_distance, 0]) + np.array([x, y, z])
     rotor_2 = R_b @ np.array([-rotor_distance,  rotor_distance, 0]) + np.array([x, y, z])
     rotor_3 = R_b @ np.array([ rotor_distance, -rotor_distance, 0]) + np.array([x, y, z])
@@ -140,42 +134,62 @@ def plot_ego(x, y, z, qw, qx, qy, qz, ax):
     
     # Plot front camera field of view
     front_fov = np.zeros([4, 3])
+    left_fov = np.zeros([4, 3])
+    right_fov = np.zeros([4, 3])
     corners_fov = corners * fov_scale
 
     # From body frame origin to (left) camera frame origin
     t1 = np.array([0.1, 0.06, 0.0])
-    # t2 = np.array(R_z(2/3*np.pi) @ t1).squeeze()
-    # t3 = np.array(R_z(-2/3*np.pi) @ t1).squeeze()
+    t2 = np.array(R_z(2/3*np.pi) @ t1).squeeze()
+    t3 = np.array(R_z(-2/3*np.pi) @ t1).squeeze()
 
     R1 = np.eye(3)
-    R2 = R_z(2/3*np.pi)
-    R3 = R_z(-2/3*np.pi)
+    R2 = R_z(np.pi/2)
+    R3 = R_z(-np.pi/2)
     
     # from camera frame to body frame
     for i in range(4):
         front[i] = R1 @ corners[i] + t1
+        left[i] = R2 @ corners[i] + t2
+        right[i] = R3 @ corners[i] + t3
+
         front_fov[i] = R1 @ corners_fov[i] + t1
-        # left[i] = R2 @ corners[i] + t2
-        # right[i] = R3 @ corners[i] + t3
+        left_fov[i] = R2 @ corners_fov[i] + t2
+        right_fov[i] = R3 @ corners_fov[i] + t3
 
     # Plot camera image
     for i in range(4):
         front[i] = R_b @ front[i] + center # front camera image w.r.t. world
-        front_fov[i] = R_b @ front_fov[i] + center # front camera image w.r.t. world
-        # left[i] = R_b @ left[i] + center
-        # right[i] = R_b @ right[i] + center
+        left[i] = R_b @ left[i] + center
+        right[i] = R_b @ right[i] + center
+
+        front_fov[i] = R_b @ front_fov[i] + center
+        left_fov[i] = R_b @ left_fov[i] + center
+        right_fov[i] = R_b @ right_fov[i] + center
+
     t1 = R_b @ t1 + center # front camera origin w.r.t. world
-    # t2 = R_b @ t2 + center
-    # t3 = R_b @ t3 + center
+    t2 = R_b @ t2 + center
+    t3 = R_b @ t3 + center
 
     # Plot front camera field of view
     v = np.vstack((front_fov, t1))
     vertices = [v[[0, 2, 4]], v[[2, 3, 4]], v[[3, 1, 4]], v[[1, 0, 4]]]
     for verts in vertices:
-        ax.add_collection3d(Poly3DCollection([verts], alpha=.2, linewidths=1, edgecolors='#e8ebff'))
+        ax.add_collection3d(Poly3DCollection([verts], alpha=.15, linewidths=1, edgecolors='#e8ebff'))
 
-    # for origin, image in zip([t1, t2, t3], [front, left, right]):
-    for origin, image in zip([t1], [front]):
+    v = np.vstack((left_fov, t1))
+    vertices = [v[[0, 2, 4]], v[[2, 3, 4]], v[[3, 1, 4]], v[[1, 0, 4]]]
+    for verts in vertices:
+        ax.add_collection3d(Poly3DCollection([verts], alpha=.15, linewidths=1, edgecolors='#e8ebff'))
+
+    v = np.vstack((right_fov, t1))
+    vertices = [v[[0, 2, 4]], v[[2, 3, 4]], v[[3, 1, 4]], v[[1, 0, 4]]]
+    for verts in vertices:
+        ax.add_collection3d(Poly3DCollection([verts], alpha=.15, linewidths=1, edgecolors='#e8ebff'))
+
+
+    for origin, image in zip([t1, t2, t3], [front, left, right]):
+    # for origin, image in zip([t1], [front]):
         t_l, t_r, b_l, b_r = image
         ax.plot(*zip(t_l, t_r), color='black', linewidth=0.5)
         ax.plot(*zip(t_l, b_l), color='black', linewidth=0.5)
@@ -226,7 +240,7 @@ def main():
             min_avg_cov[t] += min_cov
 
     min_avg_cov /= args.trackers
-    min_avg_cov = np.log(min_avg_cov)
+    # min_avg_cov = np.log(min_avg_cov)
     plt.figure(figsize=(10, 5))
     plt.plot(min_avg_cov)
     plt.title('Average Minimum Covariance from multi tracker')
@@ -293,7 +307,7 @@ def main():
         ax.set_ylabel('y')
         ax.set_zlabel('z')
         ax.view_init(90, -90)  # 90 degrees elevation for top-down view, -90 degrees azimuth for proper orientation
-        ax.set_title("Time[s]:" + str(round(time_list[0][t], 2)))
+        ax.set_title("Time[s]: {:.2f}".format(time_list[0][t]))
 
     # Set up the animation
     ani = FuncAnimation(fig, update, frames=500, interval=10, repeat=False)
@@ -301,9 +315,9 @@ def main():
     # Connect key event to figure
     fig.canvas.mpl_connect('key_press_event', lambda event: [exit(0) if event.key == 'escape' else None])
 
-    # Save as GIF
-    writer = PillowWriter(fps=20)  # Adjust fps (frames per second) as needed
-    ani.save(args.data_dir + 'multi.gif', writer=writer)
+    # # Save as GIF
+    # writer = PillowWriter(fps=20)  # Adjust fps (frames per second) as needed
+    # ani.save(args.data_dir + 'multi.gif', writer=writer)
 
     plt.show()
 
