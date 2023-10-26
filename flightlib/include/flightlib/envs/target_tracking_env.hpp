@@ -18,7 +18,8 @@
 #include "flightlib/envs/quadrotor_env/tracker_quadrotor_env.hpp"
 #include "flightlib/envs/quadrotor_env/target_quadrotor_env.hpp"
 #include "flightlib/trajectory_planner/minimum_snap_trajectory.hpp"
-
+#include "flightlib/tracking_algorithm/hungarian.hpp"
+#include "flightlib/data/multi_agent_save.hpp"
 
 namespace flightlib {
 
@@ -90,7 +91,10 @@ class TargetTrackingEnv {
 
   // Minimum snap trajectories for targets
   std::vector<MinimumSnapTrajectory> trajectories_;
-  // MinimumSnapTrajectory trajectory_;
+
+  // Multi-Agent data recoder
+  std::shared_ptr<MultiAgentSave> multi_save_;
+  bool multi_flag_{true};
 
   // create objects
   Logger logger_{"TargetTrackingEnv"};

@@ -15,7 +15,7 @@ TrackerQuadrotorEnv::TrackerQuadrotorEnv(const std::string &cfg_path) : EnvBase(
   tracker_ptr_ = std::make_shared<TrackerQuadrotor>();
 
   //
-  num_cameras_ = 3;
+  num_cameras_ = 1;
 
   // Mount front, left, right stereo cameras
   for (int i = 0; i < num_cameras_; i++) {
@@ -26,17 +26,17 @@ TrackerQuadrotorEnv::TrackerQuadrotorEnv(const std::string &cfg_path) : EnvBase(
   Vector<3> d_r = Vector<3>(-0.06, 0.0, -0.1); // body origin w.r.t. right camera
   Matrix<3, 3> R_front = (Rot_x(-M_PI_2) * Rot_y(M_PI_2)).inverse();
 
-  // 90 & -90 angle
-  Matrix<3, 3> R_left  = (Rot_z(M_PI_2) * Rot_x(-M_PI_2) * Rot_y(M_PI_2)).inverse();
-  Matrix<3, 3> R_right = (Rot_z(-M_PI_2) * Rot_x(-M_PI_2) * Rot_y(M_PI_2)).inverse();
+  // // 90 & -90 angle
+  // Matrix<3, 3> R_left  = (Rot_z(M_PI_2) * Rot_x(-M_PI_2) * Rot_y(M_PI_2)).inverse();
+  // Matrix<3, 3> R_right = (Rot_z(-M_PI_2) * Rot_x(-M_PI_2) * Rot_y(M_PI_2)).inverse();
 
   // // 120 & -120 angle
   // Matrix<3, 3> R_left  = (Rot_z(2.0/3.0 * M_PI) * Rot_x(-M_PI_2) * Rot_y(M_PI_2)).inverse();
   // Matrix<3, 3> R_right = (Rot_z(-2.0/3.0 * M_PI) * Rot_x(-M_PI_2) * Rot_y(M_PI_2)).inverse();
 
   multi_stereo_[0]->init(d_l, d_r, R_front); // front camera
-  multi_stereo_[1]->init(d_l, d_r, R_left); // left back camera
-  multi_stereo_[2]->init(d_l, d_r, R_right); // right back camera
+  // multi_stereo_[1]->init(d_l, d_r, R_left); // left back camera
+  // multi_stereo_[2]->init(d_l, d_r, R_right); // right back camera
 
   // Data recoder
   sensor_save_ = std::make_shared<SensorSave>();
@@ -460,90 +460,6 @@ bool TrackerQuadrotorEnv::getObs(Ref<Vector<>> obs)
   return true;
 }
 
-Scalar TrackerQuadrotorEnv::getIndividualHeadingReward() {
-  // Compute per-target weight
-  std::vector<Scalar> numerator;
-  Scalar denominator = 0.0;
-  for (int i = 0; i < num_targets_; ++i) {
-    Vector<3> position = target_kalman_filters_[i]->getEstimatedPosition();
-    Scalar distance = computeEuclideanDistance(quad_state_.p, position);
-    Scalar elem = exp(-distance * 0.6);
-    numerator.push_back(elem);
-    denominator += elem;
-  }
-
-
-  if (std::isnan(denominator)) {
-    std::cout << "nan occurs from individual denominator" << std::endl;
-    std::cout << "denominator : " << denominator << std::endl;
-    exit(0);
-  }
-
-
-  // Compute negative softmax
-  std::vector<Scalar> range_weight;
-  for (int i = 0; i < num_targets_; ++i) {
-    Scalar weight = numerator[i] / denominator;
-
-    if (std::isnan(weight)) {
-      std::cout << "nan occurs from individual weight" << std::endl;
-      std::cout << "weight : " << weight << std::endl;
-      exit(0);
-    }
-
-    range_weight.push_back(weight);
-  }  
-
-  // Compute heading reward
-  Scalar heading_reward = 0.0;
-  Vector<3> h = quad_state_.q().toRotationMatrix() * Vector<3>(1, 0, 0); // Ego tracker heading vector
-  h = h / (h.norm() + 1e-8);
-
-  for (int i = 0; i < num_targets_; ++i) {
-    Vector<3> target_position = target_kalman_filters_[i]->getEstimatedPosition();
-    Vector<3> d = target_position - quad_state_.p; // Relative distance to target
-    d = d / (d.norm() + 1e-8);
-    // Scalar theta = acos(h.dot(d));
-
-    Scalar dot_value = h.dot(d);
-    dot_value = std::max(static_cast<Scalar>(-1.0), std::min(static_cast<Scalar>(1.0), dot_value));
-    Scalar theta = acos(dot_value);
-
-    if (std::isnan(theta)) {
-      std::cout << "nan occurs from individual theta" << std::endl;
-      std::cout << "theta : " << theta << std::endl;
-      std::cout << "dot_value : " << dot_value << std::endl;
-      std::cout << "h : " << h << std::endl;
-      std::cout << "d : " << d << std::endl;
-      exit(0);
-    }
-
-
-    Scalar target_heading_reward = exp(-10.0 * pow(theta, 3));
-    heading_reward += range_weight[i] * target_heading_reward;
-  }
-
-  if (std::isnan(heading_reward)) {
-    std::cout << "nan occurs from individual heading reward" << std::endl;
-    exit(0);
-  }
-
-
-  return heading_reward;
-}
-
-Scalar TrackerQuadrotorEnv::getIndividualCmdReward() {
-  // Smooth action reward (penalty)
-  Scalar cmd_reward = pow((quad_act_ - prev_act_).norm(), 2);
-  prev_act_ = quad_act_;
-  return cmd_reward;
-}
-
-Scalar TrackerQuadrotorEnv::getTargetPositionCovNorm(const int i) {
-  Matrix<3, 3> cov = target_kalman_filters_[i]->getPositionErrorCovariance();
-  return cov.norm();
-}
-
 Scalar TrackerQuadrotorEnv::rewardFunction()
 {
   // Outter coefficient
@@ -557,7 +473,7 @@ Scalar TrackerQuadrotorEnv::rewardFunction()
   for (int i = 0; i < num_targets_; ++i) {
     Vector<3> position = target_kalman_filters_[i]->getEstimatedPosition();
     Scalar distance = computeEuclideanDistance(quad_state_.p, position);
-    Scalar elem = exp(-distance * 0.1);
+    Scalar elem = exp(-distance * 0.05);
     numerator.push_back(elem);
     denominator += elem;
   }

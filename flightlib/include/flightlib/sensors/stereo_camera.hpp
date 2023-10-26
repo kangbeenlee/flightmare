@@ -27,9 +27,9 @@ class StereoCamera {
   inline Vector<3> getObjectPosition(void) const { return p_w_; };
 
   // Public get functions
-  inline Scalar getFOV(void) const { return fov_; };
-  inline Scalar getFocalLength(void) const { return f_; };
-  inline Scalar getPrincipalPoint(void) const { return c_; };
+  // inline Scalar getFOV(void) const { return fov_; };
+  // inline Scalar getFocalLength(void) const { return f_; };
+  // inline Scalar getPrincipalPoint(void) const { return c_; };
   inline Scalar getBaseline(void) const { return b_; };
   inline int getWidth(void) const { return width_; };
   inline int getHeight(void) const { return height_; };
@@ -46,12 +46,25 @@ class StereoCamera {
   // From left camera to body
   Matrix<4, 4> T_LC_B_;
 
+  // // Fov 90 x 90 deg camera
+  // // Intrinsic parameters of left and right cameras
+  // Scalar fov_{90.0};
+  // int f_{320}; // Focal length (pixel)
+  // int c_{320}; // Principal point (pixel)
+  // int width_{640};
+  // int height_{640};
+  // Matrix<3, 3> K_; // Intrinsic matrix
+
   // Intrinsic parameters of left and right cameras
-  Scalar fov_{90.0};
-  int f_{320}; // Focal length (pixel)
-  int c_{320}; // Principal point (pixel)
-  int width_{640};
-  int height_{640};
+  // ZED X mini, HD1080 resolutoin
+  Scalar v_fov_{70.0};
+  Scalar h_fov_{100.0};
+  int f_{1400}; // Focal length (pixel)
+  int c_x_{960};
+  int c_y_{540};
+  
+  int width_{1920};
+  int height_{1080};
   Matrix<3, 3> K_; // Intrinsic matrix
 
   // Stereo camera parameter

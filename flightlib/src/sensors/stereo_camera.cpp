@@ -8,7 +8,7 @@ StereoCamera::~StereoCamera() {}
 void StereoCamera::init(const Ref<Vector<3>> B_r_LC, const Ref<Vector<3>> B_r_RC, const Ref<Matrix<3, 3>> R_B_C)
 {
     // Camera intrinsic matrix
-    K_ = (Matrix<3, 3>() << f_, 0, c_, 0, f_, c_, 0, 0, 1).finished();
+    K_ = (Matrix<3, 3>() << f_, 0, c_x_, 0, f_, c_y_, 0, 0, 1).finished();
 
     // Transformation from body to left camera
     T_B_LC_.block<3, 3>(0, 0) = R_B_C;
@@ -74,8 +74,8 @@ bool StereoCamera::computePixelPoint(const Ref<Vector<3>> position, const Ref<Ma
     pixels_ = Vector<4>(u_l, v_l, u_r, v_r);
 
     // Compute target coordinates w.r.t. left camera frame
-    Scalar x_c = b_ * (u_l - c_) / (u_l - u_r);
-    Scalar y_c = b_ * f_ * (v_l - c_) / (f_ * (u_l - u_r));
+    Scalar x_c = b_ * (u_l - c_x_) / (u_l - u_r);
+    Scalar y_c = b_ * f_ * (v_l - c_y_) / (f_ * (u_l - u_r));
     Scalar z_c = b_ * f_ / (u_l - u_r);
     
     Vector<4> P_LC(x_c, y_c, z_c, 1);
