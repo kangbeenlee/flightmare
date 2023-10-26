@@ -4,11 +4,11 @@ import os
 import torch
 
 # a = np.array([5., 10.])
-a = np.array([1., 5., 10., 20., 30.])
+a = np.array([5., 10., 12., 20., 30.])
 # print(np.exp(a))
 
 # softmax
-a = a * 0.05
+a = a * 0.2
 b = np.exp(-a) / np.sum(np.exp(-a))
 print(b)
 print(np.sum(b))
