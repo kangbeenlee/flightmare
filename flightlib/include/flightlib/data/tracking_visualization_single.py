@@ -264,8 +264,8 @@ def main():
             plot_3d_ellipsoid(tracker_estim[i, 0, t], tracker_estim[i, 1, t], tracker_estim[i, 2, t],
                               3*tracker_cov[i, 0, t], 3*tracker_cov[i, 1, t], 3*tracker_cov[i, 2, t], ax, target=False)
 
-        ax.axes.set_xlim3d(left=-40, right=40)
-        ax.axes.set_ylim3d(bottom=-40, top=40)
+        ax.axes.set_xlim3d(left=-60, right=60)
+        ax.axes.set_ylim3d(bottom=-60, top=60)
         ax.axes.set_zlim3d(bottom=0, top=20)
         ax.set_aspect('equal')
         ax.set_xlabel('x')
