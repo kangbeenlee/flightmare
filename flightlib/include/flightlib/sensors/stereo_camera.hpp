@@ -57,9 +57,10 @@ class StereoCamera {
 
   // Intrinsic parameters of left and right cameras
   // ZED X mini, HD1080 resolutoin
-  Scalar v_fov_{70.0};
-  Scalar h_fov_{100.0};
-  int f_{1400}; // Focal length (pixel)
+  Scalar h_fov_{110.0};
+  Scalar v_fov_{80.0};
+  int f_x_{672}; // Focal length (pixel)
+  int f_y_{643};
   int c_x_{960};
   int c_y_{540};
   
