@@ -57,7 +57,7 @@ class KalmanFilter {
   Matrix<6, 3> Gamma_;
 
   // System & sensor noise
-  Scalar sigma_w_{10.0}, sigma_v_{2.0};
+  Scalar sigma_w_{15.0}, sigma_v_{2.0};
   // Adaptive sensor noise
   bool adaptive_{true};
 
