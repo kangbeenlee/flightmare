@@ -49,7 +49,7 @@ TrackerQuadrotorEnv::TrackerQuadrotorEnv(const std::string &cfg_path) : EnvBase(
   tracker_ptr_->setVelocityPIDGain(kp_vxy_, ki_vxy_, kd_vxy_, kp_vz_, ki_vz_, kd_vz_, kp_angle_, ki_angle_, kd_angle_, kp_wz_, ki_wz_, kd_wz_);
 
   // define a bounding box
-  world_box_ << -70, 70, -70, 70, 0, 70;
+  world_box_ << -50, 50, -50, 50, 0, 50;
   if (!tracker_ptr_->setWorldBox(world_box_))
   {
     logger_.error("cannot set wolrd box");
@@ -464,7 +464,7 @@ Scalar TrackerQuadrotorEnv::rewardFunction()
 {
   // Outter coefficient
   Scalar c1 = 1.0;
-  Scalar c2 = 0.2;
+  Scalar c2 = 0.3;
   Scalar c3 = -1e-4;
 
   // Covariance reward
@@ -478,8 +478,7 @@ Scalar TrackerQuadrotorEnv::rewardFunction()
     avg_cov_norm += cov_norm;
   }
   avg_cov_norm /= num_targets_;
-  // cov_reward = exp(-0.1 * pow(avg_cov_norm, 5));
-  cov_reward = exp(-0.01 * pow(avg_cov_norm, 3));
+  cov_reward = exp(-0.1 * pow(avg_cov_norm, 5));
 
   // Heading reward
   Scalar heading_reward = 0.0;
@@ -516,7 +515,6 @@ Scalar TrackerQuadrotorEnv::rewardFunction()
   Scalar total_reward = c1 * cov_reward + c2 * heading_reward + c3 * cmd_reward;
 
   // std::cout << "-------------------------------------" << std::endl;
-  // // std::cout << "range weight   : " << range_weight[0] << ", " << range_weight[1] << ", " << range_weight[2] << ", " << range_weight[3] << std::endl;
   // std::cout << "cov norm       : " << cov_list[0] << ", " << cov_list[1] << ", " << cov_list[2] << ", " << cov_list[3] << std::endl;
   // std::cout << "avg cov norm   : " << avg_cov_norm << std::endl;
   // std::cout << "cov reward     : " << c1 * cov_reward << std::endl;
@@ -533,9 +531,9 @@ Scalar TrackerQuadrotorEnv::computeEuclideanDistance(Ref<Vector<3>> p1, Ref<Vect
 
 bool TrackerQuadrotorEnv::isTerminalState(Scalar &reward) {
   // Out of the world
-  if (quad_state_.x(QS::POSZ) <= 0.02  || quad_state_.x(QS::POSZ) >= 69.0 ||
-      quad_state_.x(QS::POSX) <= -69.0 || quad_state_.x(QS::POSX) >= 69.0 ||
-      quad_state_.x(QS::POSY) <= -69.0 || quad_state_.x(QS::POSY) >= 69.0) {
+  if (quad_state_.x(QS::POSZ) <= 0.02  || quad_state_.x(QS::POSZ) >= 49.0 ||
+      quad_state_.x(QS::POSX) <= -49.0 || quad_state_.x(QS::POSX) >= 49.0 ||
+      quad_state_.x(QS::POSY) <= -49.0 || quad_state_.x(QS::POSY) >= 49.0) {
     reward = -5.0;
     return true;
   }

@@ -13,7 +13,6 @@
 #include "flightlib/sensors/imu.hpp"
 #include "flightlib/sensors/rgb_camera.hpp"
 #include "flightlib/controller/velocity_controller.hpp"
-#include "flightlib/data/pid_controller_save.hpp"
 
 
 namespace flightlib {
@@ -110,9 +109,6 @@ class TargetQuadrotor : ObjectBase {
   // Clamp control input
   const Scalar thrust_max_{22.4449}, thrust_min_{0.0};
   const Scalar torque_max_{7.9355}, torque_min_{0.0};
-
-  // Save controller output
-  PIDControllerSave controller_save_;
 
   // auxiliar variablers
   Vector<4> motor_omega_;
