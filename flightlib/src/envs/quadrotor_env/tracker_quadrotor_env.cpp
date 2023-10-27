@@ -49,7 +49,7 @@ TrackerQuadrotorEnv::TrackerQuadrotorEnv(const std::string &cfg_path) : EnvBase(
   tracker_ptr_->setVelocityPIDGain(kp_vxy_, ki_vxy_, kd_vxy_, kp_vz_, ki_vz_, kd_vz_, kp_angle_, ki_angle_, kd_angle_, kp_wz_, ki_wz_, kd_wz_);
 
   // define a bounding box
-  world_box_ << -60, 60, -60, 60, 0, 60;
+  world_box_ << -100, 100, -100, 100, 0, 100;
   if (!tracker_ptr_->setWorldBox(world_box_))
   {
     logger_.error("cannot set wolrd box");
@@ -478,7 +478,8 @@ Scalar TrackerQuadrotorEnv::rewardFunction()
     avg_cov_norm += cov_norm;
   }
   avg_cov_norm /= num_targets_;
-  cov_reward = exp(-0.1 * pow(avg_cov_norm, 5));
+  // cov_reward = exp(-0.1 * pow(avg_cov_norm, 5));
+  cov_reward = exp(-0.01 * pow(avg_cov_norm, 3));
 
   // Heading reward
   Scalar heading_reward = 0.0;
@@ -531,9 +532,9 @@ Scalar TrackerQuadrotorEnv::computeEuclideanDistance(Ref<Vector<3>> p1, Ref<Vect
 
 bool TrackerQuadrotorEnv::isTerminalState(Scalar &reward) {
   // Out of the world
-  if (quad_state_.x(QS::POSZ) <= 0.02  || quad_state_.x(QS::POSZ) >= 59.0 ||
-      quad_state_.x(QS::POSX) <= -59.0 || quad_state_.x(QS::POSX) >= 59.0 ||
-      quad_state_.x(QS::POSY) <= -59.0 || quad_state_.x(QS::POSY) >= 59.0) {
+  if (quad_state_.x(QS::POSZ) <= 0.02  || quad_state_.x(QS::POSZ) >= 99.0 ||
+      quad_state_.x(QS::POSX) <= -99.0 || quad_state_.x(QS::POSX) >= 99.0 ||
+      quad_state_.x(QS::POSY) <= -99.0 || quad_state_.x(QS::POSY) >= 99.0) {
     reward = -5.0;
     return true;
   }

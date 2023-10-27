@@ -12,3 +12,5 @@ a = a * 0.05
 b = np.exp(-a) / np.sum(np.exp(-a))
 print(b)
 print(np.sum(b))
+
+print(40 / np.sqrt(2))

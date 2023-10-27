@@ -285,10 +285,10 @@ def main():
             # Visualize minimum covariance
             ax.plot(target_estim[j, 0, t], target_estim[j, 1, t], target_estim[j, 2, t], 'o', color='#ff7575', markersize=3, label='estimate')
             plot_3d_ellipsoid(target_estim[j, 0, t], target_estim[j, 1, t], target_estim[j, 2, t],
-                              3*target_cov[j, 0, t], 3*target_cov[j, 1, t], 3*target_cov[j, 2, t], ax)
+                              3*np.sqrt(target_cov[j, 0, t]), 3*np.sqrt(target_cov[j, 1, t]), 3*np.sqrt(target_cov[j, 2, t]), ax)
 
-        ax.axes.set_xlim3d(left=-40, right=40)
-        ax.axes.set_ylim3d(bottom=-40, top=40)
+        ax.axes.set_xlim3d(left=-50, right=50)
+        ax.axes.set_ylim3d(bottom=-50, top=50)
         ax.axes.set_zlim3d(bottom=0, top=20)
         ax.set_aspect('equal')
         ax.set_xlabel('x')
@@ -303,9 +303,9 @@ def main():
     # Connect key event to figure
     fig.canvas.mpl_connect('key_press_event', lambda event: [exit(0) if event.key == 'escape' else None])
 
-    # # Save as GIF
-    # writer = PillowWriter(fps=20)  # Adjust fps (frames per second) as needed
-    # ani.save(args.data_dir + 'multi.gif', writer=writer)
+    # Save as GIF
+    writer = PillowWriter(fps=20)  # Adjust fps (frames per second) as needed
+    ani.save(args.data_dir + 'multi.gif', writer=writer)
 
     plt.show()
 

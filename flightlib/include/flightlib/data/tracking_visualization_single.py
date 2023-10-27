@@ -254,8 +254,10 @@ def main():
 
         avg_cov_norm = np.sum(total_cov_norm)/args.targets
         cov_reward = np.exp(-0.1 * (avg_cov_norm ** 5))
+        cov_reward_v2 = np.exp(-0.01 * (avg_cov_norm ** 3))
         print("all cov      :", np.around(np.array(total_cov_norm), 3))
         print("avg cov      :", avg_cov_norm)
+        print("avg cov c2   :", cov_reward_v2)
         print("cov_reward   :", cov_reward)
 
         for i in range(args.trackers):
@@ -264,14 +266,14 @@ def main():
             plot_3d_ellipsoid(tracker_estim[i, 0, t], tracker_estim[i, 1, t], tracker_estim[i, 2, t],
                               3*np.sqrt(tracker_cov[i, 0, t]), 3*np.sqrt(tracker_cov[i, 1, t]), 3*np.sqrt(tracker_cov[i, 2, t]), ax, target=False)
 
-        ax.axes.set_xlim3d(left=-30, right=30)
-        ax.axes.set_ylim3d(bottom=-30, top=30)
+        ax.axes.set_xlim3d(left=-60, right=60)
+        ax.axes.set_ylim3d(bottom=-60, top=60)
         ax.axes.set_zlim3d(bottom=0, top=30)
         ax.set_aspect('equal')
         ax.set_xlabel('x')
         ax.set_ylabel('y')
         ax.set_zlabel('z')
-        # ax.view_init(90, -90)  # 90 degrees elevation for top-down view, -90 degrees azimuth for proper orientation
+        ax.view_init(90, -90)  # 90 degrees elevation for top-down view, -90 degrees azimuth for proper orientation
         ax.set_title("Time[s]: {:.2f}".format(time[t]))
 
 
