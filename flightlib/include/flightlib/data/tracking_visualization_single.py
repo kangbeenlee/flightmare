@@ -253,8 +253,7 @@ def main():
             total_cov_norm.append(np.sqrt(target_cov[i, 0, t]**2 + target_cov[i, 1, t]**2 + target_cov[i, 2, t]**2))
 
         avg_cov_norm = np.sum(total_cov_norm)/args.targets
-        # cov_reward = np.exp(-0.1 * (avg_cov ** 5))
-        cov_reward = np.exp(-0.01 * (avg_cov_norm ** 3))
+        cov_reward = np.exp(-0.1 * (avg_cov_norm ** 5))
         print("all cov      :", np.around(np.array(total_cov_norm), 3))
         print("avg cov      :", avg_cov_norm)
         print("cov_reward   :", cov_reward)
