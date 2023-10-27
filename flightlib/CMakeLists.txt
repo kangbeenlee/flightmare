@@ -55,9 +55,9 @@ find_package(OpenMP REQUIRED)
 find_package(Eigen3 REQUIRED)
 include_directories(${EIGEN3_INCLUDE_DIR})
 
-# Including dependencies 
-find_package(ACADO REQUIRED)
-include_directories(${ACADO_INCLUDE_DIRS})
+# # Including dependencies 
+# find_package(ACADO REQUIRED)
+# include_directories(${ACADO_INCLUDE_DIRS})
 
 if(ENABLE_BLAS)
   set(BLA_VENDOR "Generic")
@@ -218,7 +218,7 @@ else()
     zmq
     zmqpp
     stdc++fs
-    ${ACADO_SHARED_LIBRARIES}
+    # ${ACADO_SHARED_LIBRARIES}
     )
   set(LIBRARY_NAME ${PROJECT_NAME})
   set_target_properties(${PROJECT_NAME} PROPERTIES POSITION_INDEPENDENT_CODE TRUE)

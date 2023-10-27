@@ -248,21 +248,22 @@ def main():
             ax.plot(target_gt[i, 0, t], target_gt[i, 1, t], target_gt[i, 2, t], 'o', color='#fa0000', markersize=3, label='true')
             ax.plot(target_estim[i, 0, t], target_estim[i, 1, t], target_estim[i, 2, t], 'o', color='#ff7575', markersize=3, label='estimate')
             plot_3d_ellipsoid(target_estim[i, 0, t], target_estim[i, 1, t], target_estim[i, 2, t],
-                              3*target_cov[i, 0, t], 3*target_cov[i, 1, t], 3*target_cov[i, 2, t], ax)
+                              3*np.sqrt(target_cov[i, 0, t]), 3*np.sqrt(target_cov[i, 1, t]), 3*np.sqrt(target_cov[i, 2, t]), ax)
 
             total_cov.append(np.sqrt(target_cov[i, 0, t]**2 + target_cov[i, 1, t]**2 + target_cov[i, 2, t]**2))
 
-        # avg_cov = np.sum(total_cov)/args.targets
+        avg_cov = np.sum(total_cov)/args.targets
         # cov_reward = np.exp(-0.1 * (avg_cov ** 5))
+        cov_reward = np.exp(-0.01 * (avg_cov ** 3))
         print("all cov      :", np.around(np.array(total_cov), 3))
-        # print("avg cov      :", avg_cov)
-        # print("cov_reward   :", cov_reward)
+        print("avg cov      :", avg_cov)
+        print("cov_reward   :", cov_reward)
 
         for i in range(args.trackers):
             ax.plot(tracker_gt[i, 0, t], tracker_gt[i, 1, t], tracker_gt[i, 2, t], 'o', color='#1100fa', markersize=3, label='true')
             ax.plot(tracker_estim[i, 0, t], tracker_estim[i, 1, t], tracker_estim[i, 2, t], 'o', color='#7a70ff', markersize=3, label='estimate')
             plot_3d_ellipsoid(tracker_estim[i, 0, t], tracker_estim[i, 1, t], tracker_estim[i, 2, t],
-                              3*tracker_cov[i, 0, t], 3*tracker_cov[i, 1, t], 3*tracker_cov[i, 2, t], ax, target=False)
+                              3*np.sqrt(tracker_cov[i, 0, t]), 3*np.sqrt(tracker_cov[i, 1, t]), 3*np.sqrt(tracker_cov[i, 2, t]), ax, target=False)
 
         ax.axes.set_xlim3d(left=-60, right=60)
         ax.axes.set_ylim3d(bottom=-60, top=60)

@@ -478,7 +478,8 @@ Scalar TrackerQuadrotorEnv::rewardFunction()
     avg_cov_norm += cov_norm;
   }
   avg_cov_norm /= num_targets_;
-  cov_reward = exp(-0.1 * pow(avg_cov_norm, 5));
+  // cov_reward = exp(-0.1 * pow(avg_cov_norm, 5));
+  cov_reward = exp(-0.01 * pow(avg_cov_norm, 3));
 
   // Heading reward
   Scalar heading_reward = 0.0;
@@ -515,7 +516,7 @@ Scalar TrackerQuadrotorEnv::rewardFunction()
   Scalar total_reward = c1 * cov_reward + c2 * heading_reward + c3 * cmd_reward;
 
   // std::cout << "-------------------------------------" << std::endl;
-  // std::cout << "range weight   : " << range_weight[0] << ", " << range_weight[1] << ", " << range_weight[2] << ", " << range_weight[3] << std::endl;
+  // // std::cout << "range weight   : " << range_weight[0] << ", " << range_weight[1] << ", " << range_weight[2] << ", " << range_weight[3] << std::endl;
   // std::cout << "cov norm       : " << cov_list[0] << ", " << cov_list[1] << ", " << cov_list[2] << ", " << cov_list[3] << std::endl;
   // std::cout << "avg cov norm   : " << avg_cov_norm << std::endl;
   // std::cout << "cov reward     : " << c1 * cov_reward << std::endl;

@@ -6,15 +6,18 @@ import matplotlib.pyplot as plt
 
 def func(x):
     # return 0.9*(1 - np.exp(-0.00001 * (x ** 4)))
-    return np.exp(-10 * (x ** 5))
-    # return np.exp(-1 * ((2 * x) ** 5))
+    # return np.exp(-10 * (x ** 5))
+    # return np.exp(-0.1 * (x ** 5))
+    # return np.exp(-0.005 * (x ** 4))
+    return np.exp(-0.01 * (x ** 3))
+    # return np.exp(-0.05 * (x ** 2))
 
 # Scalar cov_reward = exp(-0.1 * pow(avg_position_cov_norm, 5));
 # Scalar target_cov_reward = exp(-0.01 * pow(target_cov_norm, 3));
 # exp(-0.01 * pow(target_cov_norm, 3));
 # exp(-10.0 * pow(theta, 3));
 
-x1 = np.linspace(0, 2, 100)
+x1 = np.linspace(0, 10, 100)
 
 # alpha = -0.01
 # beta = 5
