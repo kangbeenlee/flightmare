@@ -220,7 +220,7 @@ bool TargetTrackingEnv<EnvBase>::reset(Ref<MatrixRowMajor<>> obs, Ref<MatrixRowM
 
   for (int i = 0; i < num_envs_; i++) {
     Scalar yaw = uniform_yaw_(random_gen_) * M_PI;
-    Scalar radius = 37.0;
+    Scalar radius = 50.0;
     Scalar random_x = radius * cos(yaw);
     Scalar random_y = radius * sin(yaw);
     Scalar random_z = uniform_altitude_(random_gen_);
