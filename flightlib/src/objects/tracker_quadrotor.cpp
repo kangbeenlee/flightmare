@@ -153,7 +153,7 @@ void TrackerQuadrotor::init(void) {
   velocity_controller_ = VelocityController();
   velocity_controller_.setQuadrotorMass(dynamics_.getMass());
   velocity_controller_.setGravity(-Gz);
-  controller_save_ = PIDControllerSave();
+  // controller_save_ = PIDControllerSave();
 
   // mpc_controller_ = MPCController();
   // mpc_controller_.init(0.01, 10);

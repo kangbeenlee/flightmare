@@ -118,7 +118,7 @@ class TrackerQuadrotor : ObjectBase {
   const Scalar torque_max_{7.9355}, torque_min_{0.0};
 
   // Save controller output
-  PIDControllerSave controller_save_;
+  // PIDControllerSave controller_save_;
 //   MPCControllerSave controller_save_;
 
   // auxiliar variablers

@@ -81,19 +81,6 @@ bool TargetQuadrotor::run(const Scalar ctl_dt) {
     // Compute linear acceleration and body torque
     const Vector<3> force(0.0, 0.0, force_torques[0]);
 
-    // PID controller step input response check & PID gain tuning
-    if (save_flag_)
-      controller_save_.store(velocity_des[0], velocity_des[1], velocity_des[2], velocity_des[3], velocity_controller_.getControlPhi(), velocity_controller_.getControlTheta(),
-                             force_torques[0], force_torques[1], force_torques[2], force_torques[3],
-                             state_.v[0], state_.v[1], state_.v[2], state_.x(QS::OMEZ),
-                             system_phi, system_theta, system_psi,
-                             sim_dt);
-    if (save_flag_ && controller_save_.isFull()) {
-      controller_save_.save();
-      save_flag_ = false;
-      std::cout << ">>> PID controller output save is done" << std::endl;
-    }
-
     state_.a = state_.q() * force * 1.0 / dynamics_.getMass() + gz_; // state_.q(): coordinates of body frame w.r.t. world frame
 
     // compute body torque
@@ -122,7 +109,6 @@ void TargetQuadrotor::init(void) {
   velocity_controller_ = VelocityController();
   velocity_controller_.setQuadrotorMass(dynamics_.getMass());
   velocity_controller_.setGravity(-Gz);
-  controller_save_ = PIDControllerSave();
 }
 
 bool TargetQuadrotor::reset(void) {
@@ -132,7 +118,6 @@ bool TargetQuadrotor::reset(void) {
   velocity_controller_.reset();
   velocity_controller_.setQuadrotorMass(dynamics_.getMass());
   velocity_controller_.setGravity(-Gz);
-  controller_save_.reset();
   return true;
 }
 
@@ -144,7 +129,6 @@ bool TargetQuadrotor::reset(const QuadState &state) {
   // velocity_controller_.reset();
   velocity_controller_.setQuadrotorMass(dynamics_.getMass());
   velocity_controller_.setGravity(-Gz);
-  // controller_save_.reset();
   return true;
 }
 
