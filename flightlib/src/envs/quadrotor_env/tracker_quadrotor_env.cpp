@@ -479,7 +479,7 @@ Scalar TrackerQuadrotorEnv::rewardFunction()
   }
   avg_cov_norm /= num_targets_;
   // cov_reward = exp(-0.1 * pow(avg_cov_norm, 5));
-  cov_reward = exp(-0.01 * pow(avg_cov_norm, 3));
+  cov_reward = exp(-0.001 * pow(avg_cov_norm, 5));
 
   // Heading reward
   Scalar heading_reward = 0.0;
