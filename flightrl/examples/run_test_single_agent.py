@@ -47,6 +47,7 @@ def test_model(env, render=False):
             #     act = np.array([[-vx, -vy, -vz, -wz]], dtype=np.float32)
 
             obs, rew, done, infos = env.step(act)
+            # print(obs[0, 3:6])
 
     if render:
         env.disconnectUnity()

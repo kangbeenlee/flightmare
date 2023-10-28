@@ -114,9 +114,9 @@ bool TrackerQuadrotorEnv::reset(Ref<Vector<>> obs, Ref<Vector<>> position,
   quad_state_.x(QS::POSY) = position[1];
   quad_state_.x(QS::POSZ) = position[2];
 
-  // Scalar yaw = uniform_dist_(random_gen_) * M_PI;
+  Scalar yaw = uniform_dist_(random_gen_) * M_PI;
   // Scalar yaw = M_PI_2;
-  Scalar yaw = atan2(-position[1], -position[0]); // Center oriented yaw angle
+  // Scalar yaw = atan2(-position[1], -position[0]); // Center oriented yaw angle
   
   Vector<3> euler(yaw, 0, 0);
   Vector<4> quaternion = eulerToQuaternion(euler);
