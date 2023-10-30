@@ -59,7 +59,7 @@ class StereoCamera {
   // Vector<3> p_w_; // object position based on world frame
 
   // Random variable generator for pixel noise
-  std::normal_distribution<Scalar> norm_dist_{0.0, 0.2};
+  std::normal_distribution<Scalar> norm_dist_{0.0, 0.3};
   std::random_device rd_;
   std::mt19937 random_gen_{rd_()};
 };

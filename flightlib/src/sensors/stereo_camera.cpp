@@ -64,11 +64,11 @@ bool StereoCamera::computePixelPoint(const Ref<Vector<3>> position, const Ref<Ma
     //
     gt_pixels_ = Vector<4>(u_l, v_l, u_r, v_r);
 
-    // Add gaussian noise to gt pixel
-    u_l += norm_dist_(random_gen_);
-    v_l += norm_dist_(random_gen_);
-    u_r += norm_dist_(random_gen_);
-    v_r += norm_dist_(random_gen_);
+    // Add integer gaussian noise to gt pixel
+    u_l += static_cast<int>(std::round(norm_dist_(random_gen_)));;
+    v_l += static_cast<int>(std::round(norm_dist_(random_gen_)));;
+    u_r += static_cast<int>(std::round(norm_dist_(random_gen_)));;
+    v_r += static_cast<int>(std::round(norm_dist_(random_gen_)));;
 
     //
     pixels_ = Vector<4>(u_l, v_l, u_r, v_r);

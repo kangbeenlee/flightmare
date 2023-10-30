@@ -41,7 +41,7 @@ class SensorSave {
     arma::mat gt_u_l = gt_pixel_.row(0);
     arma::mat gt_v_l = gt_pixel_.row(1);
     arma::mat gt_u_r = gt_pixel_.row(2);
-    arma::mat gt_v_r = gt_pixel_.row(2);
+    arma::mat gt_v_r = gt_pixel_.row(3);
     gt_u_l.save("/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/sensor_output/gt_u_l.txt", arma::raw_ascii);
     gt_v_l.save("/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/sensor_output/gt_v_l.txt", arma::raw_ascii);
     gt_u_r.save("/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/sensor_output/gt_u_r.txt", arma::raw_ascii);
@@ -50,7 +50,7 @@ class SensorSave {
     arma::mat u_l = pixel_.row(0);
     arma::mat v_l = pixel_.row(1);
     arma::mat u_r = pixel_.row(2);
-    arma::mat v_r = pixel_.row(2);
+    arma::mat v_r = pixel_.row(3);
     u_l.save("/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/sensor_output/u_l.txt", arma::raw_ascii);
     v_l.save("/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/sensor_output/v_l.txt", arma::raw_ascii);
     u_r.save("/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/sensor_output/u_r.txt", arma::raw_ascii);

@@ -37,7 +37,7 @@ def main():
     parser.add_argument('--save_dir', type=str, default=os.path.dirname(os.path.realpath(__file__)), help="Directory where to save the checkpoints and training metrics")
     parser.add_argument('--seed', type=int, default=0, help="Random seed")
     parser.add_argument('--load_nn', type=str, default='./model/ddpg/actor.pkl', help='Trained actor weight path for ddpg, td3, ppo')
-    parser.add_argument("--max_action", type=float, default=6.0, help="Maximum action of actor output")
+    parser.add_argument("--max_action", type=float, default=3.0, help="Maximum action of actor output")
 
     # Policy model
     parser.add_argument("--policy", type=str, default="ddpg", help='Policy based reinforcement learning model')

@@ -68,12 +68,13 @@ class TrackerQuadrotorEnv final : public EnvBase {
   Matrix<3, 3> Rot_z(const Scalar angle) const;
   Matrix<3, 3> eulerToRotation(const Ref<Vector<3>> euler_zyx) const;
   Vector<4> eulerToQuaternion(const Ref<Vector<3>> euler_zyx) const;
-  Matrix<4, 4> getBodyToWorld() const;
+  Matrix<4, 4> getBodyToWorld(void) const;
 
   //
   Vector<3> fromWorldToCamera(Vector<3> point_w) const;
   Vector<3> fromCameraToWorld(Vector<3> point_c) const;
   Matrix<3, 3> fromCameraToWorld(Matrix<3, 3> cov) const;
+  Matrix<3, 3> rotateFromCameraToWorld(void) const;
 
 
   //
