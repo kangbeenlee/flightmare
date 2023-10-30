@@ -42,10 +42,6 @@ def load_data(data_dir, num_targets, num_trackers):
         target_estim[i, 1, :] = np.array([float(value) for line in open(data_dir + "target_estim_y_" + str(i) + ".txt") for value in line.split()])
         target_estim[i, 2, :] = np.array([float(value) for line in open(data_dir + "target_estim_z_" + str(i) + ".txt") for value in line.split()])
 
-        # target_cov[i, 0, :] = np.array([float(value) for line in open(data_dir + "target_cov_x_" + str(i) + ".txt") for value in line.split()])
-        # target_cov[i, 1, :] = np.array([float(value) for line in open(data_dir + "target_cov_y_" + str(i) + ".txt") for value in line.split()])
-        # target_cov[i, 2, :] = np.array([float(value) for line in open(data_dir + "target_cov_z_" + str(i) + ".txt") for value in line.split()])
-
         target_cov[i, 0, 0, :] = np.array([float(value) for line in open(data_dir + "target_cov_xx_" + str(i) + ".txt") for value in line.split()])
         target_cov[i, 0, 1, :] = np.array([float(value) for line in open(data_dir + "target_cov_xy_" + str(i) + ".txt") for value in line.split()])
         target_cov[i, 0, 2, :] = np.array([float(value) for line in open(data_dir + "target_cov_xz_" + str(i) + ".txt") for value in line.split()])
@@ -71,31 +67,6 @@ def load_data(data_dir, num_targets, num_trackers):
 
     return ego_pos, ego_orien, target_gt, target_estim, target_cov, tracker_gt, tracker_estim, tracker_cov, time
 
-
-# def plot_3d_ellipsoid(cx, cy, cz, x_axis, y_axis, z_axis, ax, roll=0, pitch=0, yaw=0, target=True):
-#     """Plot the 3-d Ellipsoid ell on the Axes3D ax with orientations."""
-    
-#     # points on unit sphere
-#     u = np.linspace(0.0, 2.0 * np.pi, 100)
-#     v = np.linspace(0.0, np.pi, 100)
-#     x = x_axis * np.outer(np.cos(u), np.sin(v))
-#     y = y_axis * np.outer(np.sin(u), np.sin(v))
-#     z = z_axis * np.outer(np.ones_like(u), np.cos(v))
-
-#     # # rotate each point on ellipsoid using rotation matrix
-#     # for i in range(len(u)):
-#     #     for j in range(len(v)):
-#     #         [x[i,j], y[i,j], z[i,j]] = np.dot(rotation_matrix(roll, pitch, yaw), [x[i,j], y[i,j], z[i,j]])
-
-#     # add center coordinates
-#     x += cx
-#     y += cy
-#     z += cz
-
-#     if target:
-#         ax.plot_wireframe(x, y, z, rstride=10, cstride=10, color='#ff7575', alpha=0.2)
-#     else:
-#         ax.plot_wireframe(x, y, z, rstride=10, cstride=10, color='#7a70ff', alpha=0.2)
 
 def plot_3d_ellipsoid(mean, cov, ax, target=True):
     """Plot the 3-d Ellipsoid ell on the Axes3D ax."""
@@ -127,7 +98,8 @@ def plot_3d_ellipsoid(mean, cov, ax, target=True):
         ax.plot_wireframe(x, y, z,  rstride=10, cstride=10, color='#7a70ff', alpha=0.2)
 
 
-def plot_drone(ax, x, y, z, R_b):
+def plot_drone(ax, center, R_b):
+    x, y, z = center[0], center[1], center[2]
     rotor_distance = 0.25
     
     # Central body
@@ -159,34 +131,32 @@ def plot_drone(ax, x, y, z, R_b):
         ax.quiver(x, y, z, R_b[0, i], R_b[1, i], R_b[2, i], length=0.4, color=color)
 
 
-def plot_ego(x, y, z, qw, qx, qy, qz, ax):
-    ax.plot(x, y, z, 'kx', markersize=3, label='true')
-    center = np.array([x, y, z])
+def plot_ego(center, R_b, ax):
+    ax.plot(center[0], center[1], center[2], 'kx', markersize=3, label='true')
 
     # Plot drone
-    R_b = quaternion_to_rotation_matrix(qw, qx, qy, qz) # body orientation
-    plot_drone(ax, x, y, z, R_b)
+    plot_drone(ax, center, R_b)
 
     # Image window cooridinates w.r.t. camera frame
     scale = 0.5
     fov_scale = 4.0
 
     # 2.88 1.62 2.2 (focal length) / (mm scale)
-    corners = np.array([[2.2,  2.88,  1.62],
-                        [2.2,  2.88, -1.62],
-                        [2.2, -2.88,  1.62],
-                        [2.2, -2.88, -1.62]]) * scale
+    corners = np.array([[ 2.88,  1.62,  2.2],
+                        [ 2.88, -1.62,  2.2],
+                        [-2.88,  1.62,  2.2],
+                        [-2.88, -1.62,  2.2]]) * scale
     front = np.zeros([4, 3])
-    
+
     # Plot front camera field of view
     front_fov = np.zeros([4, 3])
     corners_fov = corners * fov_scale
 
-    # From body frame origin to (left) camera frame origin
-    R1 = np.eye(3)
+    # Transformation from left camera to body
+    R1 = R_x(-np.pi/2) @ R_y(np.pi/2)
     t1 = np.array([0.1, 0.06, 0.0])
     
-    # from camera frame to body frame
+    # From camera frame to body frame
     for i in range(4):
         front[i] = R1 @ corners[i] + t1
         front_fov[i] = R1 @ corners_fov[i] + t1
@@ -218,7 +188,7 @@ def plot_ego(x, y, z, qw, qx, qy, qz, ax):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_dir', type=str, default="/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/tracking_output/")
-    parser.add_argument('--targets', type=int, default=4, help="The number of targets")
+    parser.add_argument('--targets', type=int, default=1, help="The number of targets")
     parser.add_argument('--trackers', type=int, default=0, help="The number of other trackers except itself (total # of tracker - 1)")
     parser.add_argument('--tracker_id', type=int, default=0, help="The id of ego tracker (agent)")
     args = parser.parse_args()
@@ -248,8 +218,11 @@ def main():
     def update(t):
         ax.cla()
         
+        # Rotation from body to world
+        R_b = quaternion_to_rotation_matrix(ego_orien[0, t], ego_orien[1, t], ego_orien[2, t], ego_orien[3, t])
+
         # Ego drone
-        plot_ego(ego_pos[0, t], ego_pos[1, t], ego_pos[2, t], ego_orien[0, t], ego_orien[1, t], ego_orien[2, t], ego_orien[3, t], ax)
+        plot_ego(ego_pos[:, t], R_b, ax)
 
         # total_cov_norm = []
 
@@ -257,7 +230,6 @@ def main():
         for i in range(args.targets):
             ax.plot(target_gt[i, 0, t], target_gt[i, 1, t], target_gt[i, 2, t], 'o', color='#fa0000', markersize=3, label='true')
             ax.plot(target_estim[i, 0, t], target_estim[i, 1, t], target_estim[i, 2, t], 'o', color='#ff7575', markersize=3, label='estimate')
-            print(target_cov[i, :, :, t])
             plot_3d_ellipsoid(target_estim[i, :, t], target_cov[i, :, :, t], ax)
 
             # total_cov_norm.append(np.sqrt(target_cov[i, 0, t]**2 + target_cov[i, 1, t]**2 + target_cov[i, 2, t]**2))

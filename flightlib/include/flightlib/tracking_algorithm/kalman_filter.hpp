@@ -8,7 +8,7 @@
 
 namespace flightlib {
 
-/** @brief Extended Kalman filter with stereo camera sensor */
+/** @brief Kalman filter with stereo camera sensor */
 class KalmanFilter {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -20,10 +20,7 @@ class KalmanFilter {
 
   // Prediction and correction
   void predict(void);
-  void update(const Ref<Vector<3>> z, const Ref<Vector<3>> ego);
-
-  // Sensor noise equation
-  Scalar computeSensorNoise(const Scalar x);
+  void update(const Ref<Vector<3>> z);
 
   // Public get functions
   inline bool isInitialized(void) const { return initialized_; };
@@ -37,9 +34,6 @@ class KalmanFilter {
   //
   bool initialized_;
 
-  // From body to left camera
-  Matrix<4, 4> T_B_C_;
-
   // Sampling time;
   Scalar Ts_;
 
@@ -50,16 +44,14 @@ class KalmanFilter {
   Matrix<6, 6> F_, P_;
   Matrix<3, 6> H_;
   Matrix<3, 3> Q_;
-  Matrix<3, 3> R_;
+  // Matrix<3, 3> R_;
   Matrix<6, 3> K_;
 
   //
   Matrix<6, 3> Gamma_;
 
-  // System & sensor noise
-  Scalar sigma_w_{15.0}, sigma_v_{2.0};
-  // Adaptive sensor noise
-  bool adaptive_{true};
+  // System noise
+  Scalar sigma_w_{3.0};
 
   // Identity matrix
   Matrix<6, 6> I_ = Matrix<6, 6>::Identity();

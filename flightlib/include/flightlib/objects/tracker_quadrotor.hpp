@@ -99,9 +99,9 @@ class TrackerQuadrotor : ObjectBase {
   Vector<3> size_;
   bool collision_;
 
-//   // MPC controller for reinforcement leraning action
-//   MPCController mpc_controller_;
-//   std::vector<float> control_{0., 0., 0., 0.};
+  // // MPC controller for reinforcement leraning action
+  // MPCController mpc_controller_;
+  // std::vector<float> control_{0., 0., 0., 0.};
 
   // PID controller for reinforcement learning action
   VelocityController velocity_controller_;

@@ -43,8 +43,6 @@ void KalmanFilter::init(const Scalar Ts, Ref<Vector<6>> x0)
 
     // Define system noise matrix
     Q_ = Matrix<3, 3>::Identity() * pow(sigma_w_, 2);
-    // Define sensor noise matrix
-    R_ = Matrix<3, 3>::Identity() * pow(sigma_v_, 2);
 
     initialized_ = true;
 }
@@ -57,38 +55,34 @@ void KalmanFilter::predict()
     P_ = F_ * P_ * F_.transpose() + Gamma_ * Q_ * Gamma_.transpose();
 }
 
-void KalmanFilter::update(const Ref<Vector<3>> z, const Ref<Vector<3>> ego)
+void KalmanFilter::update(const Ref<Vector<3>> z)
 {
     if (!initialized_) throw std::runtime_error("Kalman filter is not initialized!");
 
-    // Adaptive sensor noise
-    if (adaptive_) {
-        Vector<3> rel = Vector<3>(abs(z[0] - ego[0]), abs(z[1] - ego[1]), abs(z[2] - ego[2]));
-        // std::cout << "Before scaled std : " << rel[0] << ", " << rel[1] << ", " << rel[2] << std::endl;
-        Scalar scale = 5.0;
-        Vector<3> sigma_v = rel * scale;
-        // std::cout << "Adaptive sensor std : " << sigma_v[0] << ", " << sigma_v[1] << ", " << sigma_v[2] << std::endl;
-        R_ = rel.asDiagonal();
-    }
+    // Error covariance induced by sensor measurement in 3D space is computed
+    // by propagating the measurement error covariance through the measurement model
 
-    // // Adaptive sensor noise
-    // if (adaptive_) {
-    //     Vector<3> rel = Vector<3>(abs(z[0] - ego[0]), abs(z[1] - ego[1]), abs(z[2] - ego[2]));
-    //     // std::cout << "Before scaled std : " << rel[0] << ", " << rel[1] << ", " << rel[2] << std::endl;
-    //     Scalar scale = 0.1;
+    Vector<3> unit_z = z / (z.norm() + 1e-8);
 
-    //     Scalar noise_x = scale * computeSensorNoise(rel[0]);
-    //     Scalar noise_y = scale * computeSensorNoise(rel[1]);
-    //     Scalar noise_z = scale * computeSensorNoise(rel[2]);
-    //     Vector<3> sigma_v(noise_x, noise_y, noise_z);
+    // Scalar x_c = unit_z(0);
+    // Scalar y_c = unit_z(1);
+    // Scalar z_c = unit_z(2);
 
-    //     // std::cout << "Adaptive sensor std : " << sigma_v[0] << ", " << sigma_v[1] << ", " << sigma_v[2] << std::endl;
-    //     R_ = rel.asDiagonal();
-    // }
+    Scalar x_c = z(0);
+    Scalar y_c = z(1);
+    Scalar z_c = z(2);
+    
+    // Jacobian matrix of the measurement model with respect to the 3D position
+    Matrix<3, 3> J = (Matrix<3, 3>() << z_c,    0,  -x_c*z_c,
+                                          0,  z_c,  -y_c*z_c,
+                                          0,    0,  -z_c*z_c).finished(); // w.r.t. camera frame
 
+    Vector<3> square_sigma_v(0.4, 0.4, 1.0); // squared form
+    Matrix<3, 3> D = square_sigma_v.asDiagonal();
+    Matrix<3, 3> R = J * D * J.transpose();
 
     // Innovationf
-    Matrix<3, 3> S = H_ * P_ * H_.transpose() + R_;
+    Matrix<3, 3> S = H_ * P_ * H_.transpose() + R;
     // Kalman gain
     K_ = P_ * H_.transpose() * S.inverse();
     // State update
@@ -97,16 +91,12 @@ void KalmanFilter::update(const Ref<Vector<3>> z, const Ref<Vector<3>> ego)
     P_ = (I_ - K_ * H_) * P_;
 }
 
-Scalar KalmanFilter::computeSensorNoise(const Scalar x) {
-    return 1 - exp(-0.005 * pow(x, 2)); // Get close to 1.0 when x gets close to 30.0 (m)
-}
-
 Matrix<3, 3> KalmanFilter::getPositionErrorCovariance() const
 {
     if (!initialized_) throw std::runtime_error("Kalman filter is not initialized!");
-    Matrix<3, 3> state_cov = (Matrix<3, 3>() << P_(0, 0),        0,       0,
-                                                       0, P_(2, 2),       0,
-                                                       0,        0, P_(4, 4)).finished(); // w.r.t. camera frame
+    Matrix<3, 3> state_cov = (Matrix<3, 3>() << P_(0, 0), P_(0, 2), P_(0, 4),
+                                                P_(2, 0), P_(2, 2), P_(2, 4),
+                                                P_(4, 0), P_(4, 2), P_(4, 4)).finished(); // w.r.t. camera frame
     return state_cov;
 }
 

@@ -18,7 +18,7 @@
 #include "flightlib/objects/tracker_quadrotor.hpp"
 #include "flightlib/sensors/rgb_camera.hpp"
 
-#include <opencv2/opencv.hpp>
+// #include <opencv2/opencv.hpp>
 
 // Header files for target tracking
 #include "flightlib/sensors/stereo_camera.hpp"
@@ -71,6 +71,12 @@ class TrackerQuadrotorEnv final : public EnvBase {
   Matrix<4, 4> getBodyToWorld() const;
 
   //
+  Vector<3> fromWorldToCamera(Vector<3> point_w) const;
+  Vector<3> fromCameraToWorld(Vector<3> point_c) const;
+  Matrix<3, 3> fromCameraToWorld(Matrix<3, 3> cov) const;
+
+
+  //
   Vector<3> getPosition(void) const;
 
   // Test for only tracker without target tracking
@@ -114,6 +120,11 @@ class TrackerQuadrotorEnv final : public EnvBase {
   // Stereo camera
   int num_cameras_;
   std::vector<std::shared_ptr<StereoCamera>> multi_stereo_;
+  Vector<3> d_l_;
+  Vector<3> d_r_;
+  Matrix<3, 3> R_B_C_; // Frame rotation matrix
+  Matrix<4, 4> T_B_LC_; // Frame translation matrix
+  Matrix<4, 4> T_LC_B_; // Frame translation matrix
 
   // Kalman filter
   std::vector<std::shared_ptr<KalmanFilter>> target_kalman_filters_, tracker_kalman_filters_;

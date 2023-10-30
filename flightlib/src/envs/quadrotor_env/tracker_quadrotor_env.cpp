@@ -22,23 +22,22 @@ TrackerQuadrotorEnv::TrackerQuadrotorEnv(const std::string &cfg_path) : EnvBase(
     multi_stereo_.push_back(std::make_shared<StereoCamera>());
   }
 
-  Vector<3> d_l = Vector<3>(0.06, 0.0, -0.1); // body origin w.r.t. left camera
-  Vector<3> d_r = Vector<3>(-0.06, 0.0, -0.1); // body origin w.r.t. right camera
-  Matrix<3, 3> R_front = (Rot_x(-M_PI_2) * Rot_y(M_PI_2)).inverse();
+  d_l_ = Vector<3>(0.06, 0.0, -0.1); // body origin w.r.t. left camera
+  d_r_ = Vector<3>(-0.06, 0.0, -0.1); // body origin w.r.t. right camera
+  R_B_C_ = (Rot_x(-M_PI_2) * Rot_y(M_PI_2)).inverse(); // from body to camera
 
-  // // 90 & -90 angle
-  // Matrix<3, 3> R_left  = (Rot_z(M_PI_2) * Rot_x(-M_PI_2) * Rot_y(M_PI_2)).inverse();
-  // Matrix<3, 3> R_right = (Rot_z(-M_PI_2) * Rot_x(-M_PI_2) * Rot_y(M_PI_2)).inverse();
+  // Frame translation matrix
+  T_B_LC_.block<3, 3>(0, 0) = R_B_C_;
+  T_B_LC_.block<3, 1>(0, 3) = d_l_;
+  T_B_LC_.row(3) << 0.0, 0.0, 0.0, 1.0;
 
-  // // 120 & -120 angle
-  // Matrix<3, 3> R_left  = (Rot_z(2.0/3.0 * M_PI) * Rot_x(-M_PI_2) * Rot_y(M_PI_2)).inverse();
-  // Matrix<3, 3> R_right = (Rot_z(-2.0/3.0 * M_PI) * Rot_x(-M_PI_2) * Rot_y(M_PI_2)).inverse();
+  // Transformation from left camera to body
+  T_LC_B_ = T_B_LC_.inverse();
 
-  multi_stereo_[0]->init(d_l, d_r, R_front); // front camera
-  // multi_stereo_[1]->init(d_l, d_r, R_left); // left back camera
-  // multi_stereo_[2]->init(d_l, d_r, R_right); // right back camera
+  // Front camera
+  multi_stereo_[0]->init(d_l_, d_r_, R_B_C_);
 
-  // Data recoder
+  // // Data recoder
   sensor_save_ = std::make_shared<SensorSave>();
   tracking_save_ = std::make_shared<TrackingSave>();
 
@@ -114,9 +113,9 @@ bool TrackerQuadrotorEnv::reset(Ref<Vector<>> obs, Ref<Vector<>> position,
   quad_state_.x(QS::POSY) = position[1];
   quad_state_.x(QS::POSZ) = position[2];
 
-  Scalar yaw = uniform_dist_(random_gen_) * M_PI;
+  // Scalar yaw = uniform_dist_(random_gen_) * M_PI;
   // Scalar yaw = M_PI_2;
-  // Scalar yaw = atan2(-position[1], -position[0]); // Center oriented yaw angle
+  Scalar yaw = atan2(-position[1], -position[0]); // Center oriented yaw angle
   
   Vector<3> euler(yaw, 0, 0);
   Vector<4> quaternion = eulerToQuaternion(euler);
@@ -137,7 +136,9 @@ bool TrackerQuadrotorEnv::reset(Ref<Vector<>> obs, Ref<Vector<>> position,
   // Initialize multi kalman filter for target
   for (int i = 0; i < num_targets_; ++i){
     std::shared_ptr<KalmanFilter> target_kf = std::make_shared<KalmanFilter>();
-    Vector<6> x0 = (Vector<6>() << target_positions[i][0], 0, target_positions[i][1], 0, target_positions[i][2], 0).finished();
+    // Transform frame from world to left camera, and then initialize kalman filter
+    Vector<3> point_c = fromWorldToCamera(target_positions[i]);
+    Vector<6> x0 = (Vector<6>() << point_c[0], 0, point_c[1], 0, point_c[2], 0).finished();
     target_kf->init(sim_dt_, x0);
     target_kalman_filters_.push_back(target_kf);
   }
@@ -145,7 +146,9 @@ bool TrackerQuadrotorEnv::reset(Ref<Vector<>> obs, Ref<Vector<>> position,
   // Initialize multi kalman filter for tracker
   for (int i = 0; i < num_trackers_; ++i){
     std::shared_ptr<KalmanFilter> tracker_kf = std::make_shared<KalmanFilter>();
-    Vector<6> x0 = (Vector<6>() << tracker_positions[i][0], 0, tracker_positions[i][1], 0, tracker_positions[i][2], 0).finished();
+    // Transform frame from world to left camera, and then initialize kalman filter
+    Vector<3> point_c = fromWorldToCamera(target_positions[i]);
+    Vector<6> x0 = (Vector<6>() << point_c[0], 0, point_c[1], 0, point_c[2], 0).finished();
     tracker_kf->init(sim_dt_, x0);
     tracker_kalman_filters_.push_back(tracker_kf);
   }
@@ -228,6 +231,58 @@ Matrix<4, 4> TrackerQuadrotorEnv::getBodyToWorld() const {
   return T_B_W;
 }
 
+Vector<3> TrackerQuadrotorEnv::fromWorldToCamera(Vector<3> point_w) const {
+  // Frame transform from world to body
+  Matrix<4, 4> T_B_W = getBodyToWorld();
+  Matrix<4, 4> T_W_B = T_B_W.inverse();
+
+  // Frame transform from world to left camera
+  Matrix<3, 4> T_W_LC = (T_B_LC_ * T_W_B).topRows<3>();
+
+  // Covert to homogeneous coordinates
+  Vector<4> P_W(point_w[0], point_w[1], point_w[2], 1);
+
+  // From world to left camera
+  Vector<3> point_c = T_W_LC * P_W;
+
+  return point_c;
+}
+
+Vector<3> TrackerQuadrotorEnv::fromCameraToWorld(Vector<3> point_c) const {
+  // Frame transform from world to body
+  Matrix<4, 4> T_B_W = getBodyToWorld();
+  Matrix<4, 4> T_W_B = T_B_W.inverse();
+
+  // Frame transform from world to left camera
+  Matrix<4, 4> T_W_LC = (T_B_LC_ * T_W_B);
+  // Frame transform from camera to left world
+  Matrix<3, 4> T_LC_W = T_W_LC.inverse().topRows<3>();
+
+  // Covert to homogeneous coordinates
+  Vector<4> P_C(point_c[0], point_c[1], point_c[2], 1);
+
+  // From world to left camera
+  Vector<3> point_w = T_LC_W * P_C;
+
+  return point_w;
+}
+
+Matrix<3, 3> TrackerQuadrotorEnv::fromCameraToWorld(Matrix<3, 3> cov) const {
+  // Frame rotation from body to world
+  Matrix<3, 3> R_B_W = quad_state_.q().toRotationMatrix();
+
+  // Frame rotation from left camera to body
+  Matrix<3, 3> R_LC_B = R_B_C_.inverse();
+
+  // Frame rotation from left camera to world
+  Matrix<3, 3> R_LC_W = R_B_W * R_LC_B;
+
+  // Transform the 3D error covariance matrix from the camera frame to the world frame
+  Matrix<3, 3> cov_w = R_LC_W * cov * R_LC_W.transpose();
+
+  return cov_w;
+}
+
 Vector<3> TrackerQuadrotorEnv::getPosition() const {
   return quad_state_.p;
 }
@@ -262,7 +317,8 @@ Scalar TrackerQuadrotorEnv::trackerStep(const Ref<Vector<>> act, Ref<Vector<>> o
     for (int j = 0; j < num_cameras_; j++) {
       detected = multi_stereo_[j]->computePixelPoint(target_position, T_W_B);
       if (detected) {
-        Vector<3> target_measurement = multi_stereo_[j]->getObjectPosition();
+        // Get sensor measurement (based on left camera frame)
+        Vector<3> target_measurement = multi_stereo_[j]->getSensorMeasurement();
         target_measurements.push_back(target_measurement);
         break;      
       }
@@ -278,7 +334,7 @@ Scalar TrackerQuadrotorEnv::trackerStep(const Ref<Vector<>> act, Ref<Vector<>> o
     for (int j = 0; j < num_cameras_; j++) {
       detected = multi_stereo_[j]->computePixelPoint(tracker_position, T_W_B);
       if (detected) {
-        Vector<3> tracker_measurement = multi_stereo_[j]->getObjectPosition();
+        Vector<3> tracker_measurement = multi_stereo_[j]->getSensorMeasurement();
         tracker_measurements.push_back(tracker_measurement);
         break;      
       }
@@ -327,7 +383,7 @@ Scalar TrackerQuadrotorEnv::trackerStep(const Ref<Vector<>> act, Ref<Vector<>> o
       }
       else {
         target_kalman_filters_[i]->predict();
-        target_kalman_filters_[i]->update(target_measurements[target_assignment[i]], quad_state_.p);
+        target_kalman_filters_[i]->update(target_measurements[target_assignment[i]]);
       }
     }
   }
@@ -341,7 +397,7 @@ Scalar TrackerQuadrotorEnv::trackerStep(const Ref<Vector<>> act, Ref<Vector<>> o
       }
       else {
         tracker_kalman_filters_[i]->predict();
-        tracker_kalman_filters_[i]->update(tracker_measurements[tracker_assignment[i]], quad_state_.p);
+        tracker_kalman_filters_[i]->update(tracker_measurements[tracker_assignment[i]]);
       }
     }
   }
@@ -352,28 +408,29 @@ Scalar TrackerQuadrotorEnv::trackerStep(const Ref<Vector<>> act, Ref<Vector<>> o
   //*************************** Data Recoder *******************************
   //************************************************************************
   
-  // // Record tracking data
-  // std::vector<Vector<3>> target_estim_pos, tracker_estim_pos;
-  // std::vector<Matrix<6, 6>> target_cov, tracker_cov;
+  // Record tracking data
+  // When saving tracking data, target and tracker position must be based on world frame
+  std::vector<Vector<3>> target_estim_pos, tracker_estim_pos;
+  std::vector<Matrix<3, 3>> target_cov, tracker_cov;
 
-  // for (int i = 0; i < num_targets_; i++) {
-  //   target_estim_pos.push_back(target_kalman_filters_[i]->getEstimatedPosition());
-  //   target_cov.push_back(target_kalman_filters_[i]->getErrorCovariance());
-  // }
-  // for (int i = 0; i < num_trackers_; i++) {
-  //   tracker_estim_pos.push_back(tracker_kalman_filters_[i]->getEstimatedPosition());
-  //   tracker_cov.push_back(tracker_kalman_filters_[i]->getErrorCovariance());;
-  // }
+  for (int i = 0; i < num_targets_; i++) {
+    target_estim_pos.push_back(fromCameraToWorld(target_kalman_filters_[i]->getEstimatedPosition()));
+    target_cov.push_back(fromCameraToWorld(target_kalman_filters_[i]->getPositionErrorCovariance()));
+  }
+  for (int i = 0; i < num_trackers_; i++) {
+    tracker_estim_pos.push_back(fromCameraToWorld(tracker_kalman_filters_[i]->getEstimatedPosition()));
+    tracker_cov.push_back(fromCameraToWorld(tracker_kalman_filters_[i]->getPositionErrorCovariance()));;
+  }
 
-  // if (!tracking_save_->isFull()) {
-  //   Vector<4> quadternion(quad_state_.x(QS::ATTW), quad_state_.x(QS::ATTX), quad_state_.x(QS::ATTY), quad_state_.x(QS::ATTZ));
-  //   tracking_save_->store(quad_state_.p, quadternion, gt_target_positions_, target_estim_pos, target_cov, gt_tracker_positions_, tracker_estim_pos, tracker_cov, sim_dt_);
-  // }
-  // else if (tracking_flag_ && tracking_save_->isFull()) {
-  //   tracking_save_->save();
-  //   tracking_flag_ = false;
-  //   std::cout << ">>> Tracker " << agent_id_ << "'s tracking output save is done" << std::endl;
-  // }
+  if (!tracking_save_->isFull()) {
+    Vector<4> quadternion(quad_state_.x(QS::ATTW), quad_state_.x(QS::ATTX), quad_state_.x(QS::ATTY), quad_state_.x(QS::ATTZ));
+    tracking_save_->store(quad_state_.p, quadternion, gt_target_positions_, target_estim_pos, target_cov, gt_tracker_positions_, tracker_estim_pos, tracker_cov, sim_dt_);
+  }
+  else if (tracking_flag_ && tracking_save_->isFull()) {
+    tracking_save_->save();
+    tracking_flag_ = false;
+    std::cout << ">>> Tracker " << agent_id_ << "'s tracking output save is done" << std::endl;
+  }
 
   // // Record sensor data, just for one target case
   // for (int i = 0; i < target_positions.size(); i++) {
@@ -382,7 +439,7 @@ Scalar TrackerQuadrotorEnv::trackerStep(const Ref<Vector<>> act, Ref<Vector<>> o
   //   for (int j = 0; j < num_cameras_; j++) {
   //     detected = multi_stereo_[j]->computePixelPoint(target_position, T_W_B);
   //     if (detected) {
-  //       measured_position_ = multi_stereo_[j]->getObjectPosition();
+  //       measured_position_ = multi_stereo_[j]->getSensorMeasurement();
   //       gt_pixels_ = multi_stereo_[j]->getGtPixels();
   //       pixels_ = multi_stereo_[j]->getPixels();
   //       break;      
@@ -420,6 +477,19 @@ Scalar TrackerQuadrotorEnv::trackerStep(const Ref<Vector<>> act, Ref<Vector<>> o
 bool TrackerQuadrotorEnv::getObs(Ref<Vector<>> obs)
 {
   tracker_ptr_->getState(&quad_state_);
+
+
+
+
+
+
+
+  // 수정!!!!!!!!!!!!!!!!!!!!!! world frame으로 바꾸기
+
+
+
+
+
 
   //
   for (int i = 0; i < num_targets_; ++i) {

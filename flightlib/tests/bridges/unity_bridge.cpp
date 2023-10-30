@@ -1,5 +1,5 @@
 #include "flightlib/bridges/unity_bridge.hpp"
-#include "flightlib/common/logger.hpp"
+// #include "flightlib/common/logger.hpp"
 #include "flightlib/objects/static_gate.hpp"
 
 #include <gtest/gtest.h>

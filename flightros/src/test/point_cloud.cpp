@@ -15,7 +15,7 @@
 // flightlib
 #include "flightlib/bridges/unity_message_types.hpp"
 #include "flightlib/bridges/unity_bridge.hpp"
-#include "flightlib/common/logger.hpp"
+// #include "flightlib/common/logger.hpp"
 #include "flightlib/common/math.hpp"
 #include "flightlib/common/quad_state.hpp"
 #include "flightlib/common/types.hpp"
