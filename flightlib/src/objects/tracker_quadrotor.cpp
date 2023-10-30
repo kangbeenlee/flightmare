@@ -47,6 +47,8 @@ bool TrackerQuadrotor::run(const Scalar ctl_dt) {
   const Scalar max_dt = integrator_ptr_->dtMax();
   Scalar remain_ctl_dt = ctl_dt;
 
+  bool mpc_success = false;
+
   // simulation loop
   while (remain_ctl_dt > 0.0) {
     const Scalar sim_dt = std::min(remain_ctl_dt, max_dt);
@@ -66,22 +68,29 @@ bool TrackerQuadrotor::run(const Scalar ctl_dt) {
     // For world frame based controller
     Vector<3> velocity = state_.v;
 
-    // T, Mx, My, Mz
+    /////////////////////////// PID controller ///////////////////////////
     const Vector<4> control_input = velocity_controller_.control(velocity_des[0], velocity_des[1], velocity_des[2], velocity_des[3],
                                                             velocity[0], velocity[1], velocity[2], state_.x(QS::OMEZ),
                                                             phi, theta, psi);
+    //////////////////////////////////////////////////////////////////////
 
-
-    // std::vector<float> sub_goal{velocity_des[0], velocity_des[1], velocity_des[2], velocity_des[3]};
-    // mpc_controller_.runMPC(state_.x(QS::POSX), state_.x(QS::POSY), state_.x(QS::POSZ),
-    //                        state_.x(QS::VELX), state_.x(QS::VELY), state_.x(QS::VELZ),
-    //                        phi, theta, psi,
-    //                        state_.x(QS::OMEX), state_.x(QS::OMEY), state_.x(QS::OMEZ),
-    //                        sub_goal, control_);
+    // /////////////////////////// MPC controller ///////////////////////////
+    // std::vector<float> command{velocity_des[0], velocity_des[1], velocity_des[2], velocity_des[3]};
+    
+    // // Run mpc only 1 time 
+    // if (!mpc_success) {
+    //   mpc_success =  mpc_controller_.runMPC(state_.x(QS::POSX), state_.x(QS::POSY), state_.x(QS::POSZ),
+    //                                         state_.x(QS::VELX), state_.x(QS::VELY), state_.x(QS::VELZ),
+    //                                         phi, theta, psi,
+    //                                         state_.x(QS::OMEX), state_.x(QS::OMEY), state_.x(QS::OMEZ),
+    //                                         command, control_);
+    // }
 
     // const Vector<4> control_input(control_[0], control_[1], control_[2], control_[3]);
+    // //////////////////////////////////////////////////////////////////////
 
-    const Vector<4> motor_thrusts_des = B_allocation_inv_ * control_input;
+    // Control input: T, Mx, My, Mz
+    const Vector<4> motor_thrusts_des = B_allocation_inv_ * control_input; // 
 
     // Cliping motor thrust with motor constraint
     runMotors(sim_dt, motor_thrusts_des);
@@ -156,7 +165,7 @@ void TrackerQuadrotor::init(void) {
   // controller_save_ = PIDControllerSave();
 
   // mpc_controller_ = MPCController();
-  // mpc_controller_.init(0.01, 10);
+  // mpc_controller_.init(0.02, 10);
   // controller_save_ = MPCControllerSave();
 }
 

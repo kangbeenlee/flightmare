@@ -1,5 +1,5 @@
 #include "flightlib/envs/quadrotor_env/quadrotor_env.hpp"
-#include "flightlib/common/logger.hpp"
+// #include "flightlib/common/logger.hpp"
 
 #include <gtest/gtest.h>
 #include <yaml-cpp/yaml.h>

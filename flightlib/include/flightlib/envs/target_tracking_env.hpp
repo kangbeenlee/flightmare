@@ -78,8 +78,8 @@ class TargetTrackingEnv {
 
   // Random initialization
   // std::uniform_real_distribution<Scalar> uniform_plane_{-15.0, 15.0}; // Uniform spawn 2d plane (-15.0 ~ 15.0 m)
-  std::uniform_real_distribution<Scalar> uniform_altitude_{8.0, 12.0}; // Uniform spawn altitude (6.0 ~ 14.0 m)
-  std::uniform_real_distribution<Scalar> uniform_radius_{0.0, 30.0}; // Uniform spawn altitude (6.0 ~ 14.0 m)
+  std::uniform_real_distribution<Scalar> uniform_altitude_{4.0, 6.0}; // Uniform spawn altitude (6.0 ~ 14.0 m)
+  std::uniform_real_distribution<Scalar> uniform_radius_{0.0, 15.0}; // Uniform spawn altitude (6.0 ~ 14.0 m)
   // std::uniform_real_distribution<Scalar> binary_dis_{0.0, 1.0}; // Uniform spawn altitude (2.0 ~ 8.0 m)
 
   std::uniform_real_distribution<Scalar> uniform_theta_{-1.0, 1.0}; // Uniform spawn 2d plane (-15.0 ~ 15.0 m)

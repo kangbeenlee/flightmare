@@ -5,27 +5,15 @@ import matplotlib.pyplot as plt
 
 
 def func(x):
-    # return 0.9*(1 - np.exp(-0.00001 * (x ** 4)))
-    # return np.exp(-10 * (x ** 5))
-    return np.exp(-0.001 * (x ** 5))
+    return np.exp(-1 * (x ** 5))
+    # return np.exp(-0.01 * (x ** 3))
 
 # Scalar cov_reward = exp(-0.1 * pow(avg_position_cov_norm, 5));
 # Scalar target_cov_reward = exp(-0.01 * pow(target_cov_norm, 3));
 # exp(-0.01 * pow(target_cov_norm, 3));
 # exp(-10.0 * pow(theta, 3));
 
-x1 = np.linspace(0, 10, 100)
-
-# alpha = -0.01
-# beta = 5
-
-# y1 = np.exp(alpha * x1 ** (beta))
-# print(np.exp(alpha * (1.0 ** beta)))
-# print(np.exp(alpha * (2.0 ** beta)))
-# print(np.exp(alpha * (5.0 ** beta)))
-# print(np.exp(alpha * (10.0 ** beta)))
-# print(np.exp(alpha * (20.0 ** beta)))
-
+x1 = np.linspace(0, 5, 100)
 y1 = func(x1)
 print(func(1.0))
 print(func(2.0))

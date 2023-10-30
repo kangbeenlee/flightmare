@@ -24,15 +24,8 @@ class StereoCamera {
   // Public get functions (sensor measurement)
   inline Vector<4> getGtPixels(void) const { return gt_pixels_; };
   inline Vector<4> getPixels(void) const { return pixels_; };
-  inline Vector<3> getObjectPosition(void) const { return p_w_; };
-
-  // Public get functions
-  // inline Scalar getFOV(void) const { return fov_; };
-  // inline Scalar getFocalLength(void) const { return f_; };
-  // inline Scalar getPrincipalPoint(void) const { return c_; };
-  inline Scalar getBaseline(void) const { return b_; };
-  inline int getWidth(void) const { return width_; };
-  inline int getHeight(void) const { return height_; };
+  inline Vector<3> getSensorMeasurement(void) const { return p_c_; };
+  // inline Vector<3> getObjectPosition(void) const { return p_w_; };
 
   inline Matrix<4, 4> getFromLeftCameraToBody(void) const { return T_LC_B_; };
 
@@ -46,24 +39,12 @@ class StereoCamera {
   // From left camera to body
   Matrix<4, 4> T_LC_B_;
 
-  // // Fov 90 x 90 deg camera
-  // // Intrinsic parameters of left and right cameras
-  // Scalar fov_{90.0};
-  // int f_{320}; // Focal length (pixel)
-  // int c_{320}; // Principal point (pixel)
-  // int width_{640};
-  // int height_{640};
-  // Matrix<3, 3> K_; // Intrinsic matrix
-
-  // Intrinsic parameters of left and right cameras
-  // ZED X mini, HD1080 resolutoin
+  // Intrinsic parameters of ZED X mini (HD1080 resolutoin, 0.003mm x 0.003mm pixel size)
   Scalar h_fov_{110.0};
   Scalar v_fov_{80.0};
-  int f_x_{672}; // Focal length (pixel)
-  int f_y_{643};
+  int f_{733}; // Focal length (pixel), 2.2 (mm)
   int c_x_{960};
   int c_y_{540};
-  
   int width_{1920};
   int height_{1080};
   Matrix<3, 3> K_; // Intrinsic matrix
@@ -74,10 +55,11 @@ class StereoCamera {
   // Stereo camera sensor measurement
   Vector<4> gt_pixels_;
   Vector<4> pixels_;
-  Vector<3> p_w_; // object position based on world frame
+  Vector<3> p_c_; // Sensor measurement
+  // Vector<3> p_w_; // object position based on world frame
 
   // Random variable generator for pixel noise
-  std::normal_distribution<Scalar> norm_dist_{0.0, 0.1};
+  std::normal_distribution<Scalar> norm_dist_{0.0, 0.3};
   std::random_device rd_;
   std::mt19937 random_gen_{rd_()};
 };

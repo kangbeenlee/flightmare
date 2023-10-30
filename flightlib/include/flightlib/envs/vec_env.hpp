@@ -11,7 +11,7 @@
 
 // // flightlib
 // #include "flightlib/bridges/unity_bridge.hpp"
-// #include "flightlib/common/logger.hpp"
+// // #include "flightlib/common/logger.hpp"
 // #include "flightlib/common/types.hpp"
 // #include "flightlib/envs/env_base.hpp"
 // #include "flightlib/envs/quadrotor_env/quadrotor_env.hpp"
@@ -78,7 +78,7 @@
 //                     Ref<MatrixRowMajor<>> obs, Ref<Vector<>> reward,
 //                     Ref<BoolVector<>> done, Ref<MatrixRowMajor<>> extra_info);
 //   // create objects
-//   Logger logger_{"VecEnv"};
+// //   Logger logger_{"VecEnv"};
 //   std::vector<std::unique_ptr<EnvBase>> envs_;
 //   std::vector<std::string> extra_info_names_;
 
