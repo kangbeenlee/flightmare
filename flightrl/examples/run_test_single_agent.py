@@ -33,7 +33,7 @@ def test_model(env, render=False):
             epi_step += 1
             
             # vx, vy, vz, wz (m/s, m/s, m/s, rad/s)
-            act = np.array([[0.0, 0.0, 0.0, 3.0]], dtype=np.float32)
+            act = np.array([[0.0, 0.0, 0.0, 0.0]], dtype=np.float32)
             
             # # Step input response test
             # vx = -2.0

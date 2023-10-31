@@ -236,23 +236,23 @@ def main():
 
             total_cov_det.append(np.linalg.det(target_cov[i, :, :, t]))
 
-        avg_cov_det = np.sum(total_cov_det)/args.targets
-        cov_reward = np.exp(-1.0 * (avg_cov_det ** 5))
-        cov_reward_v2 = np.exp(-0.01 * (avg_cov_det ** 3))
+        total_cov_det = np.array(total_cov_det) * 9
+        exp_cov_det = np.exp(-0.1 * (total_cov_det ** 2))
+        cov_reward = np.sum(exp_cov_det) / args.targets
         print("----------------------------------------")
-        print("all cov det  :", np.around(np.array(avg_cov_det), 4))
-        print("avg cov det  :", np.around(avg_cov_det, 4))
-        print("cov reward   :", np.around(cov_reward, 4))
-        print("cov reward 2 :", np.around(cov_reward_v2, 4))
+        print("all cov det    :", np.around(np.array(total_cov_det), 4))
+        print("exp cov det    :", np.around(np.array(exp_cov_det), 4))
+        print("cov reward     :", np.around(cov_reward, 4))
+        # print("cov reward 2   :", np.around(cov_reward_v2, 4))
 
         for i in range(args.trackers):
             ax.plot(tracker_gt[i, 0, t], tracker_gt[i, 1, t], tracker_gt[i, 2, t], 'o', color='#1100fa', markersize=3, label='true')
             ax.plot(tracker_estim[i, 0, t], tracker_estim[i, 1, t], tracker_estim[i, 2, t], 'o', color='#7a70ff', markersize=3, label='estimate')
-            plot_3d_ellipsoid(tracker_estim[i, :, t], tracker_cov[i, :, :, t], ax)
+            plot_3d_ellipsoid(tracker_estim[i, :, t], tracker_cov[i, :, :, t], ax, target=False)
 
         ax.axes.set_xlim3d(left=-20, right=20)
         ax.axes.set_ylim3d(bottom=-20, top=20)
-        ax.axes.set_zlim3d(bottom=5, top=15)
+        ax.axes.set_zlim3d(bottom=0, top=15)
         ax.set_aspect('equal')
         ax.set_xlabel('x')
         ax.set_ylabel('y')
