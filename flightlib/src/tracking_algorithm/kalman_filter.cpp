@@ -47,9 +47,9 @@ void KalmanFilter::init(const Scalar Ts, Ref<Vector<6>> x0)
 
     // sigma_alpha_ = 0.3 / 733; // sigma_alpha = sigma_u / focal_length
     // sigma_beta_ = 0.3 / 733; // sigma_beta = sigma_v / focal_length
-    sigma_alpha_ = 0.05;
-    sigma_beta_ = 0.05;
-    sigma_rho_ = 0.03;
+    sigma_alpha_ = 0.1;
+    sigma_beta_ = 0.1;
+    sigma_rho_ = 0.02;
 
     Vector<3> square_sigma_v(pow(sigma_alpha_, 2), pow(sigma_beta_, 2), pow(sigma_rho_, 2)); // squared form
     D_ = square_sigma_v.asDiagonal();

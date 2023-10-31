@@ -153,23 +153,23 @@ bool TargetTrackingEnv<EnvBase>::reset(Ref<MatrixRowMajor<>> obs, Ref<MatrixRowM
   // Initial target position
   std::vector<Vector<3>> tracker_positions;
 
-  // // Single position
-  // tracker_positions.push_back(Vector<3>{0.0, -20.0, 10.0});
+  // // // Single position
+  // tracker_positions.push_back(Vector<3>{0.0, -15.0, 5.0});
 
   // Ideal multi position
-  // tracker_positions.push_back(Vector<3>{0.0, 40.0, 10.0});
-  // tracker_positions.push_back(Vector<3>{-30.0, -30.0, 10.0});
-  // tracker_positions.push_back(Vector<3>{30.0, -30.0, 10.0});
+  // tracker_positions.push_back(Vector<3>{0.0, 40.0, 5.0});
+  // tracker_positions.push_back(Vector<3>{-30.0, -30.0, 5.0});
+  // tracker_positions.push_back(Vector<3>{30.0, -30.0, 5.0});
 
   // // Unideal multi position
-  // tracker_positions.push_back(Vector<3>{-3.0, -45.0, 10.0});
-  // tracker_positions.push_back(Vector<3>{0.0, -45.0, 10.0});
-  // tracker_positions.push_back(Vector<3>{3.0, -45.0, 10.0});
+  // tracker_positions.push_back(Vector<3>{-5.0, 0.0, 5.0});
+  // tracker_positions.push_back(Vector<3>{5.0, 0.0, 5.0});
+  // tracker_positions.push_back(Vector<3>{0.0, -15.0, 5.0});
 
   for (int i = 0; i < num_envs_; i++) {
     Scalar theta = uniform_theta_(random_gen_) * M_PI;
-    // Scalar radius = 15.0;
-    Scalar radius = uniform_radius_(random_gen_);
+    Scalar radius = 12.0;
+    // Scalar radius = uniform_radius_(random_gen_);
     Scalar random_x = radius * cos(theta);
     Scalar random_y = radius * sin(theta);
     Scalar random_z = uniform_altitude_(random_gen_);

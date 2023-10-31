@@ -14,3 +14,7 @@ import torch
 # print(np.sum(b))
 
 # print(40 / np.sqrt(2))
+
+a = np.array([1., 2., 3.])
+b = np.exp(a ** 2)
+print(b)

@@ -42,7 +42,7 @@ def main():
     # Policy model
     parser.add_argument("--policy", type=str, default="ddpg", help='Policy based reinforcement learning model')
     parser.add_argument("--use_orthogonal_init", type=bool, default=True, help="Orthogonal initialization")
-    parser.add_argument("--use_z_score_normalization", type=bool, default=True, help="Z score normalization to observation")
+    parser.add_argument("--use_z_score_normalization", type=bool, default=False, help="Z score normalization to observation")
 
     # Learning parameters
     parser.add_argument('--max_training_timesteps', default=int(3e5), type=int, help='Number of training timesteps')

@@ -113,9 +113,9 @@ bool TrackerQuadrotorEnv::reset(Ref<Vector<>> obs, Ref<Vector<>> position,
   quad_state_.x(QS::POSY) = position[1];
   quad_state_.x(QS::POSZ) = position[2];
 
-  Scalar yaw = uniform_dist_(random_gen_) * M_PI;
+  // Scalar yaw = uniform_dist_(random_gen_) * M_PI;
   // Scalar yaw = M_PI_2;
-  // Scalar yaw = atan2(-position[1], -position[0]); // Center oriented yaw angle
+  Scalar yaw = atan2(-position[1], -position[0]); // Center oriented yaw angle
   
   Vector<3> euler(yaw, 0, 0);
   Vector<4> quaternion = eulerToQuaternion(euler);
@@ -549,7 +549,7 @@ Scalar TrackerQuadrotorEnv::rewardFunction()
 {
   // Outter coefficient
   Scalar c1 = 1.0;
-  Scalar c2 = 0.5;
+  Scalar c2 = 0.3;
   Scalar c3 = -1e-4;
 
   // Covariance reward
@@ -559,11 +559,11 @@ Scalar TrackerQuadrotorEnv::rewardFunction()
   for (int i = 0; i < num_targets_; ++i) {
     Matrix<3, 3> cov = target_kalman_filters_[i]->getPositionErrorCovariance();
     Scalar cov_det = cov.determinant();
-    cov_list.push_back(cov_det);
-    avg_cov_det += cov_det;
+    Scalar cov_det_3_sigma = cov_det * 9;
+    cov_list.push_back(cov_det_3_sigma);
+    avg_cov_det += exp(-0.1 * pow(cov_det_3_sigma, 2));
   }
-  avg_cov_det /= num_targets_;
-  cov_reward = exp(-1.0 * pow(avg_cov_det, 5));
+  cov_reward = avg_cov_det / num_targets_;
 
   // Heading reward
   Scalar heading_reward = 0.0;
