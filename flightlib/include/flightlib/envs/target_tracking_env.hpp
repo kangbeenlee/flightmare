@@ -73,8 +73,10 @@ class TargetTrackingEnv {
   void perTargetStep(int target_id, Ref<Vector<>> target_obs); // for target quadrotor
   void perTrackerStep(int agent_id, Ref<MatrixRowMajor<>> act, Ref<MatrixRowMajor<>> obs, Ref<Vector<>> reward,
                       Ref<BoolVector<>> done, Ref<MatrixRowMajor<>> extra_info); // for multi-tracking quadrotors
-
+  
   Scalar computeGlobalReward();
+  std::pair<Vector<3>, Matrix<3, 3>> fuseGaussian(const Ref<Vector<3>> mu1, const Ref<Matrix<3, 3>> cov1,
+                                                  const Ref<Vector<3>> mu2, const Ref<Matrix<3, 3>> cov2);
 
   // Random initialization
   // std::uniform_real_distribution<Scalar> uniform_plane_{-15.0, 15.0}; // Uniform spawn 2d plane (-15.0 ~ 15.0 m)

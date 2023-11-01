@@ -27,11 +27,11 @@ def load_data(data_dir, num_targets, num_trackers):
 
     target_gt = np.zeros([num_targets, 3, timesteps])
     target_estim = np.zeros([num_targets, 3, timesteps])
-    target_cov = np.zeros([num_targets, 3, timesteps])
+    target_cov = np.zeros([num_targets, 3, 3, timesteps])
 
     tracker_gt = np.zeros([num_trackers, 3, timesteps])
     tracker_estim = np.zeros([num_trackers, 3, timesteps])
-    tracker_cov = np.zeros([num_trackers, 3, timesteps])
+    tracker_cov = np.zeros([num_trackers, 3, 3, timesteps])
 
     for i in range(num_targets):
         target_gt[i, 0, :] = np.array([float(value) for line in open(data_dir + "target_gt_x_" + str(i) + ".txt") for value in line.split()])
@@ -42,9 +42,15 @@ def load_data(data_dir, num_targets, num_trackers):
         target_estim[i, 1, :] = np.array([float(value) for line in open(data_dir + "target_estim_y_" + str(i) + ".txt") for value in line.split()])
         target_estim[i, 2, :] = np.array([float(value) for line in open(data_dir + "target_estim_z_" + str(i) + ".txt") for value in line.split()])
 
-        target_cov[i, 0, :] = np.array([float(value) for line in open(data_dir + "target_cov_x_" + str(i) + ".txt") for value in line.split()])
-        target_cov[i, 1, :] = np.array([float(value) for line in open(data_dir + "target_cov_y_" + str(i) + ".txt") for value in line.split()])
-        target_cov[i, 2, :] = np.array([float(value) for line in open(data_dir + "target_cov_z_" + str(i) + ".txt") for value in line.split()])
+        target_cov[i, 0, 0, :] = np.array([float(value) for line in open(data_dir + "target_cov_xx_" + str(i) + ".txt") for value in line.split()])
+        target_cov[i, 0, 1, :] = np.array([float(value) for line in open(data_dir + "target_cov_xy_" + str(i) + ".txt") for value in line.split()])
+        target_cov[i, 0, 2, :] = np.array([float(value) for line in open(data_dir + "target_cov_xz_" + str(i) + ".txt") for value in line.split()])
+        target_cov[i, 1, 0, :] = np.array([float(value) for line in open(data_dir + "target_cov_yx_" + str(i) + ".txt") for value in line.split()])
+        target_cov[i, 1, 1, :] = np.array([float(value) for line in open(data_dir + "target_cov_yy_" + str(i) + ".txt") for value in line.split()])
+        target_cov[i, 1, 2, :] = np.array([float(value) for line in open(data_dir + "target_cov_yz_" + str(i) + ".txt") for value in line.split()])
+        target_cov[i, 2, 0, :] = np.array([float(value) for line in open(data_dir + "target_cov_zx_" + str(i) + ".txt") for value in line.split()])
+        target_cov[i, 2, 1, :] = np.array([float(value) for line in open(data_dir + "target_cov_zy_" + str(i) + ".txt") for value in line.split()])
+        target_cov[i, 2, 2, :] = np.array([float(value) for line in open(data_dir + "target_cov_zz_" + str(i) + ".txt") for value in line.split()])
 
     for i in range(num_trackers):
         tracker_gt[i, 0, :] = np.array([float(value) for line in open(data_dir + "tracker_gt_x_" + str(i) + ".txt") for value in line.split()])
@@ -55,11 +61,18 @@ def load_data(data_dir, num_targets, num_trackers):
         tracker_estim[i, 1, :] = np.array([float(value) for line in open(data_dir + "tracker_estim_y_" + str(i) + ".txt") for value in line.split()])
         tracker_estim[i, 2, :] = np.array([float(value) for line in open(data_dir + "tracker_estim_z_" + str(i) + ".txt") for value in line.split()])
 
-        tracker_cov[i, 0, :] = np.array([float(value) for line in open(data_dir + "tracker_cov_x_" + str(i) + ".txt") for value in line.split()])
-        tracker_cov[i, 1, :] = np.array([float(value) for line in open(data_dir + "tracker_cov_y_" + str(i) + ".txt") for value in line.split()])
-        tracker_cov[i, 2, :] = np.array([float(value) for line in open(data_dir + "tracker_cov_z_" + str(i) + ".txt") for value in line.split()])
+        tracker_cov[i, 0, 0, :] = np.array([float(value) for line in open(data_dir + "tracker_cov_xx_" + str(i) + ".txt") for value in line.split()])
+        tracker_cov[i, 0, 1, :] = np.array([float(value) for line in open(data_dir + "tracker_cov_xy_" + str(i) + ".txt") for value in line.split()])
+        tracker_cov[i, 0, 2, :] = np.array([float(value) for line in open(data_dir + "tracker_cov_xz_" + str(i) + ".txt") for value in line.split()])
+        tracker_cov[i, 1, 0, :] = np.array([float(value) for line in open(data_dir + "tracker_cov_yx_" + str(i) + ".txt") for value in line.split()])
+        tracker_cov[i, 1, 1, :] = np.array([float(value) for line in open(data_dir + "tracker_cov_yy_" + str(i) + ".txt") for value in line.split()])
+        tracker_cov[i, 1, 2, :] = np.array([float(value) for line in open(data_dir + "tracker_cov_yz_" + str(i) + ".txt") for value in line.split()])
+        tracker_cov[i, 2, 0, :] = np.array([float(value) for line in open(data_dir + "tracker_cov_zx_" + str(i) + ".txt") for value in line.split()])
+        tracker_cov[i, 2, 1, :] = np.array([float(value) for line in open(data_dir + "tracker_cov_zy_" + str(i) + ".txt") for value in line.split()])
+        tracker_cov[i, 2, 2, :] = np.array([float(value) for line in open(data_dir + "tracker_cov_zz_" + str(i) + ".txt") for value in line.split()])
 
     return ego_pos, ego_orien, target_gt, target_estim, target_cov, tracker_gt, tracker_estim, tracker_cov, time
+
 
 def load_multi_data(data_dir, num_targets):
     # Load data from txt files
@@ -67,33 +80,49 @@ def load_multi_data(data_dir, num_targets):
     timesteps = time.shape[0]
 
     target_estim = np.zeros([num_targets, 3, timesteps])
-    target_cov = np.zeros([num_targets, 3, timesteps])
+    target_cov = np.zeros([num_targets, 3, 3, timesteps])
 
     for i in range(num_targets):
         target_estim[i, 0, :] = np.array([float(value) for line in open(data_dir + "target_estim_x_" + str(i) + ".txt") for value in line.split()])
         target_estim[i, 1, :] = np.array([float(value) for line in open(data_dir + "target_estim_y_" + str(i) + ".txt") for value in line.split()])
         target_estim[i, 2, :] = np.array([float(value) for line in open(data_dir + "target_estim_z_" + str(i) + ".txt") for value in line.split()])
 
-        target_cov[i, 0, :] = np.array([float(value) for line in open(data_dir + "target_cov_x_" + str(i) + ".txt") for value in line.split()])
-        target_cov[i, 1, :] = np.array([float(value) for line in open(data_dir + "target_cov_y_" + str(i) + ".txt") for value in line.split()])
-        target_cov[i, 2, :] = np.array([float(value) for line in open(data_dir + "target_cov_z_" + str(i) + ".txt") for value in line.split()])
-
+        target_cov[i, 0, 0, :] = np.array([float(value) for line in open(data_dir + "target_cov_xx_" + str(i) + ".txt") for value in line.split()])
+        target_cov[i, 0, 1, :] = np.array([float(value) for line in open(data_dir + "target_cov_xy_" + str(i) + ".txt") for value in line.split()])
+        target_cov[i, 0, 2, :] = np.array([float(value) for line in open(data_dir + "target_cov_xz_" + str(i) + ".txt") for value in line.split()])
+        target_cov[i, 1, 0, :] = np.array([float(value) for line in open(data_dir + "target_cov_yx_" + str(i) + ".txt") for value in line.split()])
+        target_cov[i, 1, 1, :] = np.array([float(value) for line in open(data_dir + "target_cov_yy_" + str(i) + ".txt") for value in line.split()])
+        target_cov[i, 1, 2, :] = np.array([float(value) for line in open(data_dir + "target_cov_yz_" + str(i) + ".txt") for value in line.split()])
+        target_cov[i, 2, 0, :] = np.array([float(value) for line in open(data_dir + "target_cov_zx_" + str(i) + ".txt") for value in line.split()])
+        target_cov[i, 2, 1, :] = np.array([float(value) for line in open(data_dir + "target_cov_zy_" + str(i) + ".txt") for value in line.split()])
+        target_cov[i, 2, 2, :] = np.array([float(value) for line in open(data_dir + "target_cov_zz_" + str(i) + ".txt") for value in line.split()])
+        
     return target_estim, target_cov
 
-def plot_3d_ellipsoid(cx, cy, cz, x_axis, y_axis, z_axis, ax, target=True):
+
+def plot_3d_ellipsoid(mean, cov, ax, target=True):
     """Plot the 3-d Ellipsoid ell on the Axes3D ax."""
-    
-    # points on unit sphere
+
+    # Compute the eigenvalues and eigenvectors
+    eigenvalues, eigenvectors = np.linalg.eigh(cov)
+
+    # Using the eigenvalues to generate radii for the ellipsoid
+    radii = 3 * np.sqrt(eigenvalues)
+
+    # Generate data for the ellipsoid surface
     u = np.linspace(0.0, 2.0 * np.pi, 100)
     v = np.linspace(0.0, np.pi, 100)
-    x = x_axis * np.outer(np.cos(u), np.sin(v))
-    y = y_axis * np.outer(np.sin(u), np.sin(v))
-    z = z_axis * np.outer(np.ones_like(u), np.cos(v))
+    x = radii[0] * np.outer(np.cos(u), np.sin(v))
+    y = radii[1] * np.outer(np.sin(u), np.sin(v))
+    z = radii[2] * np.outer(np.ones_like(u), np.cos(v))
+    for i in range(len(u)):
+        for j in range(len(v)):
+            [x[i, j], y[i, j], z[i, j]] = np.dot(eigenvectors, [x[i, j], y[i, j], z[i, j]])
 
     # add center coordinates
-    x += cx
-    y += cy
-    z += cz
+    x += mean[0]
+    y += mean[1]
+    z += mean[2]
 
     if target:
         ax.plot_wireframe(x, y, z,  rstride=10, cstride=10, color='#ff7575', alpha=0.2)
@@ -101,12 +130,13 @@ def plot_3d_ellipsoid(cx, cy, cz, x_axis, y_axis, z_axis, ax, target=True):
         ax.plot_wireframe(x, y, z,  rstride=10, cstride=10, color='#7a70ff', alpha=0.2)
 
 
-def plot_drone(ax, x, y, z, R_b):
+def plot_drone(ax, center, R_b):
+    x, y, z = center[0], center[1], center[2]
     rotor_distance = 0.25
     
     # Central body
     ax.scatter(x, y, z, c='k', s=10)
-    
+
     rotor_1 = R_b @ np.array([ rotor_distance,  rotor_distance, 0]) + np.array([x, y, z])
     rotor_2 = R_b @ np.array([-rotor_distance,  rotor_distance, 0]) + np.array([x, y, z])
     rotor_3 = R_b @ np.array([ rotor_distance, -rotor_distance, 0]) + np.array([x, y, z])
@@ -133,66 +163,41 @@ def plot_drone(ax, x, y, z, R_b):
         ax.quiver(x, y, z, R_b[0, i], R_b[1, i], R_b[2, i], length=0.4, color=color)
 
 
-def plot_ego(x, y, z, qw, qx, qy, qz, ax):
-    ax.plot(x, y, z, 'kx', markersize=3, label='true')
-    center = np.array([x, y, z])
-
+def plot_ego(center, orientation, ax):
     # Plot drone
-    R_b = quaternion_to_rotation_matrix(qw, qx, qy, qz) # body orientation
-    plot_drone(ax, x, y, z, R_b)
+    R_b = quaternion_to_rotation_matrix(orientation[0], orientation[1], orientation[2], orientation[3])
+    plot_drone(ax, center, R_b)
 
     # Image window cooridinates w.r.t. camera frame
-    scale = 2.0
+    scale = 0.5
     fov_scale = 4.0
-    # corners = np.array([[0.32,  0.32,  0.32],
-    #                     [0.32,  0.32, -0.32],
-    #                     [0.32, -0.32,  0.32],
-    #                     [0.32, -0.32, -0.32]]) * scale
 
-    corners = np.array([[1.4,  0.96,  0.54],
-                        [1.4,  0.96, -0.54],
-                        [1.4, -0.96,  0.54],
-                        [1.4, -0.96, -0.54]]) * scale
-    front, left, right = np.zeros([4, 3]), np.zeros([4, 3]), np.zeros([4, 3])
-    
+    # 2.88 1.62 2.2 (focal length) / (mm scale)
+    corners = np.array([[ 2.88,  1.62,  2.2],
+                        [ 2.88, -1.62,  2.2],
+                        [-2.88,  1.62,  2.2],
+                        [-2.88, -1.62,  2.2]]) * scale
+    front = np.zeros([4, 3])
+
     # Plot front camera field of view
     front_fov = np.zeros([4, 3])
-    # left_fov = np.zeros([4, 3])
-    # right_fov = np.zeros([4, 3])
     corners_fov = corners * fov_scale
 
-    # From body frame origin to (left) camera frame origin
+    # Transformation from left camera to body
+    R1 = R_x(-np.pi/2) @ R_y(np.pi/2)
     t1 = np.array([0.1, 0.06, 0.0])
-    # t2 = np.array(R_z(np.pi/2) @ t1).squeeze()
-    # t3 = np.array(R_z(-np.pi/2) @ t1).squeeze()
-
-    R1 = np.eye(3)
-    # R2 = R_z(np.pi/2)
-    # R3 = R_z(-np.pi/2)
     
-    # from camera frame to body frame
+    # From camera frame to body frame
     for i in range(4):
         front[i] = R1 @ corners[i] + t1
-        # left[i] = R2 @ corners[i] + t2
-        # right[i] = R3 @ corners[i] + t3
-
         front_fov[i] = R1 @ corners_fov[i] + t1
-        # left_fov[i] = R2 @ corners_fov[i] + t2
-        # right_fov[i] = R3 @ corners_fov[i] + t3
 
     # Plot camera image
     for i in range(4):
         front[i] = R_b @ front[i] + center # front camera image w.r.t. world
-        # left[i] = R_b @ left[i] + center
-        # right[i] = R_b @ right[i] + center
-
         front_fov[i] = R_b @ front_fov[i] + center
-        # left_fov[i] = R_b @ left_fov[i] + center
-        # right_fov[i] = R_b @ right_fov[i] + center
 
     t1 = R_b @ t1 + center # front camera origin w.r.t. world
-    # t2 = R_b @ t2 + center
-    # t3 = R_b @ t3 + center
 
     # Plot front camera field of view
     v = np.vstack((front_fov, t1))
@@ -200,18 +205,6 @@ def plot_ego(x, y, z, qw, qx, qy, qz, ax):
     for verts in vertices:
         ax.add_collection3d(Poly3DCollection([verts], alpha=.15, linewidths=1, edgecolors='#e8ebff'))
 
-    # v = np.vstack((left_fov, t1))
-    # vertices = [v[[0, 2, 4]], v[[2, 3, 4]], v[[3, 1, 4]], v[[1, 0, 4]]]
-    # for verts in vertices:
-    #     ax.add_collection3d(Poly3DCollection([verts], alpha=.15, linewidths=1, edgecolors='#e8ebff'))
-
-    # v = np.vstack((right_fov, t1))
-    # vertices = [v[[0, 2, 4]], v[[2, 3, 4]], v[[3, 1, 4]], v[[1, 0, 4]]]
-    # for verts in vertices:
-    #     ax.add_collection3d(Poly3DCollection([verts], alpha=.15, linewidths=1, edgecolors='#e8ebff'))
-
-
-    # for origin, image in zip([t1, t2, t3], [front, left, right]):
     for origin, image in zip([t1], [front]):
         t_l, t_r, b_l, b_r = image
         ax.plot(*zip(t_l, t_r), color='black', linewidth=0.5)
@@ -223,7 +216,7 @@ def plot_ego(x, y, z, qw, qx, qy, qz, ax):
         ax.plot(*zip(origin, b_l), color='grey', linewidth=0.5)
         ax.plot(*zip(origin, b_r), color='grey', linewidth=0.5)
 
-        
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_dir', type=str, default="/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/tracking_output/")
@@ -237,33 +230,32 @@ def main():
     for i in range(args.trackers):
         data_path_list.append(os.path.join(args.data_dir, 'tracker_'+ str(i) + '/'))
 
-    ego_pos_list, ego_orien_list, target_gt_list, target_estim_list, target_cov_list, time_list = [], [], [], [], [], []
+    ego_pos_list, ego_orien_list, target_gt_list, time_list = [], [], [], []
     for i in range(args.trackers):
-        ego_pos, ego_orien, target_gt, target_estim, target_cov, _, _, _, time = load_data(data_path_list[i], args.targets, args.other_trackers)
+        ego_pos, ego_orien, target_gt, _, _, _, _, _, time = load_data(data_path_list[i], args.targets, args.other_trackers)
         ego_pos_list.append(ego_pos)
         ego_orien_list.append(ego_orien)
         target_gt_list.append(target_gt)
-        target_estim_list.append(target_estim)
-        target_cov_list.append(target_cov)
+        # target_estim_list.append(target_estim)
+        # target_cov_list.append(target_cov)
         time_list.append(time)
 
     target_estim, target_cov = load_multi_data(os.path.join(args.data_dir, 'multi/'), args.targets)
 
     # Compute average target covariance norm graph
-    min_avg_cov = np.zeros([time.shape[0]])
+    min_avg_metric = np.zeros([time.shape[0]])
     for t in range(time.shape[0]):
         for j in range(args.targets):
-            cov = np.sqrt(target_cov[j, 0, t]**2 + target_cov[j, 1, t]**2 + target_cov[j, 2, t]**2)
-            min_avg_cov[t] += cov
+            min_avg_metric[t] += 27 * np.sqrt(np.linalg.det(target_cov[j, :, :, t]))
             
-    min_avg_cov /= args.targets
+    min_avg_metric /= args.targets
     # min_avg_cov = np.log(min_avg_cov)
     plt.figure(figsize=(10, 5))
-    plt.plot(min_avg_cov)
-    plt.title('Average Minimum Covariance Norm from multi tracker')
+    plt.plot(min_avg_metric)
+    plt.title('Average Minimum 3-Sigma Covariance from multi tracker')
     plt.xlabel('time')
     plt.ylabel('average min covariance norm')
-    plt.ylim(0.0, 2.5)
+    plt.ylim(0.0, 5.0)
     plt.show()
 
     # Show animation
@@ -276,20 +268,31 @@ def main():
         
         # Ego drone (tracker 0 ~ 2)
         for i in range(args.trackers):
-            plot_ego(ego_pos_list[i][0, t], ego_pos_list[i][1, t], ego_pos_list[i][2, t], ego_orien_list[i][0, t], ego_orien_list[i][1, t], ego_orien_list[i][2, t], ego_orien_list[i][3, t], ax)
+            plot_ego(ego_pos_list[i][:, t], ego_orien_list[i][:, t], ax)
+
+        total_cov_det = []
 
         # Targets
         for j in range(args.targets):
             ax.plot(target_gt_list[0][j, 0, t], target_gt_list[0][j, 1, t], target_gt_list[0][j, 2, t], 'o', color='#fa0000', markersize=3, label='true')
-            
-            # Visualize minimum covariance
             ax.plot(target_estim[j, 0, t], target_estim[j, 1, t], target_estim[j, 2, t], 'o', color='#ff7575', markersize=3, label='estimate')
-            plot_3d_ellipsoid(target_estim[j, 0, t], target_estim[j, 1, t], target_estim[j, 2, t],
-                              3*np.sqrt(target_cov[j, 0, t]), 3*np.sqrt(target_cov[j, 1, t]), 3*np.sqrt(target_cov[j, 2, t]), ax)
+            plot_3d_ellipsoid(target_estim[j, :, t], target_cov[j, :, :, t], ax)
 
-        ax.axes.set_xlim3d(left=-50, right=50)
-        ax.axes.set_ylim3d(bottom=-50, top=50)
-        ax.axes.set_zlim3d(bottom=0, top=20)
+            total_cov_det.append(np.linalg.det(target_cov[j, :, :, t]))
+
+        # total_cov_det = np.array(total_cov_det)
+        # sigma_cov_det = np.sqrt(total_cov_det) * 27
+        # avg_sigma = np.sum(sigma_cov_det) / args.targets
+        # avg_reward = np.exp(-0.1 * (avg_sigma ** 4))
+        # print("----------------------------------------")
+        # print("all cov det    :", np.around(total_cov_det, 4))
+        # print("exp cov det    :", np.around(sigma_cov_det, 4))
+        # print("avg cov det    :", np.around(avg_sigma, 4))
+        # print("avg reward     :", np.around(avg_reward, 4))
+
+        ax.axes.set_xlim3d(left=-20, right=20)
+        ax.axes.set_ylim3d(bottom=-20, top=20)
+        ax.axes.set_zlim3d(bottom=0, top=15)
         ax.set_aspect('equal')
         ax.set_xlabel('x')
         ax.set_ylabel('y')
@@ -303,9 +306,9 @@ def main():
     # Connect key event to figure
     fig.canvas.mpl_connect('key_press_event', lambda event: [exit(0) if event.key == 'escape' else None])
 
-    # Save as GIF
-    writer = PillowWriter(fps=20)  # Adjust fps (frames per second) as needed
-    ani.save(args.data_dir + 'multi.gif', writer=writer)
+    # # Save as GIF
+    # writer = PillowWriter(fps=20)  # Adjust fps (frames per second) as needed
+    # ani.save(args.data_dir + 'multi.gif', writer=writer)
 
     plt.show()
 

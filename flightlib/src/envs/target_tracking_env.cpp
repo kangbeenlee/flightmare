@@ -156,15 +156,15 @@ bool TargetTrackingEnv<EnvBase>::reset(Ref<MatrixRowMajor<>> obs, Ref<MatrixRowM
   // // // Single position
   // tracker_positions.push_back(Vector<3>{0.0, -15.0, 5.0});
 
-  // Ideal multi position
-  // tracker_positions.push_back(Vector<3>{0.0, 40.0, 5.0});
-  // tracker_positions.push_back(Vector<3>{-30.0, -30.0, 5.0});
-  // tracker_positions.push_back(Vector<3>{30.0, -30.0, 5.0});
+  // // Ideal multi position
+  // tracker_positions.push_back(Vector<3>{0.0, 15.0, 5.0});
+  // tracker_positions.push_back(Vector<3>{-11.0, -11.0, 5.0});
+  // tracker_positions.push_back(Vector<3>{11.0, -11.0, 5.0});
 
   // // Unideal multi position
-  // tracker_positions.push_back(Vector<3>{-5.0, 0.0, 5.0});
-  // tracker_positions.push_back(Vector<3>{5.0, 0.0, 5.0});
+  // tracker_positions.push_back(Vector<3>{3.0, -15.0, 5.0});
   // tracker_positions.push_back(Vector<3>{0.0, -15.0, 5.0});
+  // tracker_positions.push_back(Vector<3>{-3.0, -15.0, 5.0});
 
   for (int i = 0; i < num_envs_; i++) {
     Scalar theta = uniform_theta_(random_gen_) * M_PI;
@@ -216,23 +216,21 @@ bool TargetTrackingEnv<EnvBase>::step(Ref<MatrixRowMajor<>> act, Ref<MatrixRowMa
   //*************************** Global Reward ******************************
   //************************************************************************
 
-  // Scalar w = 2.0;
-  // Scalar individual_reward = 0.0;
-  // Scalar cooperative_reward = computeGlobalReward();
-  // Scalar terminal_reward = 0.0;
+  Scalar w = 2.0;
+  Scalar individual_reward = 0.0; // Max individual reward 1.3 * 3 = 3.9
+  Scalar cooperative_reward = computeGlobalReward(); // Max cooperative reward = w * 1.0
 
-  // for (int i = 0; i < num_envs_; i++)
-  // {
-  //   individual_reward += envs_[i]->rewardFunction();
-  //   terminal_reward += reward(i); // Store agent terminal reward
-  // }
+  for (int i = 0; i < num_envs_; i++)
+  {
+    individual_reward += reward(i);
+  }
 
-  // Scalar global_reward = individual_reward + w * cooperative_reward + terminal_reward;
+  Scalar global_reward = individual_reward + w * cooperative_reward;
 
-  // for (int i = 0; i < num_envs_; i++)
-  // {
-  //   reward(i) = global_reward;
-  // }
+  for (int i = 0; i < num_envs_; i++)
+  {
+    reward(i) = global_reward;
+  }
 
   //************************************************************************
   //*************************** Global Reward ******************************
@@ -338,10 +336,10 @@ template<typename EnvBase>
 Scalar TargetTrackingEnv<EnvBase>::computeGlobalReward() {
 
   //
-  std::vector<Scalar> min_cov_list = {std::numeric_limits<Scalar>::infinity(),
-                                      std::numeric_limits<Scalar>::infinity(),
-                                      std::numeric_limits<Scalar>::infinity(),
-                                      std::numeric_limits<Scalar>::infinity()};
+  std::vector<Scalar> min_cov_det_list = {std::numeric_limits<Scalar>::infinity(),
+                                          std::numeric_limits<Scalar>::infinity(),
+                                          std::numeric_limits<Scalar>::infinity(),
+                                          std::numeric_limits<Scalar>::infinity()};
   std::vector<Vector<3>> min_position = {Vector<3>(), Vector<3>(), Vector<3>(), Vector<3>()};
   std::vector<Matrix<3, 3>> min_cov = {Matrix<3, 3>(), Matrix<3, 3>(), Matrix<3, 3>(), Matrix<3, 3>()};
 
@@ -350,7 +348,7 @@ Scalar TargetTrackingEnv<EnvBase>::computeGlobalReward() {
 
   for (int i = 0; i < num_envs_; ++i) {
     // Initialize cost matrix
-    for (int i = 0; i < num_targets_; ++i) {
+    for (int j = 0; j < num_targets_; ++j) {
       std::vector<Scalar> place_holder(num_targets_, 1000.0);
       cost_matrix.push_back(place_holder);
     }    
@@ -370,47 +368,74 @@ Scalar TargetTrackingEnv<EnvBase>::computeGlobalReward() {
 
     for (int j = 0; j < num_targets_; ++j) {
       // target j에 matching된 추정 대상
-      Scalar target_cov = envs_[i]->getTargetPositionCovNorm(assignment[j]);
-      if (target_cov < min_cov_list[j]) {
-        min_cov_list[j] = target_cov;
+      Scalar cov_det = envs_[i]->getTargetPositionCovDet(assignment[j]);
+      if (cov_det < min_cov_det_list[j]) {
+        min_cov_det_list[j] = cov_det;
         min_position[j] = envs_[i]->getEstimatedTargetPosition(assignment[j]);
         min_cov[j] = envs_[i]->getTargetPositionCov(assignment[j]);
       }
     }
   }
 
-  Scalar avg_min_cov_norm = (min_cov_list[0] + min_cov_list[1] + min_cov_list[2] + min_cov_list[3]) / num_targets_;
-  Scalar min_cov_reward = exp(-0.1 * pow(avg_min_cov_norm, 5));
-
-  std::cout << "-----------------------------------------" << std::endl;
-  std::cout << "min cov norm   : " << min_cov_list[0] << ", " << min_cov_list[1] << ", " << min_cov_list[2] << ", " << min_cov_list[3] << std::endl;
-  std::cout << "min avg cov    : " << avg_min_cov_norm << std::endl;
-  std::cout << "min cov reward : " << min_cov_reward << std::endl;
-  std::cout << "-----------------------------------------" << std::endl;
-
-
-
-  //************************************************************************
-  //*************************** Data Recoder *******************************
-  //************************************************************************
-
-  if (num_envs_ > 1) {
-    if (!multi_save_->isFull()) {
-      multi_save_->store(min_position, min_cov, 0.02);
-    }
-    else if (multi_flag_ && multi_save_->isFull()) {
-      multi_save_->save();
-      multi_flag_ = false;
-      std::cout << ">>> Multi-Agent output save is done" << std::endl;
-    }
+  Scalar avg_3_sigma = 0.0;
+  for (int i = 0; i < num_targets_; ++i) {
+    avg_3_sigma += 27 * sqrt(min_cov_det_list[i]);
   }
+  avg_3_sigma /= num_targets_;
+
+  Scalar cooperative_reward = exp(-0.1 * pow(avg_3_sigma, 5));
+
+  // std::cout << "-----------------------------------------" << std::endl;
+  // std::cout << "min cov det        : " << min_cov_det_list[0] << ", " << min_cov_det_list[1] << ", " << min_cov_det_list[2] << ", " << min_cov_det_list[3] << std::endl;
+  // std::cout << "avg cov det        : " << avg_3_sigma << std::endl;
+  // std::cout << "cooperative reward : " << cooperative_reward << std::endl;
+  // std::cout << "-----------------------------------------" << std::endl;
+
+
+
+  //************************************************************************
+  //*************************** Data Recoder *******************************
+  //************************************************************************
+
+  // if (num_envs_ > 1) {
+  //   if (!multi_save_->isFull()) {
+  //     multi_save_->store(min_position, min_cov, 0.02);
+  //   }
+  //   else if (multi_flag_ && multi_save_->isFull()) {
+  //     multi_save_->save();
+  //     multi_flag_ = false;
+  //     std::cout << ">>> Multi-Agent output save is done" << std::endl;
+  //   }
+  // }
 
   //************************************************************************
   //*************************** Data Recoder *******************************
   //************************************************************************
 
 
-  return min_cov_reward;
+  return cooperative_reward;
+}
+
+template<typename EnvBase>
+std::pair<Vector<3>, Matrix<3, 3>> TargetTrackingEnv<EnvBase>::fuseGaussian(const Ref<Vector<3>> mu1, const Ref<Matrix<3, 3>> cov1,
+                                                                            const Ref<Vector<3>> mu2, const Ref<Matrix<3, 3>> cov2) {
+  // Calculate the information matrices
+  Matrix<3, 3> Y1 = cov1.inverse();
+  Matrix<3, 3> Y2 = cov2.inverse();
+  
+  // Calculate the information vectors
+  Vector<3> eta1 = Y1 * mu1;
+  Vector<3> eta2 = Y2 * mu2;
+  
+  // Combine the information
+  Matrix<3, 3> Y = Y1 + Y2;
+  Vector<3> eta = eta1 + eta2;
+  
+  // Convert back to mean and covariance
+  Matrix<3, 3> fused_cov = Y.inverse();
+  Vector<3> fused_mu = fused_cov * eta;
+  
+  return std::make_pair(fused_mu, fused_cov);
 }
 
 template<typename EnvBase>

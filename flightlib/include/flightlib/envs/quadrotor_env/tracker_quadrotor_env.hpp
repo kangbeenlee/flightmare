@@ -93,8 +93,9 @@ class TrackerQuadrotorEnv final : public EnvBase {
 
   //
   inline Vector<3> getEstimatedTargetPosition(const int i) { return target_kalman_filters_[i]->getEstimatedPosition(); };
-  inline Scalar getTargetPositionCovNorm(const int i) { return (target_kalman_filters_[i]->getPositionErrorCovariance()).norm(); };
   inline Matrix<3, 3> getTargetPositionCov(const int i) { return target_kalman_filters_[i]->getPositionErrorCovariance(); };
+  inline Scalar getTargetPositionCovNorm(const int i) { return (target_kalman_filters_[i]->getPositionErrorCovariance()).norm(); };
+  inline Scalar getTargetPositionCovDet(const int i) { return (target_kalman_filters_[i]->getPositionErrorCovariance()).determinant(); };
 
 
   // - public set functions
@@ -157,8 +158,8 @@ class TrackerQuadrotorEnv final : public EnvBase {
 
   // Observations and actions (for RL)
   // Vector<trackerquadenv::kNObs> quad_obs_;
-  Vector<55> quad_obs_;
-  // Vector<79> quad_obs_;
+  // Vector<55> quad_obs_;
+  Vector<79> quad_obs_;
   Vector<trackerquadenv::kNAct> quad_act_;
 
   YAML::Node cfg_;

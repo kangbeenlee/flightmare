@@ -190,12 +190,13 @@ def plot_ego(center, orientation, ax):
         ax.plot(*zip(origin, b_l), color='grey', linewidth=0.5)
         ax.plot(*zip(origin, b_r), color='grey', linewidth=0.5)
 
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_dir', type=str, default="/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/tracking_output/")
     parser.add_argument('--targets', type=int, default=4, help="The number of targets")
-    parser.add_argument('--trackers', type=int, default=0, help="The number of other trackers except itself (total # of tracker - 1)")
-    parser.add_argument('--tracker_id', type=int, default=0, help="The id of ego tracker (agent)")
+    parser.add_argument('--trackers', type=int, default=2, help="The number of other trackers except itself (total # of tracker - 1)")
+    parser.add_argument('--tracker_id', type=int, default=2, help="The id of ego tracker (agent)")
     args = parser.parse_args()
 
     data_path = os.path.join(args.data_dir, 'tracker_'+ str(args.tracker_id) + '/')
@@ -243,7 +244,6 @@ def main():
         print("all cov det    :", np.around(np.array(total_cov_det), 4))
         print("exp cov det    :", np.around(np.array(exp_cov_det), 4))
         print("cov reward     :", np.around(cov_reward, 4))
-        # print("cov reward 2   :", np.around(cov_reward_v2, 4))
 
         for i in range(args.trackers):
             ax.plot(tracker_gt[i, 0, t], tracker_gt[i, 1, t], tracker_gt[i, 2, t], 'o', color='#1100fa', markersize=3, label='true')
