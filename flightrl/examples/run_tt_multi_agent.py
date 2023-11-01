@@ -136,7 +136,7 @@ if __name__ == '__main__':
     parser.add_argument('--seed', type=int, default=0, help="Random seed")
     parser.add_argument('--load_nn', type=str, default='./model', help='Trained actor weight path for ddpg and td3')
     
-    parser.add_argument("--max_training_timesteps", type=int, default=int(3e6), help=" Maximum number of training steps")
+    parser.add_argument("--max_training_timesteps", type=int, default=int(2e6), help=" Maximum number of training steps")
     parser.add_argument("--max_episode_steps", type=int, default=1000, help="Maximum number of steps per episode")
     parser.add_argument("--evaluation_time_steps", type=float, default=5000, help="Evaluate the policy every 'evaluation_time_steps'")
     parser.add_argument("--evaluation_times", type=float, default=10, help="Evaluate times")
