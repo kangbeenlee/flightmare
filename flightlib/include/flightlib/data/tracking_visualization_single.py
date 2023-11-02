@@ -195,8 +195,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_dir', type=str, default="/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/tracking_output/")
     parser.add_argument('--targets', type=int, default=4, help="The number of targets")
-    parser.add_argument('--trackers', type=int, default=2, help="The number of other trackers except itself (total # of tracker - 1)")
-    parser.add_argument('--tracker_id', type=int, default=2, help="The id of ego tracker (agent)")
+    parser.add_argument('--trackers', type=int, default=0, help="The number of other trackers except itself (total # of tracker - 1)")
+    parser.add_argument('--tracker_id', type=int, default=0, help="The id of ego tracker (agent)")
     args = parser.parse_args()
 
     data_path = os.path.join(args.data_dir, 'tracker_'+ str(args.tracker_id) + '/')
@@ -227,7 +227,7 @@ def main():
         # Ego drone
         plot_ego(ego_pos[:, t], ego_orien[:, t], ax)
 
-        total_cov_det = []
+        # total_cov_det = []
 
         # Targets and trackers
         for i in range(args.targets):
@@ -235,15 +235,15 @@ def main():
             ax.plot(target_estim[i, 0, t], target_estim[i, 1, t], target_estim[i, 2, t], 'o', color='#ff7575', markersize=3, label='estimate')
             plot_3d_ellipsoid(target_estim[i, :, t], target_cov[i, :, :, t], ax)
 
-            total_cov_det.append(np.linalg.det(target_cov[i, :, :, t]))
+        #     total_cov_det.append(np.linalg.det(target_cov[i, :, :, t]))
 
-        total_cov_det = np.array(total_cov_det) * 9
-        exp_cov_det = np.exp(-0.1 * (total_cov_det ** 2))
-        cov_reward = np.sum(exp_cov_det) / args.targets
-        print("----------------------------------------")
-        print("all cov det    :", np.around(np.array(total_cov_det), 4))
-        print("exp cov det    :", np.around(np.array(exp_cov_det), 4))
-        print("cov reward     :", np.around(cov_reward, 4))
+        # total_cov_det = np.array(total_cov_det) * 9
+        # exp_cov_det = np.exp(-0.1 * (total_cov_det ** 2))
+        # cov_reward = np.sum(exp_cov_det) / args.targets
+        # print("----------------------------------------")
+        # print("all cov det    :", np.around(np.array(total_cov_det), 4))
+        # print("exp cov det    :", np.around(np.array(exp_cov_det), 4))
+        # print("cov reward     :", np.around(cov_reward, 4))
 
         for i in range(args.trackers):
             ax.plot(tracker_gt[i, 0, t], tracker_gt[i, 1, t], tracker_gt[i, 2, t], 'o', color='#1100fa', markersize=3, label='true')
@@ -257,7 +257,7 @@ def main():
         ax.set_xlabel('x')
         ax.set_ylabel('y')
         ax.set_zlabel('z')
-        # ax.view_init(90, -90)  # 90 degrees elevation for top-down view, -90 degrees azimuth for proper orientation
+        ax.view_init(90, -90)  # 90 degrees elevation for top-down view, -90 degrees azimuth for proper orientation
         ax.set_title("Time[s]: {:.2f}".format(time[t]))
 
 

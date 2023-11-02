@@ -82,7 +82,7 @@ def main():
                      lam=0.95,
                      gamma=0.99, # lower 0.9 ~ 0.99
                      # n_steps=math.floor(cfg['env']['max_time'] / cfg['env']['ctl_dt']),
-                     n_steps=1024,
+                     n_steps=512,
                      ent_coef=0.00,
                      learning_rate=3e-4,
                      vf_coef=0.5,

@@ -166,17 +166,22 @@ bool TargetTrackingEnv<EnvBase>::reset(Ref<MatrixRowMajor<>> obs, Ref<MatrixRowM
   // tracker_positions.push_back(Vector<3>{0.0, -15.0, 5.0});
   // tracker_positions.push_back(Vector<3>{-3.0, -15.0, 5.0});
 
-  for (int i = 0; i < num_envs_; i++) {
-    Scalar theta = uniform_theta_(random_gen_) * M_PI;
-    Scalar radius = 12.0;
-    // Scalar radius = uniform_radius_(random_gen_);
-    Scalar random_x = radius * cos(theta);
-    Scalar random_y = radius * sin(theta);
-    Scalar random_z = uniform_altitude_(random_gen_);
-    // Scalar random_z = 10.0;
 
-    tracker_positions.push_back(Vector<3>{random_x, random_y, random_z});
-  }
+  // Training multi position
+  tracker_positions.push_back(Vector<3>{0.0, 13.0, 5.0});
+  tracker_positions.push_back(Vector<3>{-10.0, -10.0, 5.0});
+  tracker_positions.push_back(Vector<3>{10.0, -10.0, 5.0});
+
+  // for (int i = 0; i < num_envs_; i++) {
+  //   Scalar theta = uniform_theta_(random_gen_) * M_PI;
+  //   Scalar radius = 12.0;
+  //   // Scalar radius = uniform_radius_(random_gen_);
+  //   Scalar random_x = radius * cos(theta);
+  //   Scalar random_y = radius * sin(theta);
+  //   Scalar random_z = uniform_altitude_(random_gen_);
+  //   // Scalar random_z = 10.0;
+  //   tracker_positions.push_back(Vector<3>{random_x, random_y, random_z});
+  // }
   tracker_positions_ = tracker_positions;
 
 
@@ -229,7 +234,8 @@ bool TargetTrackingEnv<EnvBase>::step(Ref<MatrixRowMajor<>> act, Ref<MatrixRowMa
 
   for (int i = 0; i < num_envs_; i++)
   {
-    reward(i) = global_reward;
+    // reward(i) = global_reward;
+    reward(i) = global_reward / 10; // Reward scaling
   }
 
   //************************************************************************

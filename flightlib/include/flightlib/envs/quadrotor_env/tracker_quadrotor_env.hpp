@@ -159,7 +159,7 @@ class TrackerQuadrotorEnv final : public EnvBase {
   // Observations and actions (for RL)
   // Vector<trackerquadenv::kNObs> quad_obs_;
   // Vector<55> quad_obs_;
-  Vector<79> quad_obs_;
+  Vector<73> quad_obs_;
   Vector<trackerquadenv::kNAct> quad_act_;
 
   YAML::Node cfg_;
