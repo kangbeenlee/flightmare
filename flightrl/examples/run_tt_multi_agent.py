@@ -212,6 +212,7 @@ if __name__ == '__main__':
     print("Max timesteps per episode :", args.max_episode_steps)
     print("Evaluation timesteps :", args.evaluation_time_steps)
     print("--------------------------------------------------------------------------------------------")
+    print("Critic input space dimension :", args.critic_input_dim)
     print("Observation space dimension :", env.num_obs)
     print("Action space dimension :", env.num_acts)
     print("--------------------------------------------------------------------------------------------")

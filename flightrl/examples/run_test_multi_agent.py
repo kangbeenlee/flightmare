@@ -54,8 +54,7 @@ def test_model(env, render=False):
             
             obs_n, r_n, done_n, _ = env.step(act)
             # print("=======================================")
-            # print('reward:', r_n)
-            # print("=======================================")
+            # print('reward:', r_n[0])
 
             if all(done_n):
                 break

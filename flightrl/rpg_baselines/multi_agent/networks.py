@@ -26,8 +26,8 @@ class Actor(nn.Module):
             orthogonal_init(self.fc3)
 
     def forward(self, x):
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
+        x = F.tanh(self.fc1(x))
+        x = F.tanh(self.fc2(x))
         a = self.max_action * torch.tanh(self.fc3(x))
         return a
 
@@ -48,8 +48,8 @@ class Critic_MADDPG(nn.Module):
         # s_n.shape=(batch, N*obs_dim)
         # a_n.shape=(batch, N*action_dim)
         s_a_n = torch.cat([s_n, a_n], dim=-1) # s_a_n.shape=(batch, N*(obs_dim + action_dim))
-        q = F.relu(self.fc1(s_a_n))
-        q = F.relu(self.fc2(q))
+        q = F.tanh(self.fc1(s_a_n))
+        q = F.tanh(self.fc2(q))
         q = self.fc3(q)
         return q
 
@@ -77,18 +77,18 @@ class Critic_MATD3(nn.Module):
         # s_n.shape=(batch, N*obs_dim)
         # a_n.shape=(batch, N*action_dim)
         s_a_n = torch.cat([s_n, a_n], dim=-1) # s_a_n.shape=(batch, N*(obs_dim + action_dim))
-        q1 = F.relu(self.fc1(s_a_n))
-        q1 = F.relu(self.fc2(q1))
+        q1 = F.tanh(self.fc1(s_a_n))
+        q1 = F.tanh(self.fc2(q1))
         q1 = self.fc3(q1)
 
-        q2 = F.relu(self.fc4(s_a_n))
-        q2 = F.relu(self.fc5(q2))
+        q2 = F.tanh(self.fc4(s_a_n))
+        q2 = F.tanh(self.fc5(q2))
         q2 = self.fc6(q2)
         return q1, q2
 
     def Q1(self, s_n, a_n):
         s_a_n = torch.cat([s_n, a_n], dim=-1)
-        q1 = F.relu(self.fc1(s_a_n))
-        q1 = F.relu(self.fc2(q1))
+        q1 = F.tanh(self.fc1(s_a_n))
+        q1 = F.tanh(self.fc2(q1))
         q1 = self.fc3(q1)
         return q1
