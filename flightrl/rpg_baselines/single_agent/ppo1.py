@@ -334,13 +334,13 @@ class Trainer:
         self.obs_dim = obs_dim
         self.action_dim = action_dim
         self.max_action = max_action
-        self.save_dir = os.path.join(save_dir, "model", "ppo")
+        self.save_dir = os.path.join(save_dir, "model", "ppo1")
 
         # Store current step elements
         self._last_obs = np.zeros((self.n_envs, self.obs_dim), dtype=np.float32)
         self._dones = None
 
-        self.writer = SummaryWriter(log_dir="runs/single/ppo/")
+        self.writer = SummaryWriter(log_dir="runs/single/ppo1/")
 
     def evaluate_policy(self, env, policy, max_episode_steps, eval_episodes=10):
         avg_reward = 0.

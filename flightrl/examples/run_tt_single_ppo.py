@@ -38,7 +38,7 @@ def main():
     args = parser().parse_args()
     cfg = YAML().load(open(os.environ["FLIGHTMARE_PATH"] + "/flightlib/configs/target_tracking_env.yaml", 'r'))
     if args.train:
-        cfg["env"]["num_envs"] = 100
+        cfg["env"]["num_envs"] = 10
         cfg["env"]["num_threads"] = 10
         cfg["env"]["scene_id"] = 0
     else:
@@ -92,7 +92,7 @@ def main():
                      cliprange=0.2,
                      verbose=1)
 
-        model.learn(total_timesteps=int(1e7),
+        model.learn(total_timesteps=int(3e7),
                     # total_timesteps=int(25000000),
                     log_dir=save_dir,
                     logger=logger)

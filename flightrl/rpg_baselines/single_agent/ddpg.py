@@ -26,6 +26,70 @@ def orthogonal_init(layer, gain=1.0):
             nn.init.orthogonal_(param, gain=gain)
 
 
+# # ************************************************************************
+# # ******************************** SRT ***********************************
+# # ************************************************************************
+# class Actor(nn.Module):
+#     def __init__(self, args, obs_dim=None, action_dim=None, max_action=None):
+#         super(Actor, self).__init__()
+#         self.use_orthogonal_init = args.use_orthogonal_init
+#         self.use_z_score_normalization = args.use_z_score_normalization
+#         self.max_action = max_action
+#         self.l1 = nn.Linear(obs_dim, 256)
+#         self.l2 = nn.Linear(256, 256)
+#         self.l3 = nn.Linear(256, action_dim)
+
+#         if self.use_orthogonal_init:
+#             print("------use_orthogonal_init------")
+#             orthogonal_init(self.l1)
+#             orthogonal_init(self.l2)
+#             orthogonal_init(self.l3)
+
+#     def forward(self, x):
+#         with torch.autograd.set_detect_anomaly(True):
+#             if self.use_z_score_normalization:
+#                 x = z_score_normalize(x)     
+#             x = F.relu(self.l1(x))
+#             x = F.relu(self.l2(x))
+#             return torch.tanh(self.l3(x))
+
+
+
+# # ************************************************************************
+# # ******************************** CTBR **********************************
+# # ************************************************************************
+# class Actor(nn.Module):
+#     def __init__(self, args, obs_dim=None, action_dim=None, max_action=None):
+#         super(Actor, self).__init__()
+#         self.use_orthogonal_init = args.use_orthogonal_init
+#         self.use_z_score_normalization = args.use_z_score_normalization
+#         self.max_action = max_action
+#         self.l1 = nn.Linear(obs_dim, 256)
+#         self.l2 = nn.Linear(256, 256)
+#         self.l3 = nn.Linear(256, 1)
+#         self.l4 = nn.Linear(256, 3)
+
+#         if self.use_orthogonal_init:
+#             print("------use_orthogonal_init------")
+#             orthogonal_init(self.l1)
+#             orthogonal_init(self.l2)
+#             orthogonal_init(self.l3)
+#             orthogonal_init(self.l4)
+
+#     def forward(self, x):
+#         if self.use_z_score_normalization:
+#             x = z_score_normalize(x)     
+#         x = F.relu(self.l1(x))
+#         x = F.relu(self.l2(x))
+#         c = torch.sigmoid(self.l3(x)) # Collective thrust
+#         w = torch.tanh(self.l4(x)) * 3.0 # Body-Rates
+#         return torch.cat([c, w], dim=-1)
+
+
+
+# ************************************************************************
+# ********************************* LV ***********************************
+# ************************************************************************
 class Actor(nn.Module):
     def __init__(self, args, obs_dim=None, action_dim=None, max_action=None):
         super(Actor, self).__init__()
@@ -66,12 +130,13 @@ class Critic(nn.Module):
             orthogonal_init(self.l3)
 
     def forward(self, s, a):
-        if self.use_z_score_normalization:
-            s = z_score_normalize(s)
-            a = z_score_normalize(a)
-        q = F.relu(self.l1(torch.cat([s, a], 1)))
-        q = F.relu(self.l2(q))
-        return self.l3(q)
+        with torch.autograd.set_detect_anomaly(True):
+            if self.use_z_score_normalization:
+                s = z_score_normalize(s)
+                a = z_score_normalize(a)
+            q = F.relu(self.l1(torch.cat([s, a], 1)))
+            q = F.relu(self.l2(q))
+            return self.l3(q)
 
 
 class ReplayBuffer:
@@ -154,39 +219,52 @@ class DDPG:
         return action.astype(np.float32)
 
     def train(self, memory):
-        self.update += 1
-        mini_batch = memory.sample()
-        
-        obs = mini_batch['obs'].to(self.device)
-        a = mini_batch['a'].to(self.device)
-        r = mini_batch['r'].to(self.device)
-        obs_prime = mini_batch['obs_prime'].to(self.device)
-        done = mini_batch['done'].to(self.device)
-        
-        with torch.no_grad():
-            td_target = r + self.gamma * self.target_critic(obs_prime, self.target_actor(obs_prime)) * (1 - done)
+        with torch.autograd.set_detect_anomaly(True):
 
-        # Weights update of value network (gradient descent)
-        critic_loss = F.smooth_l1_loss(self.critic(obs, a), td_target.detach())
-        self.critic_optimizer.zero_grad()
-        critic_loss.backward()
-        torch.nn.utils.clip_grad_norm_(self.critic.parameters(), 5.0)
-        self.critic_optimizer.step()
-        
-        # Weights update of policy network (gradient ascent)
-        actor_loss = -self.critic(obs, self.actor(obs)).mean() # .mean() -> batch mean
-        self.actor_optimizer.zero_grad()
-        actor_loss.backward()
-        torch.nn.utils.clip_grad_norm_(self.actor.parameters(), 5.0)
-        self.actor_optimizer.step()
+            self.update += 1
+            mini_batch = memory.sample()
+            
+            obs = mini_batch['obs'].to(self.device)
+            a = mini_batch['a'].to(self.device)
+            r = mini_batch['r'].to(self.device)
+            obs_prime = mini_batch['obs_prime'].to(self.device)
+            done = mini_batch['done'].to(self.device)
+            
+            with torch.no_grad():
+                next_action = self.target_actor(obs_prime)
+                next_value = self.target_critic(obs_prime, next_action)
+                td_target = r + self.gamma * next_value * (1 - done)
+                # td_target = r + self.gamma * self.target_critic(obs_prime, self.target_actor(obs_prime)) * (1 - done)
 
-        # Target update
-        for param, target_param in zip(self.actor.parameters(), self.target_actor.parameters()):
-            target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
-        for param, target_param in zip(self.critic.parameters(), self.target_critic.parameters()):
-            target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
+            # Weights update of value network (gradient descent)
+            critic_loss = F.smooth_l1_loss(self.critic(obs, a), td_target.detach())
 
-        return critic_loss.data.item(), actor_loss.data.item()
+            if torch.any(torch.isnan(critic_loss)):
+                print(td_target.detach())
+                print("-----dataset-----")
+                print(torch.any(torch.isnan(r)))
+                print(r)
+
+
+            self.critic_optimizer.zero_grad()
+            critic_loss.backward()
+            torch.nn.utils.clip_grad_norm_(self.critic.parameters(), 5.0)
+            self.critic_optimizer.step()
+            
+            # Weights update of policy network (gradient ascent)
+            actor_loss = -self.critic(obs, self.actor(obs)).mean() # .mean() -> batch mean
+            self.actor_optimizer.zero_grad()
+            actor_loss.backward()
+            torch.nn.utils.clip_grad_norm_(self.actor.parameters(), 5.0)
+            self.actor_optimizer.step()
+
+            # Target update
+            for param, target_param in zip(self.actor.parameters(), self.target_actor.parameters()):
+                target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
+            for param, target_param in zip(self.critic.parameters(), self.target_critic.parameters()):
+                target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
+
+            return critic_loss.data.item(), actor_loss.data.item()
 
     def save(self, save_path, timestep):
         filename_actor = os.path.join(save_path, "actor_{}k.pkl".format(timestep))
@@ -222,14 +300,16 @@ class Trainer:
         self.evaluation_time_steps = evaluation_time_steps
         self.evaluation_times = evaluation_times
         self.training_start = training_start
-        self.save_dir = os.path.join(save_dir, "model", "batch_{}_ddpg".format(batch_size))
+        # self.save_dir = os.path.join(save_dir, "model", "batch_{}_ddpg".format(batch_size))
+        self.save_dir = os.path.join(save_dir, "model", "ddpg".format(batch_size))
         self.action_dim = action_dim
         self.max_action = max_action
         self.expl_noise = expl_noise
         self.replay_buffer = ReplayBuffer(obs_dim=obs_dim, action_dim=action_dim, memory_capacity=memory_capacity, batch_size=batch_size)
 
         # Tensorboard results
-        self.writer = SummaryWriter(log_dir="runs/single/batch_{}_ddpg/".format(batch_size))
+        # self.writer = SummaryWriter(log_dir="runs/single/batch_{}_ddpg/".format(batch_size))
+        self.writer = SummaryWriter(log_dir="runs/single/ddpg/".format(batch_size))
 
     def evaluate_policy(self, env, policy, max_episode_steps, eval_episodes=10):
         avg_reward = 0.
