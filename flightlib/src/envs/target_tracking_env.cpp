@@ -60,24 +60,6 @@ void TargetTrackingEnv<EnvBase>::init(void)
 
 
 
-  // // Single target test
-  // target_positions_.push_back(Vector<3>{0.0, 2.0, 10.0});
-
-  // Eigen::MatrixXf way_points(5, 3); // Should be n
-  // Eigen::VectorXf segment_times(4); // Should be n-1
-
-  // way_points << 0.0, 2.0, 10.0,   2.0, 2.5, 10.0,   0.0, 4.0, 10,   -2.0, 2.5, 10,   0.0, 2.0, 10; // 6m x 6m circle
-  // segment_times << 2.0, 2.0, 2.0, 2.0;
-  // MinimumSnapTrajectory trajectory1 = MinimumSnapTrajectory();
-  // trajectory1.setMinimumSnapTrajectory(way_points, segment_times);
-
-  // way_points << 0.0, 2.0, 10.0,   2.0, 10.0, 7.0,   0.0, 20.0, 10,   -2.0, 10.0, 13,   0.0, 2.0, 10; // 6m x 6m circle
-  // segment_times << 3.0, 3.0, 3.0, 3.0;
-  // MinimumSnapTrajectory trajectory1 = MinimumSnapTrajectory();
-  // trajectory1.setMinimumSnapTrajectory(way_points, segment_times);
-
-
-
   // Set initial start position
   target_positions_.push_back(Vector<3>{-5.0, 8.0, 5.0});
   target_positions_.push_back(Vector<3>{5.0, 2.0, 5.0});
@@ -152,9 +134,6 @@ bool TargetTrackingEnv<EnvBase>::reset(Ref<MatrixRowMajor<>> obs, Ref<MatrixRowM
 
   // Initial target position
   std::vector<Vector<3>> tracker_positions;
-
-  // // // Single position
-  // tracker_positions.push_back(Vector<3>{0.0, -15.0, 5.0});
 
   // // Ideal multi position
   // tracker_positions.push_back(Vector<3>{0.0, 15.0, 5.0});
@@ -234,8 +213,8 @@ bool TargetTrackingEnv<EnvBase>::step(Ref<MatrixRowMajor<>> act, Ref<MatrixRowMa
 
   for (int i = 0; i < num_envs_; i++)
   {
-    // reward(i) = global_reward;
-    reward(i) = global_reward / 10; // Reward scaling
+    reward(i) = global_reward;
+    // reward(i) = global_reward / 10; // Reward scaling
   }
 
   //************************************************************************
@@ -390,6 +369,13 @@ Scalar TargetTrackingEnv<EnvBase>::computeGlobalReward() {
   avg_3_sigma /= num_targets_;
 
   Scalar cooperative_reward = exp(-0.1 * pow(avg_3_sigma, 5));
+
+
+  if (std::isnan(cooperative_reward)) {
+    std::cout << "nan occurs from cooperative_reward" << std::endl;
+    std::cout << "avg_3_sigma : " << avg_3_sigma << std::endl;
+    exit(0);
+  }
 
   // std::cout << "-----------------------------------------" << std::endl;
   // std::cout << "min cov det        : " << min_cov_det_list[0] << ", " << min_cov_det_list[1] << ", " << min_cov_det_list[2] << ", " << min_cov_det_list[3] << std::endl;

@@ -51,7 +51,8 @@
 //   while (remain_ctl_dt > 0.0) {
 //     const Scalar sim_dt = std::min(remain_ctl_dt, max_dt);
 
-//     const Vector<4> motor_thrusts_des = cmd_.isSingleRotorThrusts() ? cmd_.thrusts : runFlightCtl(sim_dt, state_.w, cmd_);
+//     // const Vector<4> motor_thrusts_des = cmd_.isSingleRotorThrusts() ? cmd_.thrusts : runFlightCtl(sim_dt, state_.w, cmd_);
+//     const Vector<4> motor_thrusts_des = cmd_.thrusts;
 
 //     runMotors(sim_dt, motor_thrusts_des);
 //     // motor_thrusts_ = cmd_.thrusts;

@@ -17,8 +17,8 @@ from rpg_baselines.single_agent.ddpg import DDPG
 from rpg_baselines.single_agent.ddpg import Trainer as DDPGTrainer
 from rpg_baselines.single_agent.td3 import TD3
 from rpg_baselines.single_agent.td3 import Trainer as TD3Trainer
-# from rpg_baselines.single_agent.ppo import PPO
-# from rpg_baselines.single_agent.ppo import Trainer as PPOTrainer
+from rpg_baselines.single_agent.ppo1 import PPO
+from rpg_baselines.single_agent.ppo1 import Trainer as PPOTrainer
 from rpg_baselines.single_agent.test import test_model
 
 
@@ -45,8 +45,8 @@ def main():
     parser.add_argument("--use_z_score_normalization", type=bool, default=False, help="Z score normalization to observation")
 
     # Learning parameters
-    parser.add_argument('--max_training_timesteps', default=int(3e5), type=int, help='Number of training timesteps')
-    parser.add_argument('--max_episode_steps', default=1000, type=int, help='Number of steps per episode')
+    parser.add_argument('--max_training_timesteps', default=int(1e5), type=int, help='Number of training timesteps')
+    parser.add_argument('--max_episode_steps', default=200, type=int, help='Number of steps per episode')
     parser.add_argument('--evaluation_time_steps', default=5000, type=int, help='Number of steps for evaluation')
     parser.add_argument("--evaluation_times", type=int, default=10, help="Evaluate times")
     parser.add_argument('--memory_capacity', default=100000, type=int, help='Replay memory capacity')
@@ -109,11 +109,12 @@ def main():
         cfg["env"]["num_envs"] = 1
         if args.policy == "ppo": cfg["env"]["num_envs"] = args.n_envs
         cfg["env"]["num_threads"] = 10
+        cfg["env"]["num_targets"] = 1
         cfg["env"]["scene_id"] = 0
     else:
         cfg["env"]["num_envs"] = 1
         cfg["env"]["num_threads"] = 10
-        cfg["env"]["num_targets"] = 4
+        cfg["env"]["num_targets"] = 1
         cfg["env"]["scene_id"] = 0
     if args.render:
         cfg["env"]["render"] = "yes"
@@ -193,32 +194,32 @@ def main():
                                  batch_size=args.batch_size,
                                  training_start=args.training_start,
                                  save_dir=args.save_dir)
-        # elif args.policy == "ppo":
-        #     model = PPO(n_envs=args.n_envs,
-        #                 gamma=args.gamma,
-        #                 gae_lambda=args.gae_lambda,
-        #                 rollout_length=args.update_timestep,
-        #                 learning_rate=args.learning_rate,
-        #                 n_epochs=args.n_epochs,
-        #                 ent_coef=args.ent_coef,
-        #                 vf_coef=args.vf_coef,
-        #                 max_grad_norm=args.max_grad_norm,
-        #                 batch_size=64,
-        #                 clip_range=args.clip_range,
-        #                 obs_dim=env.num_obs,
-        #                 action_dim=env.num_acts,
-        #                 max_action=args.max_action)
-        #     trainer = PPOTrainer(model=model,
-        #                          env=env,
-        #                          n_envs=1,
-        #                          max_training_timesteps=args.max_training_timesteps,
-        #                          max_episode_steps=args.max_episode_steps,
-        #                          evaluation_time_steps=args.evaluation_time_steps,
-        #                          evaluation_times=args.evaluation_times,
-        #                          obs_dim=env.num_obs,
-        #                          action_dim=env.num_acts,
-        #                          max_action=args.max_action,
-        #                          save_dir=args.save_dir)
+        elif args.policy == "ppo":
+            model = PPO(n_envs=args.n_envs,
+                        gamma=args.gamma,
+                        gae_lambda=args.gae_lambda,
+                        rollout_length=args.update_timestep,
+                        learning_rate=args.learning_rate,
+                        n_epochs=args.n_epochs,
+                        ent_coef=args.ent_coef,
+                        vf_coef=args.vf_coef,
+                        max_grad_norm=args.max_grad_norm,
+                        batch_size=64,
+                        clip_range=args.clip_range,
+                        obs_dim=env.num_obs,
+                        action_dim=env.num_acts,
+                        max_action=args.max_action)
+            trainer = PPOTrainer(model=model,
+                                 env=env,
+                                 n_envs=1,
+                                 max_training_timesteps=args.max_training_timesteps,
+                                 max_episode_steps=args.max_episode_steps,
+                                 evaluation_time_steps=args.evaluation_time_steps,
+                                 evaluation_times=args.evaluation_times,
+                                 obs_dim=env.num_obs,
+                                 action_dim=env.num_acts,
+                                 max_action=args.max_action,
+                                 save_dir=args.save_dir)
         else:
             print(f"{args.policy} is unsupported policy")
             sys.exit()

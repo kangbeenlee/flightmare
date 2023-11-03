@@ -502,7 +502,7 @@ class Runner(AbstractEnvRunner):
             mb_values.append(values)
             mb_neglogpacs.append(neglogpacs)
             mb_dones.append(self.dones)
-            clipped_actions = tanh_action * 3.0
+            clipped_actions = tanh_action
             # Clip the actions to avoid out of bound error
             # if isinstance(self.env.action_space, gym.spaces.Box):
             #     clipped_actions = np.clip(actions, self.env.action_space.low, self.env.action_space.high)

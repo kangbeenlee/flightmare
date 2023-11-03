@@ -202,19 +202,21 @@ def main():
     data_path = os.path.join(args.data_dir, 'tracker_'+ str(args.tracker_id) + '/')
     ego_pos, ego_orien, target_gt, target_estim, target_cov, tracker_gt, tracker_estim, tracker_cov, time = load_data(data_path, args.targets, args.trackers)
 
-    # # Compute average target covariance norm graph
-    # avg_cov = np.zeros([time.shape[0]])
-    # for i in range(args.targets):
-    #     avg_cov += np.sqrt(target_cov[i, 0, :] ** 2 + target_cov[i, 1, :] ** 2 + target_cov[i, 2, :] ** 2)
-    # avg_cov /= args.targets
-    # avg_cov = np.log(avg_cov)
-
-    # plt.figure(figsize=(10, 5))
-    # plt.plot(avg_cov)
-    # plt.title('Average Covariance from tracker {}'.format(args.tracker_id))
-    # plt.xlabel('time')
-    # plt.ylabel('average covariance')
-    # plt.show()
+    # Compute average target covariance norm graph
+    min_avg_metric = np.zeros([time.shape[0]])
+    for t in range(time.shape[0]):
+        for j in range(args.targets):
+            min_avg_metric[t] += 27 * np.sqrt(np.linalg.det(target_cov[j, :, :, t]))
+            
+    min_avg_metric /= args.targets
+    # min_avg_cov = np.log(min_avg_cov)
+    plt.figure(figsize=(10, 5))
+    plt.plot(min_avg_metric)
+    plt.title('Average Minimum 3-Sigma Covariance from multi tracker')
+    plt.xlabel('time')
+    plt.ylabel('average min covariance norm')
+    plt.ylim(0.0, 10.0)
+    plt.show()
 
     # Show animation
     fig = plt.figure()

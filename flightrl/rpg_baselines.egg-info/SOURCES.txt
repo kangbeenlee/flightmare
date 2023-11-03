@@ -15,7 +15,7 @@ rpg_baselines/multi_agent/networks.py
 rpg_baselines/multi_agent/replay_buffer.py
 rpg_baselines/multi_agent/test.py
 rpg_baselines/single_agent/ddpg.py
-rpg_baselines/single_agent/ppo.py
+rpg_baselines/single_agent/ppo1.py
 rpg_baselines/single_agent/td3.py
 rpg_baselines/single_agent/test.py
 rpg_baselines/single_agent/common/__init__.py
