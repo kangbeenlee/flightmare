@@ -6,6 +6,7 @@ import math
 import argparse
 import numpy as np
 import tensorflow as tf
+from datetime import datetime
 
 from stable_baselines import logger
 from rpg_baselines.single_agent.common.policies import MlpPolicy, MlpLstmPolicy
@@ -82,7 +83,7 @@ def main():
                      lam=0.95,
                      gamma=0.99, # lower 0.9 ~ 0.99
                      # n_steps=math.floor(cfg['env']['max_time'] / cfg['env']['ctl_dt']),
-                     n_steps=512,
+                     n_steps=1024,
                      ent_coef=0.00,
                      learning_rate=3e-4,
                      vf_coef=0.5,
@@ -92,10 +93,24 @@ def main():
                      cliprange=0.2,
                      verbose=1)
 
-        model.learn(total_timesteps=int(3e7),
+
+        start_time = datetime.now().replace(microsecond=0)
+        print("============================================================================================")
+        print("Started training at (GMT) : ", start_time)
+        print("============================================================================================")
+
+        model.learn(total_timesteps=int(2e7),
                     # total_timesteps=int(25000000),
                     log_dir=save_dir,
                     logger=logger)
+        
+        end_time = datetime.now().replace(microsecond=0)
+        print("============================================================================================")
+        print("Started training at (GMT) : ", start_time)
+        print("Finished training at (GMT) : ", end_time)
+        print("Total training time  : ", end_time - start_time)
+        print("============================================================================================")
+
         model.save(save_dir)
 
         if args.render:
