@@ -145,7 +145,7 @@ if __name__ == '__main__':
     parser.add_argument("--policy", type=str, default="maddpg", help="maddpg or matd3")
     parser.add_argument("--buffer_size", type=int, default=int(1e6), help="The capacity of the replay buffer")
     parser.add_argument("--batch_size", type=int, default=128, help="Batch size")
-    parser.add_argument("--hidden_dim", type=int, default=256, help="The number of neurons in hidden layers of the neural network")
+    parser.add_argument("--hidden_dim", type=int, default=512, help="The number of neurons in hidden layers of the neural network")
     parser.add_argument("--noise_std_init", type=float, default=0.2, help="The std of Gaussian noise for exploration")
     parser.add_argument("--noise_std_min", type=float, default=0.05, help="The std of Gaussian noise for exploration")
     parser.add_argument("--noise_decay_steps", type=float, default=3e5, help="How many steps before the noise_std decays to the minimum")
