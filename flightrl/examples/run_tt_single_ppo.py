@@ -83,13 +83,13 @@ def main():
                      lam=0.95,
                      gamma=0.99, # lower 0.9 ~ 0.99
                      # n_steps=math.floor(cfg['env']['max_time'] / cfg['env']['ctl_dt']),
-                     n_steps=1024,
+                     n_steps=512,
                      ent_coef=0.00,
                      learning_rate=3e-4,
                      vf_coef=0.5,
                      max_grad_norm=0.5,
-                     nminibatches=64,
-                     noptepochs=10,
+                     nminibatches=128,
+                     noptepochs=15,
                      cliprange=0.2,
                      verbose=1)
 
@@ -99,7 +99,7 @@ def main():
         print("Started training at (GMT) : ", start_time)
         print("============================================================================================")
 
-        model.learn(total_timesteps=int(2e7),
+        model.learn(total_timesteps=int(1e7),
                     # total_timesteps=int(25000000),
                     log_dir=save_dir,
                     logger=logger)
@@ -119,7 +119,7 @@ def main():
     # Testing mode with a trained weight
     else:
         model = PPO2.load(args.load_nn)
-        test_model(env, model, render=args.render)
+        test_model(env, model, render=args.render, max_episode_steps=1000)
 
 
 if __name__ == "__main__":

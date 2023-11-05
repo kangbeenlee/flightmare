@@ -153,7 +153,7 @@ bool TargetTrackingEnv<EnvBase>::reset(Ref<MatrixRowMajor<>> obs, Ref<MatrixRowM
 
   for (int i = 0; i < num_envs_; i++) {
     Scalar theta = uniform_theta_(random_gen_) * M_PI;
-    Scalar radius = 12.0;
+    Scalar radius = 13.0;
     // Scalar radius = uniform_radius_(random_gen_);
     Scalar random_x = radius * cos(theta);
     Scalar random_y = radius * sin(theta);
@@ -200,21 +200,32 @@ bool TargetTrackingEnv<EnvBase>::step(Ref<MatrixRowMajor<>> act, Ref<MatrixRowMa
   //*************************** Global Reward ******************************
   //************************************************************************
 
-  Scalar w = 2.0;
-  Scalar individual_reward = 0.0; // Max individual reward 1.3 * 3 = 3.9
-  Scalar cooperative_reward = computeGlobalReward(); // Max cooperative reward = w * 1.0
+  // Scalar w = 2.0;
+  // Scalar individual_reward = 0.0; // Max individual reward 1.3 * 3 = 3.9
+  // Scalar cooperative_reward = computeGlobalReward(); // Max cooperative reward = w * 1.0
+
+  // for (int i = 0; i < num_envs_; i++)
+  // {
+  //   individual_reward += reward(i);
+  // }
+
+  // Scalar global_reward = individual_reward + w * cooperative_reward;
+
+  // for (int i = 0; i < num_envs_; i++)
+  // {
+  //   reward(i) = global_reward;
+  //   // reward(i) = global_reward / 10; // Reward scaling
+  // }
+
+
+  //************************************************************************
+  // For seperated network
+  Scalar w = 0.5;
+  Scalar cooperative_reward = computeGlobalReward();
 
   for (int i = 0; i < num_envs_; i++)
   {
-    individual_reward += reward(i);
-  }
-
-  Scalar global_reward = individual_reward + w * cooperative_reward;
-
-  for (int i = 0; i < num_envs_; i++)
-  {
-    reward(i) = global_reward;
-    // reward(i) = global_reward / 10; // Reward scaling
+    reward(i) += w * cooperative_reward; // individual reward + w * cooperative reward, (1.3 + w * 1.0)
   }
 
   //************************************************************************

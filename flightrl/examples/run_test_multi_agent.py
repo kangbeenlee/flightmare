@@ -53,8 +53,7 @@ def test_model(env, render=False):
             #                     [0.0, 0.0, 0.0, 0.0]], dtype=np.float32)
             
             obs_n, r_n, done_n, _ = env.step(act)
-            # print("=======================================")
-            # print('reward:', r_n[0])
+            print('reward:', r_n)
 
             if all(done_n):
                 break
