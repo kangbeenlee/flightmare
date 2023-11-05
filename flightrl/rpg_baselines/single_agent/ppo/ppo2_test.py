@@ -15,7 +15,6 @@ def test_model(env, model=None, render=False, max_episode_steps=500):
             epi_step += 1
             action, _ = model.predict(obs, deterministic=True)
             obs, reward, done, infos = env.step(action)
-            print(action)
             score += reward[0]
 
         print(">>> Evaluation episode {}, reward: {:.1f}".format(n_roll, score))

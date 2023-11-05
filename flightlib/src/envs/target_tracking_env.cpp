@@ -146,21 +146,21 @@ bool TargetTrackingEnv<EnvBase>::reset(Ref<MatrixRowMajor<>> obs, Ref<MatrixRowM
   // tracker_positions.push_back(Vector<3>{-3.0, -15.0, 5.0});
 
 
-  // Training multi position
-  tracker_positions.push_back(Vector<3>{0.0, 13.0, 5.0});
-  tracker_positions.push_back(Vector<3>{-10.0, -10.0, 5.0});
-  tracker_positions.push_back(Vector<3>{10.0, -10.0, 5.0});
+  // // Training multi position
+  // tracker_positions.push_back(Vector<3>{0.0, 13.0, 5.0});
+  // tracker_positions.push_back(Vector<3>{-10.0, -10.0, 5.0});
+  // tracker_positions.push_back(Vector<3>{10.0, -10.0, 5.0});
 
-  // for (int i = 0; i < num_envs_; i++) {
-  //   Scalar theta = uniform_theta_(random_gen_) * M_PI;
-  //   Scalar radius = 12.0;
-  //   // Scalar radius = uniform_radius_(random_gen_);
-  //   Scalar random_x = radius * cos(theta);
-  //   Scalar random_y = radius * sin(theta);
-  //   Scalar random_z = uniform_altitude_(random_gen_);
-  //   // Scalar random_z = 10.0;
-  //   tracker_positions.push_back(Vector<3>{random_x, random_y, random_z});
-  // }
+  for (int i = 0; i < num_envs_; i++) {
+    Scalar theta = uniform_theta_(random_gen_) * M_PI;
+    Scalar radius = 12.0;
+    // Scalar radius = uniform_radius_(random_gen_);
+    Scalar random_x = radius * cos(theta);
+    Scalar random_y = radius * sin(theta);
+    Scalar random_z = uniform_altitude_(random_gen_);
+    // Scalar random_z = 10.0;
+    tracker_positions.push_back(Vector<3>{random_x, random_y, random_z});
+  }
   tracker_positions_ = tracker_positions;
 
 
@@ -352,7 +352,7 @@ Scalar TargetTrackingEnv<EnvBase>::computeGlobalReward() {
     hungarian.Solve(cost_matrix, assignment);
 
     for (int j = 0; j < num_targets_; ++j) {
-      // target j에 matching된 추정 대상
+      // gt target j에 matching된 추정 대상
       Scalar cov_det = envs_[i]->getTargetPositionCovDet(assignment[j]);
       if (cov_det < min_cov_det_list[j]) {
         min_cov_det_list[j] = cov_det;
@@ -364,7 +364,9 @@ Scalar TargetTrackingEnv<EnvBase>::computeGlobalReward() {
 
   Scalar avg_3_sigma = 0.0;
   for (int i = 0; i < num_targets_; ++i) {
-    avg_3_sigma += 27 * sqrt(min_cov_det_list[i]);
+    Scalar min_cov_det = min_cov_det_list[i];
+    Scalar clipped_det = std::max(static_cast<Scalar>(0.0), min_cov_det); // Det must be zero or positive
+    avg_3_sigma += 27 * sqrt(clipped_det);
   }
   avg_3_sigma /= num_targets_;
 
@@ -373,7 +375,7 @@ Scalar TargetTrackingEnv<EnvBase>::computeGlobalReward() {
 
   if (std::isnan(cooperative_reward)) {
     std::cout << "nan occurs from cooperative_reward" << std::endl;
-    std::cout << "avg_3_sigma : " << avg_3_sigma << std::endl;
+    std::cout << "avg_3_sigma  : " << avg_3_sigma << std::endl;
     exit(0);
   }
 

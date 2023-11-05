@@ -321,7 +321,9 @@ Scalar TrackerQuadrotorEnv::trackerStep(const Ref<Vector<>> act, Ref<Vector<>> o
                                         const std::vector<Vector<3>>& target_positions, const std::vector<Vector<3>>& tracker_positions) {
   quad_act_ = act;
   cmd_.t += sim_dt_;
-  cmd_.velocity = quad_act_;
+  // cmd_.velocity = quad_act_;
+
+  cmd_.velocity = Vector<4>(quad_act_[0], quad_act_[1], quad_act_[2], quad_act_[3]) * 3.0; // PPO action
 
   // cmd_.collective_thrust = quad_act_[0] * 22.0;
   // cmd_.omega = Vector<3>(quad_act_[1], quad_act_[2], quad_act_[3]);
@@ -549,7 +551,7 @@ bool TrackerQuadrotorEnv::getObs(Ref<Vector<>> obs)
   // quad_obs_ << quad_state_.p, quad_state_.v, ori, quad_state_.w, radius_,
   //              estimated_target_positions_[0], estimated_target_velocities_[0], radius_, estimated_target_ranges_[0], radius_ * 2;
 
-  // // Single
+  // // Single target tracking
   // quad_obs_ << quad_state_.p, quad_state_.v, ori, quad_state_.w, radius_,
   //              estimated_target_positions_[0], estimated_target_velocities_[0], radius_, estimated_target_ranges_[0], radius_ * 2, 
   //              estimated_target_positions_[1], estimated_target_velocities_[1], radius_, estimated_target_ranges_[1], radius_ * 2,
@@ -567,6 +569,7 @@ bool TrackerQuadrotorEnv::getObs(Ref<Vector<>> obs)
   //              estimated_tracker_positions_[1], estimated_tracker_velocities_[1], radius_, estimated_tracker_ranges_[1], radius_ * 2, 1;
 
 
+  // // Multi target tracking
   quad_obs_ << quad_state_.p, quad_state_.v, ori, quad_state_.w, radius_,
                estimated_target_positions_[0], estimated_target_velocities_[0], radius_, estimated_target_ranges_[0], radius_ * 2, 0,
                estimated_target_positions_[1], estimated_target_velocities_[1], radius_, estimated_target_ranges_[1], radius_ * 2, 0,
