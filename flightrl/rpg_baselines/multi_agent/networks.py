@@ -16,9 +16,9 @@ class Actor(nn.Module):
     def __init__(self, args):
         super(Actor, self).__init__()
         self.max_action = args.max_action
-        self.fc1 = nn.Linear(args.obs_dim, args.hidden_dim)
-        self.fc2 = nn.Linear(args.hidden_dim, args.hidden_dim)
-        self.fc3 = nn.Linear(args.hidden_dim, args.action_dim)
+        self.fc1 = nn.Linear(args.obs_dim, args.actor_hidden_dim)
+        self.fc2 = nn.Linear(args.actor_hidden_dim, args.actor_hidden_dim)
+        self.fc3 = nn.Linear(args.actor_hidden_dim, args.action_dim)
         if args.use_orthogonal_init:
             print("------use_orthogonal_init------")
             orthogonal_init(self.fc1)
@@ -35,16 +35,14 @@ class Actor(nn.Module):
 class Critic_MADDPG(nn.Module):
     def __init__(self, args):
         super(Critic_MADDPG, self).__init__()
-        self.fc1 = nn.Linear(args.critic_input_dim, args.hidden_dim)
-        self.fc2 = nn.Linear(args.hidden_dim, args.hidden_dim)
-        self.fc3 = nn.Linear(args.hidden_dim, args.hidden_dim)
-        self.fc4 = nn.Linear(args.hidden_dim, 1)
+        self.fc1 = nn.Linear(args.critic_input_dim, args.critic_hidden_dim)
+        self.fc2 = nn.Linear(args.critic_hidden_dim, args.critic_hidden_dim)
+        self.fc3 = nn.Linear(args.critic_hidden_dim, 1)
         if args.use_orthogonal_init:
             print("------use_orthogonal_init------")
             orthogonal_init(self.fc1)
             orthogonal_init(self.fc2)
             orthogonal_init(self.fc3)
-            orthogonal_init(self.fc4)
 
     def forward(self, s_n, a_n):
         # s_n.shape=(batch, N*obs_dim)
@@ -52,21 +50,20 @@ class Critic_MADDPG(nn.Module):
         s_a_n = torch.cat([s_n, a_n], dim=-1) # s_a_n.shape=(batch, N*(obs_dim + action_dim))
         q = F.relu(self.fc1(s_a_n))
         q = F.relu(self.fc2(q))
-        q = F.relu(self.fc3(q))
-        q = self.fc4(q)
+        q = self.fc3(q)
         return q
 
 
 class Critic_MATD3(nn.Module):
     def __init__(self, args):
         super(Critic_MATD3, self).__init__()
-        self.fc1 = nn.Linear(args.critic_input_dim, args.hidden_dim)
-        self.fc2 = nn.Linear(args.hidden_dim, args.hidden_dim)
-        self.fc3 = nn.Linear(args.hidden_dim, 1)
+        self.fc1 = nn.Linear(args.critic_input_dim, args.critic_hidden_dim)
+        self.fc2 = nn.Linear(args.critic_hidden_dim, args.critic_hidden_dim)
+        self.fc3 = nn.Linear(args.critic_hidden_dim, 1)
 
-        self.fc4 = nn.Linear(args.critic_input_dim, args.hidden_dim)
-        self.fc5 = nn.Linear(args.hidden_dim, args.hidden_dim)
-        self.fc6 = nn.Linear(args.hidden_dim, 1)
+        self.fc4 = nn.Linear(args.critic_input_dim, args.critic_hidden_dim)
+        self.fc5 = nn.Linear(args.critic_hidden_dim, args.critic_hidden_dim)
+        self.fc6 = nn.Linear(args.critic_hidden_dim, 1)
 
         if args.use_orthogonal_init:
             print("------use_orthogonal_init------")
