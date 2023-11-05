@@ -200,22 +200,22 @@ bool TargetTrackingEnv<EnvBase>::step(Ref<MatrixRowMajor<>> act, Ref<MatrixRowMa
   //*************************** Global Reward ******************************
   //************************************************************************
 
-  // Scalar w = 2.0;
-  // Scalar individual_reward = 0.0; // Max individual reward 1.3 * 3 = 3.9
-  // Scalar cooperative_reward = computeGlobalReward(); // Max cooperative reward = w * 1.0
+  Scalar w = 2.0;
+  Scalar individual_reward = 0.0; // Max individual reward 1.3 * 3 = 3.9
+  Scalar cooperative_reward = computeGlobalReward(); // Max cooperative reward = w * 1.0
 
-  // for (int i = 0; i < num_envs_; i++)
-  // {
-  //   individual_reward += reward(i);
-  // }
+  for (int i = 0; i < num_envs_; i++)
+  {
+    individual_reward += reward(i);
+  }
 
-  // Scalar global_reward = individual_reward + w * cooperative_reward;
+  Scalar global_reward = individual_reward + w * cooperative_reward;
 
-  // for (int i = 0; i < num_envs_; i++)
-  // {
-  //   reward(i) = global_reward;
-  //   // reward(i) = global_reward / 10; // Reward scaling
-  // }
+  for (int i = 0; i < num_envs_; i++)
+  {
+    reward(i) = global_reward;
+    // reward(i) = global_reward / 10; // Reward scaling
+  }
 
   //************************************************************************
   //*************************** Global Reward ******************************
