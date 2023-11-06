@@ -108,7 +108,7 @@ class Critic(nn.Module):
 
 
 class ReplayBuffer(object):
-    def __init__(self, obs_dim, action_dim, memory_capacity=int(1e6), batch_size=256):
+    def __init__(self, args, obs_dim, action_dim, memory_capacity=int(1e6), batch_size=256):
         self.memory_capacity = memory_capacity
         self.batch_size = batch_size
         self.ptr = 0
@@ -120,7 +120,7 @@ class ReplayBuffer(object):
         self.reward = np.zeros((memory_capacity, 1))
         self.done = np.zeros((memory_capacity, 1))
         
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = args.device
         
     def add(self, state, action, reward, next_obs, done):
         self.state[self.ptr] = state
@@ -157,7 +157,7 @@ class TD3(object):
         action_dim=4,
         max_action=3.0):
 
-        self.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+        self.device = args.device
         self.actor = Actor(args, obs_dim, action_dim, max_action).to(self.device)
         self.actor_target = copy.deepcopy(self.actor)
         self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=lr_actor)
@@ -253,6 +253,7 @@ class TD3(object):
 class Trainer:
     def __init__(
             self,
+            args=None,
             model=None,
             env=None,
             max_training_timesteps=None,
@@ -281,7 +282,7 @@ class Trainer:
         self.expl_noise = expl_noise
         self.training_start = training_start
         self.save_dir = os.path.join(save_dir, "model", "batch_{}_td3".format(batch_size))
-        self.replay_buffer = ReplayBuffer(obs_dim=obs_dim, action_dim=action_dim, memory_capacity=memory_capacity, batch_size=batch_size)
+        self.replay_buffer = ReplayBuffer(args, obs_dim=obs_dim, action_dim=action_dim, memory_capacity=memory_capacity, batch_size=batch_size)
 
         # Tensorboard results
         self.writer = SummaryWriter(log_dir="runs/single/batch_{}_td3/".format(batch_size))
