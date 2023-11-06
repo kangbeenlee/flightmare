@@ -40,6 +40,13 @@ class Runner:
             print(f"{self.args.policy} is not supported marl policy")
             sys.exit()
 
+        if self.args.load_weight:
+            print("--------------------------------------------------------------------------------------------")
+            load_nn = os.path.join(args.load_nn, 'batch_{}_{}'.format(args.batch_size, args.policy))
+            for agent_id in range(args.N):
+                self.agent_n[agent_id].load_model(os.path.join(load_nn, 'actor_{}_{}k.pth'.format(agent_id, args.iteration)))
+            print("--------------------------------------------------------------------------------------------")
+
         self.replay_buffer = ReplayBuffer(self.args)
 
         # Create a tensorboard
@@ -140,11 +147,14 @@ if __name__ == '__main__':
 
     parser.add_argument('--n', type=int, default=3, help="Number of agent (tracker)")
     parser.add_argument('--train', action="store_true", help="To train new model or simply test pre-trained model")
+    parser.add_argument('--load_weight', action="store_true", help="To train new model or simply test pre-trained model")
     parser.add_argument('--render', type=int, default=1, help="Enable Unity Render")
     parser.add_argument('--seed', type=int, default=0, help="Random seed")
     parser.add_argument('--load_nn', type=str, default='./model', help='Trained actor weight path for ddpg and td3')
-    
-    parser.add_argument("--max_training_timesteps", type=int, default=int(1e6), help=" Maximum number of training steps")
+    parser.add_argument('--iteration', type=str, default='0', help='Choose trained iteration')
+    parser.add_argument('--gpu_id', type=str, default='cuda:0', help='Choose gpu device id')
+
+    parser.add_argument("--max_training_timesteps", type=int, default=int(1e7), help=" Maximum number of training steps")
     parser.add_argument("--max_episode_steps", type=int, default=1000, help="Maximum number of steps per episode")
     parser.add_argument("--evaluation_time_steps", type=float, default=5000, help="Evaluate the policy every 'evaluation_time_steps'")
     parser.add_argument("--evaluation_times", type=float, default=10, help="Evaluate times")
@@ -177,7 +187,7 @@ if __name__ == '__main__':
     print("============================================================================================")
     args.device = torch.device('cpu')
     if(torch.cuda.is_available()): 
-        args.device = torch.device('cuda:0') 
+        args.device = torch.device(args.gpu_id)
         torch.cuda.empty_cache()
         print("Device set to : " + str(torch.cuda.get_device_name(args.device)))
     else:
@@ -241,15 +251,17 @@ if __name__ == '__main__':
         print("============================================================================================")
     else:
         # Load trained model!
+        load_nn = os.path.join(args.load_nn, 'batch_{}_{}'.format(args.batch_size, args.policy))
+
         if args.policy == "maddpg":
             agent_n = [MADDPG(args, agent_id) for agent_id in range(args.N)]
             for agent_id in range(args.N):
-                agent_n[agent_id].load_model(args.load_nn)
+                agent_n[agent_id].load_model(os.path.join(load_nn, 'actor_{}_{}k.pth'.format(agent_id, args.iteration)))
             test_model(env, agent_n=agent_n, render=args.render, max_episode_steps=args.max_episode_steps)
         elif args.policy == "matd3":
             agent_n = [MATD3(args, agent_id) for agent_id in range(args.N)]
             for agent_id in range(args.N):
-                agent_n[agent_id].load_model(args.load_nn)
+                agent_n[agent_id].load_model(os.path.join(load_nn, 'actor_{}_{}k.pth'.format(agent_id, args.iteration)))
             test_model(env, agent_n=agent_n, render=args.render, max_episode_steps=args.max_episode_steps)
         else:
             print(f"{args.policy} is unsupported policy")

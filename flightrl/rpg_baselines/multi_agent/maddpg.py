@@ -88,4 +88,5 @@ class MADDPG(object):
         torch.save(self.actor.state_dict(), path)
 
     def load_model(self, load_nn):
+        print("Load model from {}".format(load_nn))
         self.actor.load_state_dict(torch.load(load_nn))
