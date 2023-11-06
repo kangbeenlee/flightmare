@@ -22,20 +22,23 @@ from rpg_baselines.multi_agent.test import test_model
 
 
 
+
+
 class Runner:
     def __init__(self, args, env):
         self.args = args
         self.render = args.render        
         self.env = env
+        self.N = args.N
 
         # Create N agents
         if self.args.policy == "maddpg":
-            self.agent_n = MADDPG(args)
+            self.agent_n = [MADDPG(args, agent_id) for agent_id in range(self.N)]
         elif self.args.policy == "matd3":
-            self.agent_n = MATD3(args)
+            self.agent_n = [MATD3(args, agent_id) for agent_id in range(self.N)]
         else:
             print(f"{self.args.policy} is not supported marl policy")
-            print("--------------------------------------------------------------------------------------------")
+            sys.exit()
 
         self.replay_buffer = ReplayBuffer(self.args)
 
@@ -64,7 +67,7 @@ class Runner:
                 self.tqdm_bar.update(1)
                 
                 # Multi agent selects actions based on its own local observations (add noise for exploration)
-                a_n = self.agent_n.choose_action(obs_n, noise_std=self.noise_std)
+                a_n = np.array([agent.choose_action(obs, noise_std=self.noise_std) for agent, obs in zip(self.agent_n, obs_n)]).astype(np.float32)
                 obs_next_n, r_n, done_n, _ = self.env.step(copy.deepcopy(a_n))
 
                 # Store the transition
@@ -77,7 +80,9 @@ class Runner:
                     self.noise_std = self.noise_std - self.args.noise_std_decay if self.noise_std - self.args.noise_std_decay > self.args.noise_std_min else self.args.noise_std_min
 
                 if self.replay_buffer.current_size > self.args.batch_size:
-                    self.agent_n.train(self.replay_buffer)
+                    # Train each agent individually
+                    for agent_id in range(self.N):
+                        self.agent_n[agent_id].train(self.replay_buffer, self.agent_n)
 
                 if self.time_steps % self.args.evaluation_time_steps == 0:
                     self.evaluate_policy()
@@ -95,7 +100,7 @@ class Runner:
             episode_reward = 0
             
             for _ in range(self.args.max_episode_steps):
-                a_n = self.agent_n.choose_action(obs_n, noise_std=0)
+                a_n = np.array([agent.choose_action(obs, noise_std=0) for agent, obs in zip(self.agent_n, obs_n)]).astype(np.float32)
                 obs_next_n, r_n, done_n, _ = self.env.step(copy.deepcopy(a_n))
                 episode_reward += np.mean(r_n)
                 # episode_reward += r_n[0] # All agent get same team reward
@@ -114,7 +119,9 @@ class Runner:
         if self.best_score == None or evaluate_reward > self.best_score:
             self.best_score = evaluate_reward
             self.best_step  = self.time_steps
-            self.agent_n.save_model(save_path, self.time_steps)
+            # Save the rewards and models
+            for agent_id in range(self.N):
+                self.agent_n[agent_id].save_model(save_path, agent_id, self.time_steps)
 
         print("time_steps:{} \t\t evaluate_reward:{} \t\t noise_std:{} \t\t best step:{}".format(self.time_steps, evaluate_reward, self.noise_std, self.best_step))
         self.writer.add_scalar("evaluate_step_rewards", evaluate_reward, global_step=self.time_steps)
@@ -127,6 +134,7 @@ def configure_random_seed(seed, env=None):
     np.random.seed(seed)
     random.seed(seed)
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser("Hyperparameters Setting for MADDPG and MATD3")
 
@@ -136,7 +144,7 @@ if __name__ == '__main__':
     parser.add_argument('--seed', type=int, default=0, help="Random seed")
     parser.add_argument('--load_nn', type=str, default='./model', help='Trained actor weight path for ddpg and td3')
     
-    parser.add_argument("--max_training_timesteps", type=int, default=int(2e6), help=" Maximum number of training steps")
+    parser.add_argument("--max_training_timesteps", type=int, default=int(1e6), help=" Maximum number of training steps")
     parser.add_argument("--max_episode_steps", type=int, default=1000, help="Maximum number of steps per episode")
     parser.add_argument("--evaluation_time_steps", type=float, default=5000, help="Evaluate the policy every 'evaluation_time_steps'")
     parser.add_argument("--evaluation_times", type=float, default=10, help="Evaluate times")
@@ -234,12 +242,14 @@ if __name__ == '__main__':
     else:
         # Load trained model!
         if args.policy == "maddpg":
-            agent_n = MADDPG(args)
-            agent_n.load_model(args.load_nn)
+            agent_n = [MADDPG(args, agent_id) for agent_id in range(args.N)]
+            for agent_id in range(args.N):
+                agent_n[agent_id].load_model(args.load_nn)
             test_model(env, agent_n=agent_n, render=args.render, max_episode_steps=args.max_episode_steps)
         elif args.policy == "matd3":
-            agent_n = MATD3(args)
-            agent_n.load_model(args.load_nn)
+            agent_n = [MATD3(args, agent_id) for agent_id in range(args.N)]
+            for agent_id in range(args.N):
+                agent_n[agent_id].load_model(args.load_nn)
             test_model(env, agent_n=agent_n, render=args.render, max_episode_steps=args.max_episode_steps)
         else:
             print(f"{args.policy} is unsupported policy")

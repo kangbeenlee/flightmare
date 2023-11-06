@@ -45,8 +45,8 @@ class Critic_MADDPG(nn.Module):
             orthogonal_init(self.fc3)
 
     def forward(self, s_n, a_n):
-        # s_n.shape=(batch, N*obs_dim)
-        # a_n.shape=(batch, N*action_dim)
+        s_n = torch.cat(s_n, dim=1) # s_n.shape=(batch, N*obs_dim)
+        a_n = torch.cat(a_n, dim=1) # a_n.shape=(batch, N*action_dim)
         s_a_n = torch.cat([s_n, a_n], dim=-1) # s_a_n.shape=(batch, N*(obs_dim + action_dim))
         q = F.relu(self.fc1(s_a_n))
         q = F.relu(self.fc2(q))
@@ -75,8 +75,8 @@ class Critic_MATD3(nn.Module):
             orthogonal_init(self.fc6)
 
     def forward(self, s_n, a_n):
-        # s_n.shape=(batch, N*obs_dim)
-        # a_n.shape=(batch, N*action_dim)
+        s_n = torch.cat(s_n, dim=1) # s_n.shape=(batch, N*obs_dim)
+        a_n = torch.cat(a_n, dim=1) # a_n.shape=(batch, N*action_dim)
         s_a_n = torch.cat([s_n, a_n], dim=-1) # s_a_n.shape=(batch, N*(obs_dim + action_dim))
         q1 = F.relu(self.fc1(s_a_n))
         q1 = F.relu(self.fc2(q1))
@@ -88,6 +88,8 @@ class Critic_MATD3(nn.Module):
         return q1, q2
 
     def Q1(self, s_n, a_n):
+        s_n = torch.cat(s_n, dim=1) # s_n.shape=(batch, N*obs_dim)
+        a_n = torch.cat(a_n, dim=1) # a_n.shape=(batch, N*action_dim)
         s_a_n = torch.cat([s_n, a_n], dim=-1)
         q1 = F.relu(self.fc1(s_a_n))
         q1 = F.relu(self.fc2(q1))
