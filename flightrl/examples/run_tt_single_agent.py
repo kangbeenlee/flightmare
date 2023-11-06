@@ -32,7 +32,11 @@ def configure_random_seed(seed, env=None):
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument('--n', type=int, default=1, help="Number of agent (tracker)")
+    parser.add_argument('--n_targets', type=int, default=4, help="Number of target")
+
     parser.add_argument('--train', action="store_true", help="To train new model or simply test pre-trained model")
+    parser.add_argument('--gpu_id', type=str, default='cuda:0', help='Choose gpu device id')
     parser.add_argument('--render', type=int, default=1, help="Enable Unity Render")
     parser.add_argument('--save_dir', type=str, default=os.path.dirname(os.path.realpath(__file__)), help="Directory where to save the checkpoints and training metrics")
     parser.add_argument('--seed', type=int, default=0, help="Random seed")
@@ -95,10 +99,11 @@ def main():
 
     # Set device
     print("============================================================================================")
+    args.device = torch.device('cpu')
     if(torch.cuda.is_available()):
-        device = torch.device('cuda')
+        args.device = torch.device(args.gpu_id)
         torch.cuda.empty_cache()
-        print("Device set to : " + str(torch.cuda.get_device_name(device)))
+        print("Device set to : " + str(torch.cuda.get_device_name(args.device)))
     else:
         print("Device set to : cpu")
     print("============================================================================================")
@@ -106,15 +111,15 @@ def main():
     # Environment setting parameter
     cfg = YAML().load(open(os.environ["FLIGHTMARE_PATH"] + "/flightlib/configs/target_tracking_env.yaml", 'r'))
     if args.train:
-        cfg["env"]["num_envs"] = 1
+        cfg["env"]["num_envs"] = args.n
         if args.policy == "ppo": cfg["env"]["num_envs"] = args.n_envs
         cfg["env"]["num_threads"] = 10
-        cfg["env"]["num_targets"] = 2
+        cfg["env"]["num_targets"] = args.n_targets
         cfg["env"]["scene_id"] = 0
     else:
-        cfg["env"]["num_envs"] = 1
+        cfg["env"]["num_envs"] = args.n
         cfg["env"]["num_threads"] = 10
-        cfg["env"]["num_targets"] = 2
+        cfg["env"]["num_targets"] = args.n_targets
         cfg["env"]["scene_id"] = 0
     if args.render:
         cfg["env"]["render"] = "yes"
@@ -125,8 +130,9 @@ def main():
     print("Training environment name : Flightrl Single Agent Reinforcement Learning Environment")
     print("Scene ID :", cfg["env"]["scene_id"])
     if args.train: print("Policy to be trained :", args.policy)
-    else: print("Policy to be tested :", args.policy)
+    else: print("Policy to be tested     :", args.policy)
     print("The number of tracker (agent) :", cfg["env"]["num_envs"])
+    print("The number of target          :", cfg["env"]["num_targets"])
     print("--------------------------------------------------------------------------------------------")
 
     # Generate target tracking environment
@@ -180,7 +186,8 @@ def main():
                         obs_dim=env.num_obs,
                         action_dim=env.num_acts,
                         max_action=args.max_action)
-            trainer = TD3Trainer(model=model,
+            trainer = TD3Trainer(args,
+                                 model=model,
                                  env=env,
                                  max_training_timesteps=args.max_training_timesteps,
                                  max_episode_steps=args.max_episode_steps,

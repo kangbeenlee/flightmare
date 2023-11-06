@@ -161,8 +161,8 @@ class TrackerQuadrotorEnv final : public EnvBase {
   
   // Vector<28> quad_obs_; // control policy test
   
-  Vector<37> quad_obs_; // single (2 targets)
-  // Vector<55> quad_obs_; // single (4 targets)
+  // Vector<37> quad_obs_; // single (2 targets)
+  Vector<55> quad_obs_; // single (4 targets)
 
   // Vector<56> quad_obs_; // multi (2 agents & 3 targets)
   // Vector<73> quad_obs_; // multi (3 agents & 4 targets)

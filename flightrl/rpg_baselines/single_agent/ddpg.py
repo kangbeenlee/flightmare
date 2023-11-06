@@ -194,7 +194,7 @@ class DDPG:
                  action_dim=4,
                  max_action=3.0):
         
-        self.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+        self.device = args.device
         self.actor = Actor(args, obs_dim, action_dim, max_action).to(self.device)
         self.critic = Critic(args, obs_dim, action_dim).to(self.device)
         self.target_actor = Actor(args, obs_dim, action_dim, max_action).to(self.device)
