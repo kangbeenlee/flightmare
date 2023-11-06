@@ -54,11 +54,18 @@ TrackerQuadrotorEnv::TrackerQuadrotorEnv(const std::string &cfg_path) : EnvBase(
     logger_.error("cannot set wolrd box");
   };
 
+
+
   // define input and output dimension for the environment
-  // obs_dim_ = trackerquadenv::kNObs;
   // obs_dim_ = 28; // Three targets & ego
-  // obs_dim_ = 55; // Three targets & ego
-  obs_dim_ = 73; // Three targets & two other trackers & ego
+  
+  obs_dim_ = 37; // single (2 targets)
+  // obs_dim_ = 55; // single (4 targets)
+
+  // obs_dim_ = 56; // multi (2 agents & 3 targets)
+  // obs_dim_ = 73; // multi (3 agents & 4 targets)
+
+
   act_dim_ = trackerquadenv::kNAct;
 }
 
@@ -544,14 +551,26 @@ bool TrackerQuadrotorEnv::getObs(Ref<Vector<>> obs)
   Vector<9> ori = Map<Vector<>>(quad_state_.R().data(), quad_state_.R().size());
   
   // Ego oservation dim: 3 + 3 + 9 + 3 + 1 = 19
-  // Target observation dim: 3 + 3 + 1 + 1 + 1 = 9 (+1 id)
-  // // Other tracker observations 3 + 1 + 1 + 1 = 6 (+1 id)
+  // Target observation dim: 3 + 3 + 1 + 1 + 1 = 9 (+1 id in multi)
+  // // Other tracker observations 3 + 1 + 1 + 1 = 6 (+1 id in multi)
 
+  // //************************************************************************
   // // Control policy test
   // quad_obs_ << quad_state_.p, quad_state_.v, ori, quad_state_.w, radius_,
   //              estimated_target_positions_[0], estimated_target_velocities_[0], radius_, estimated_target_ranges_[0], radius_ * 2;
 
-  // // Single target tracking
+
+
+  //************************************************************************
+  // Single target tracking (2 targets)
+  quad_obs_ << quad_state_.p, quad_state_.v, ori, quad_state_.w, radius_,
+               estimated_target_positions_[0], estimated_target_velocities_[0], radius_, estimated_target_ranges_[0], radius_ * 2, 
+               estimated_target_positions_[1], estimated_target_velocities_[1], radius_, estimated_target_ranges_[1], radius_ * 2;
+
+
+
+  // //************************************************************************
+  // // Single target tracking (4 targets)
   // quad_obs_ << quad_state_.p, quad_state_.v, ori, quad_state_.w, radius_,
   //              estimated_target_positions_[0], estimated_target_velocities_[0], radius_, estimated_target_ranges_[0], radius_ * 2, 
   //              estimated_target_positions_[1], estimated_target_velocities_[1], radius_, estimated_target_ranges_[1], radius_ * 2,
@@ -559,30 +578,38 @@ bool TrackerQuadrotorEnv::getObs(Ref<Vector<>> obs)
   //              estimated_target_positions_[3], estimated_target_velocities_[3], radius_, estimated_target_ranges_[3], radius_ * 2;
 
 
+
+  // //************************************************************************
+  // // Multi target tracking (2 agents & 3 targets)
+  // quad_obs_ << quad_state_.p, quad_state_.v, ori, quad_state_.w, radius_,
+  //              estimated_target_positions_[0], estimated_target_velocities_[0], radius_, estimated_target_ranges_[0], radius_ * 2, 0,
+  //              estimated_target_positions_[1], estimated_target_velocities_[1], radius_, estimated_target_ranges_[1], radius_ * 2, 0,
+  //              estimated_target_positions_[2], estimated_target_velocities_[2], radius_, estimated_target_ranges_[2], radius_ * 2, 0,
+               
+  //              gt_tracker_positions_[0], radius_, gt_tracker_ranges[0], radius_ * 2, 1;
+
+
+
+  // //************************************************************************
+  // // Multi target tracking (3 agents & 4 targets)
   // quad_obs_ << quad_state_.p, quad_state_.v, ori, quad_state_.w, radius_,
   //              estimated_target_positions_[0], estimated_target_velocities_[0], radius_, estimated_target_ranges_[0], radius_ * 2, 0,
   //              estimated_target_positions_[1], estimated_target_velocities_[1], radius_, estimated_target_ranges_[1], radius_ * 2, 0,
   //              estimated_target_positions_[2], estimated_target_velocities_[2], radius_, estimated_target_ranges_[2], radius_ * 2, 0,
   //              estimated_target_positions_[3], estimated_target_velocities_[3], radius_, estimated_target_ranges_[3], radius_ * 2, 0,
                
-  //              estimated_tracker_positions_[0], estimated_tracker_velocities_[0], radius_, estimated_tracker_ranges_[0], radius_ * 2, 1,
-  //              estimated_tracker_positions_[1], estimated_tracker_velocities_[1], radius_, estimated_tracker_ranges_[1], radius_ * 2, 1;
+  //              gt_tracker_positions_[0], radius_, gt_tracker_ranges[0], radius_ * 2, 1,
+  //              gt_tracker_positions_[1], radius_, gt_tracker_ranges[1], radius_ * 2, 1;
 
 
-  // // Multi target tracking
-  quad_obs_ << quad_state_.p, quad_state_.v, ori, quad_state_.w, radius_,
-               estimated_target_positions_[0], estimated_target_velocities_[0], radius_, estimated_target_ranges_[0], radius_ * 2, 0,
-               estimated_target_positions_[1], estimated_target_velocities_[1], radius_, estimated_target_ranges_[1], radius_ * 2, 0,
-               estimated_target_positions_[2], estimated_target_velocities_[2], radius_, estimated_target_ranges_[2], radius_ * 2, 0,
-               estimated_target_positions_[3], estimated_target_velocities_[3], radius_, estimated_target_ranges_[3], radius_ * 2, 0,
-               
-               gt_tracker_positions_[0], radius_, gt_tracker_ranges[0], radius_ * 2, 1,
-               gt_tracker_positions_[1], radius_, gt_tracker_ranges[1], radius_ * 2, 1;
+  //************************************************************************
+  // obs.segment<28>(0) = quad_obs_; // control policy test
 
-
-  // obs.segment<28>(0) = quad_obs_;
-  // obs.segment<55>(0) = quad_obs_;
-  obs.segment<73>(0) = quad_obs_;
+  obs.segment<37>(0) = quad_obs_; // single (2 targets)
+  // obs.segment<55>(0) = quad_obs_; // single (4 targets)
+  
+  // obs.segment<56>(0) = quad_obs_; // multi (2 agents & 3 targets)
+  // obs.segment<73>(0) = quad_obs_; // multi (3 agents & 4 targets)
 
   return true;
 }
@@ -681,7 +708,6 @@ Scalar TrackerQuadrotorEnv::rewardFunction()
   prev_act_ = quad_act_;
 
   Scalar total_reward = c1 * cov_reward + c2 * heading_reward + c3 * cmd_reward;
-  // total_reward /= 100; // Reward scale
 
   // std::cout << "-------------------------------------" << std::endl;
   // std::cout << "cov det        : " << cov_list[0] << ", " << cov_list[1] << ", " << cov_list[2] << ", " << cov_list[3] << std::endl;

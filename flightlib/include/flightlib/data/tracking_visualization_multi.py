@@ -280,15 +280,15 @@ def main():
 
             total_cov_det.append(np.linalg.det(target_cov[j, :, :, t]))
 
-        # total_cov_det = np.array(total_cov_det)
-        # sigma_cov_det = np.sqrt(total_cov_det) * 27
-        # avg_sigma = np.sum(sigma_cov_det) / args.targets
-        # avg_reward = np.exp(-0.1 * (avg_sigma ** 4))
-        # print("----------------------------------------")
-        # print("all cov det    :", np.around(total_cov_det, 4))
-        # print("exp cov det    :", np.around(sigma_cov_det, 4))
-        # print("avg cov det    :", np.around(avg_sigma, 4))
-        # print("avg reward     :", np.around(avg_reward, 4))
+        total_cov_det = np.array(total_cov_det)
+        sigma_cov_det = np.sqrt(total_cov_det) * 27
+        avg_sigma = np.sum(sigma_cov_det) / args.targets
+        avg_reward = np.exp(-20.0 * (avg_sigma ** 5))
+        print("----------------------------------------")
+        print("all cov det    :", np.around(total_cov_det, 4))
+        print("exp cov det    :", np.around(sigma_cov_det, 4))
+        print("avg cov det    :", np.around(avg_sigma, 4))
+        print("avg reward     :", np.around(avg_reward, 4))
 
         ax.axes.set_xlim3d(left=-20, right=20)
         ax.axes.set_ylim3d(bottom=-20, top=20)
@@ -306,9 +306,9 @@ def main():
     # Connect key event to figure
     fig.canvas.mpl_connect('key_press_event', lambda event: [exit(0) if event.key == 'escape' else None])
 
-    # Save as GIF
-    writer = PillowWriter(fps=20)  # Adjust fps (frames per second) as needed
-    ani.save(args.data_dir + 'multi.gif', writer=writer)
+    # # Save as GIF
+    # writer = PillowWriter(fps=20)  # Adjust fps (frames per second) as needed
+    # ani.save(args.data_dir + 'multi.gif', writer=writer)
 
     plt.show()
 

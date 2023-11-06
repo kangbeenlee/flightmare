@@ -45,8 +45,8 @@ def main():
     parser.add_argument("--use_z_score_normalization", type=bool, default=False, help="Z score normalization to observation")
 
     # Learning parameters
-    parser.add_argument('--max_training_timesteps', default=int(1e5), type=int, help='Number of training timesteps')
-    parser.add_argument('--max_episode_steps', default=200, type=int, help='Number of steps per episode')
+    parser.add_argument('--max_training_timesteps', default=int(1e6), type=int, help='Number of training timesteps')
+    parser.add_argument('--max_episode_steps', default=1000, type=int, help='Number of steps per episode')
     parser.add_argument('--evaluation_time_steps', default=5000, type=int, help='Number of steps for evaluation')
     parser.add_argument("--evaluation_times", type=int, default=10, help="Evaluate times")
     parser.add_argument('--memory_capacity', default=100000, type=int, help='Replay memory capacity')
@@ -109,12 +109,12 @@ def main():
         cfg["env"]["num_envs"] = 1
         if args.policy == "ppo": cfg["env"]["num_envs"] = args.n_envs
         cfg["env"]["num_threads"] = 10
-        cfg["env"]["num_targets"] = 1
+        cfg["env"]["num_targets"] = 2
         cfg["env"]["scene_id"] = 0
     else:
         cfg["env"]["num_envs"] = 1
         cfg["env"]["num_threads"] = 10
-        cfg["env"]["num_targets"] = 1
+        cfg["env"]["num_targets"] = 2
         cfg["env"]["scene_id"] = 0
     if args.render:
         cfg["env"]["render"] = "yes"
