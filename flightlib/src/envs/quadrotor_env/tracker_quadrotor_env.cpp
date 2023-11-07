@@ -60,10 +60,10 @@ TrackerQuadrotorEnv::TrackerQuadrotorEnv(const std::string &cfg_path) : EnvBase(
   // obs_dim_ = 28; // Three targets & ego
   
   // obs_dim_ = 37; // single (2 targets)
-  obs_dim_ = 55; // single (4 targets)
+  // obs_dim_ = 55; // single (4 targets)
 
   // obs_dim_ = 56; // multi (2 agents & 3 targets)
-  // obs_dim_ = 73; // multi (3 agents & 4 targets)
+  obs_dim_ = 73; // multi (3 agents & 4 targets)
 
 
   act_dim_ = trackerquadenv::kNAct;
@@ -330,7 +330,7 @@ Scalar TrackerQuadrotorEnv::trackerStep(const Ref<Vector<>> act, Ref<Vector<>> o
   cmd_.t += sim_dt_;
   // cmd_.velocity = quad_act_;
 
-  cmd_.velocity = Vector<4>(quad_act_[0], quad_act_[1], quad_act_[2], quad_act_[3]) * 3.0; // PPO action
+  cmd_.velocity = Vector<4>(quad_act_[0], quad_act_[1], quad_act_[2], quad_act_[3]); // PPO action
 
   // cmd_.collective_thrust = quad_act_[0] * 22.0;
   // cmd_.omega = Vector<3>(quad_act_[1], quad_act_[2], quad_act_[3]);
@@ -569,13 +569,13 @@ bool TrackerQuadrotorEnv::getObs(Ref<Vector<>> obs)
 
 
 
-  //************************************************************************
-  // Single target tracking (4 targets)
-  quad_obs_ << quad_state_.p, quad_state_.v, ori, quad_state_.w, radius_,
-               estimated_target_positions_[0], estimated_target_velocities_[0], radius_, estimated_target_ranges_[0], radius_ * 2, 
-               estimated_target_positions_[1], estimated_target_velocities_[1], radius_, estimated_target_ranges_[1], radius_ * 2,
-               estimated_target_positions_[2], estimated_target_velocities_[2], radius_, estimated_target_ranges_[2], radius_ * 2,
-               estimated_target_positions_[3], estimated_target_velocities_[3], radius_, estimated_target_ranges_[3], radius_ * 2;
+  // //************************************************************************
+  // // Single target tracking (4 targets)
+  // quad_obs_ << quad_state_.p, quad_state_.v, ori, quad_state_.w, radius_,
+  //              estimated_target_positions_[0], estimated_target_velocities_[0], radius_, estimated_target_ranges_[0], radius_ * 2, 
+  //              estimated_target_positions_[1], estimated_target_velocities_[1], radius_, estimated_target_ranges_[1], radius_ * 2,
+  //              estimated_target_positions_[2], estimated_target_velocities_[2], radius_, estimated_target_ranges_[2], radius_ * 2,
+  //              estimated_target_positions_[3], estimated_target_velocities_[3], radius_, estimated_target_ranges_[3], radius_ * 2;
 
 
 
@@ -590,26 +590,26 @@ bool TrackerQuadrotorEnv::getObs(Ref<Vector<>> obs)
 
 
 
-  // //************************************************************************
-  // // Multi target tracking (3 agents & 4 targets)
-  // quad_obs_ << quad_state_.p, quad_state_.v, ori, quad_state_.w, radius_,
-  //              estimated_target_positions_[0], estimated_target_velocities_[0], radius_, estimated_target_ranges_[0], radius_ * 2, 0,
-  //              estimated_target_positions_[1], estimated_target_velocities_[1], radius_, estimated_target_ranges_[1], radius_ * 2, 0,
-  //              estimated_target_positions_[2], estimated_target_velocities_[2], radius_, estimated_target_ranges_[2], radius_ * 2, 0,
-  //              estimated_target_positions_[3], estimated_target_velocities_[3], radius_, estimated_target_ranges_[3], radius_ * 2, 0,
+  //************************************************************************
+  // Multi target tracking (3 agents & 4 targets)
+  quad_obs_ << quad_state_.p, quad_state_.v, ori, quad_state_.w, radius_,
+               estimated_target_positions_[0], estimated_target_velocities_[0], radius_, estimated_target_ranges_[0], radius_ * 2, 0,
+               estimated_target_positions_[1], estimated_target_velocities_[1], radius_, estimated_target_ranges_[1], radius_ * 2, 0,
+               estimated_target_positions_[2], estimated_target_velocities_[2], radius_, estimated_target_ranges_[2], radius_ * 2, 0,
+               estimated_target_positions_[3], estimated_target_velocities_[3], radius_, estimated_target_ranges_[3], radius_ * 2, 0,
                
-  //              gt_tracker_positions_[0], radius_, gt_tracker_ranges[0], radius_ * 2, 1,
-  //              gt_tracker_positions_[1], radius_, gt_tracker_ranges[1], radius_ * 2, 1;
+               gt_tracker_positions_[0], radius_, gt_tracker_ranges[0], radius_ * 2, 1,
+               gt_tracker_positions_[1], radius_, gt_tracker_ranges[1], radius_ * 2, 1;
 
 
   //************************************************************************
   // obs.segment<28>(0) = quad_obs_; // control policy test
 
   // obs.segment<37>(0) = quad_obs_; // single (2 targets)
-  obs.segment<55>(0) = quad_obs_; // single (4 targets)
+  // obs.segment<55>(0) = quad_obs_; // single (4 targets)
   
   // obs.segment<56>(0) = quad_obs_; // multi (2 agents & 3 targets)
-  // obs.segment<73>(0) = quad_obs_; // multi (3 agents & 4 targets)
+  obs.segment<73>(0) = quad_obs_; // multi (3 agents & 4 targets)
 
   return true;
 }
