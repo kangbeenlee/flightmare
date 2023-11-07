@@ -32,7 +32,7 @@ def configure_random_seed(seed, env=None):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--n', type=int, default=1, help="Number of agent (tracker)")
+    parser.add_argument('--n', type=int, default=3, help="Number of agent (tracker)")
     parser.add_argument('--n_targets', type=int, default=4, help="Number of target")
 
     parser.add_argument('--train', action="store_true", help="To train new model or simply test pre-trained model")
