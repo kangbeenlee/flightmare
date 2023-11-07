@@ -232,7 +232,7 @@ bool TargetTrackingEnv<EnvBase>::step(Ref<MatrixRowMajor<>> act, Ref<MatrixRowMa
   // // For pseudo single network
   Scalar w = 0.3;
   Scalar cooperative_reward = computeGlobalReward();
-  reward(2) += w * cooperative_reward; // individual reward + w * cooperative reward, (1.3 + w * 1.0)
+  reward(0) += w * cooperative_reward; // individual reward + w * cooperative reward, (1.3 + w * 1.0)
 
   //************************************************************************
   //*************************** Global Reward ******************************
@@ -337,13 +337,22 @@ void TargetTrackingEnv<EnvBase>::perTrackerStep(int agent_id, Ref<MatrixRowMajor
 template<typename EnvBase>
 Scalar TargetTrackingEnv<EnvBase>::computeGlobalReward() {
 
-  //
+  // 3 targets
   std::vector<Scalar> min_cov_det_list = {std::numeric_limits<Scalar>::infinity(),
                                           std::numeric_limits<Scalar>::infinity(),
-                                          std::numeric_limits<Scalar>::infinity(),
                                           std::numeric_limits<Scalar>::infinity()};
-  std::vector<Vector<3>> min_position = {Vector<3>(), Vector<3>(), Vector<3>(), Vector<3>()};
-  std::vector<Matrix<3, 3>> min_cov = {Matrix<3, 3>(), Matrix<3, 3>(), Matrix<3, 3>(), Matrix<3, 3>()};
+  std::vector<Vector<3>> min_position = {Vector<3>(), Vector<3>(), Vector<3>()};
+  std::vector<Matrix<3, 3>> min_cov = {Matrix<3, 3>(), Matrix<3, 3>(), Matrix<3, 3>()};
+
+
+  // // 4 targets
+  // std::vector<Scalar> min_cov_det_list = {std::numeric_limits<Scalar>::infinity(),
+  //                                         std::numeric_limits<Scalar>::infinity(),
+  //                                         std::numeric_limits<Scalar>::infinity(),
+  //                                         std::numeric_limits<Scalar>::infinity()};
+  // std::vector<Vector<3>> min_position = {Vector<3>(), Vector<3>(), Vector<3>(), Vector<3>()};
+  // std::vector<Matrix<3, 3>> min_cov = {Matrix<3, 3>(), Matrix<3, 3>(), Matrix<3, 3>(), Matrix<3, 3>()};
+
 
   // Hungarian algorithm
   std::vector<std::vector<Scalar>> cost_matrix;

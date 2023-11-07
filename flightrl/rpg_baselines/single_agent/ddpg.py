@@ -312,7 +312,7 @@ class Trainer:
         # self.writer = SummaryWriter(log_dir="runs/single/ddpg/".format(batch_size))
 
         # Main agent id
-        self.main = 1
+        self.main = 0
 
     # def evaluate_policy(self, env, policy, max_episode_steps, eval_episodes=10):
     #     avg_reward = 0.
@@ -394,7 +394,7 @@ class Trainer:
                 # pseudo_action = np.array([[0.0, 0.0, 0.0, 0.0],
                 #                           [0.0, 0.0, 0.0, 0.0]], dtype=np.float32)
                 pseudo_action = np.array([[0.0, 0.0, 0.0, 0.0]], dtype=np.float32)                
-                pseudo_action = np.concatenate((pseudo_action, action), axis=0)
+                pseudo_action = np.concatenate((action, pseudo_action), axis=0)
 
                 obs, reward, done, _ = env.step(pseudo_action)
                 obs = obs[self.main]
@@ -433,7 +433,7 @@ class Trainer:
                 # pseudo_action = np.array([[0.0, 0.0, 0.0, 0.0],
                 #                           [0.0, 0.0, 0.0, 0.0]], dtype=np.float32)
                 pseudo_action = np.array([[0.0, 0.0, 0.0, 0.0]], dtype=np.float32)
-                pseudo_action = np.concatenate((pseudo_action, action), axis=0)
+                pseudo_action = np.concatenate((action, pseudo_action), axis=0)
 
 
                 obs_prime, reward, done, _ = self.env.step(pseudo_action)
