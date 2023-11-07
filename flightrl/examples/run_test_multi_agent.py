@@ -37,7 +37,7 @@ def test_model(env, render=False):
             #                 [0.0, 0.0, 0.0, 0.0],
             #                 [0.0, 0.0, 0.0, 0.0]], dtype=np.float32)
             
-            # Step input response test
+            # Step input response test !
             vx = 0.0
             vy = 0.0
             vz = 0.0
