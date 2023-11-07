@@ -287,7 +287,7 @@ class Trainer:
         # Tensorboard results
         self.writer = SummaryWriter(log_dir="runs/single/batch_{}_td3/".format(batch_size))
 
-        self.main = 2
+        self.main = 1
 
     # def evaluate_policy(self, env, policy, max_episode_steps, eval_episodes=10):
     #     avg_reward = 0.
@@ -360,8 +360,9 @@ class Trainer:
                 epi_step += 1
                 action = policy.select_action(np.array(obs)).reshape(1, -1).astype(np.float32)
 
-                pseudo_action = np.array([[0.0, 0.0, 0.0, 0.0],
-                                          [0.0, 0.0, 0.0, 0.0]], dtype=np.float32)
+                # pseudo_action = np.array([[0.0, 0.0, 0.0, 0.0],
+                #                           [0.0, 0.0, 0.0, 0.0]], dtype=np.float32)
+                pseudo_action = np.array([[0.0, 0.0, 0.0, 0.0]], dtype=np.float32)
                 pseudo_action = np.concatenate((pseudo_action, action), axis=0)
 
                 obs, reward, done, _ = env.step(pseudo_action)
@@ -397,8 +398,9 @@ class Trainer:
                     action = (self.model.select_action(np.array(obs)) + 
                               np.random.normal(0, self.max_action * self.expl_noise, size=self.action_dim)).clip(-self.max_action, self.max_action).reshape(1, -1).astype(np.float32)
                     
-                pseudo_action = np.array([[0.0, 0.0, 0.0, 0.0],
-                                          [0.0, 0.0, 0.0, 0.0]], dtype=np.float32)
+                # pseudo_action = np.array([[0.0, 0.0, 0.0, 0.0],
+                #                           [0.0, 0.0, 0.0, 0.0]], dtype=np.float32)
+                pseudo_action = np.array([[0.0, 0.0, 0.0, 0.0]], dtype=np.float32)
                 pseudo_action = np.concatenate((pseudo_action, action), axis=0)
 
                 obs_prime, reward, done, _ = self.env.step(pseudo_action)
