@@ -391,9 +391,9 @@ class Trainer:
                 epi_step += 1
                 action = policy.select_action(np.array(obs)).reshape(1, -1).astype(np.float32)
 
-                # pseudo_action = np.array([[0.0, 0.0, 0.0, 0.0],
-                #                           [0.0, 0.0, 0.0, 0.0]], dtype=np.float32)
-                pseudo_action = np.array([[0.0, 0.0, 0.0, 0.0]], dtype=np.float32)                
+                pseudo_action = np.array([[0.0, 0.0, 0.0, 0.0],
+                                          [0.0, 0.0, 0.0, 0.0]], dtype=np.float32)
+                # pseudo_action = np.array([[0.0, 0.0, 0.0, 0.0]], dtype=np.float32)                
                 pseudo_action = np.concatenate((action, pseudo_action), axis=0)
 
                 obs, reward, done, _ = env.step(pseudo_action)
@@ -430,9 +430,9 @@ class Trainer:
                     action = self.model.select_action(np.array(obs)).reshape(1, -1).astype(np.float32)
 
 
-                # pseudo_action = np.array([[0.0, 0.0, 0.0, 0.0],
-                #                           [0.0, 0.0, 0.0, 0.0]], dtype=np.float32)
-                pseudo_action = np.array([[0.0, 0.0, 0.0, 0.0]], dtype=np.float32)
+                pseudo_action = np.array([[0.0, 0.0, 0.0, 0.0],
+                                          [0.0, 0.0, 0.0, 0.0]], dtype=np.float32)
+                # pseudo_action = np.array([[0.0, 0.0, 0.0, 0.0]], dtype=np.float32)
                 pseudo_action = np.concatenate((action, pseudo_action), axis=0)
 
 
