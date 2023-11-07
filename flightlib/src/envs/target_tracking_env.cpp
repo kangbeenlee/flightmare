@@ -230,9 +230,9 @@ bool TargetTrackingEnv<EnvBase>::step(Ref<MatrixRowMajor<>> act, Ref<MatrixRowMa
 
   //************************************************************************
   // // For pseudo single network
-  // Scalar w = 0.3;
-  // Scalar cooperative_reward = computeGlobalReward();
-  // reward(2) += w * cooperative_reward; // individual reward + w * cooperative reward, (1.3 + w * 1.0)
+  Scalar w = 0.3;
+  Scalar cooperative_reward = computeGlobalReward();
+  reward(2) += w * cooperative_reward; // individual reward + w * cooperative reward, (1.3 + w * 1.0)
 
   //************************************************************************
   //*************************** Global Reward ******************************
