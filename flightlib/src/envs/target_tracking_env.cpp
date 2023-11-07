@@ -64,7 +64,7 @@ void TargetTrackingEnv<EnvBase>::init(void)
   target_positions_.push_back(Vector<3>{-5.0, 8.0, 5.0}); // LU
   target_positions_.push_back(Vector<3>{5.0, 2.0, 5.0}); // RU
   target_positions_.push_back(Vector<3>{-5.0, -2.0, 5.0}); // LD
-  // target_positions_.push_back(Vector<3>{5.0, -8.0, 5.0}); // RD
+  target_positions_.push_back(Vector<3>{5.0, -8.0, 5.0}); // RD
 
   // Target minimum snap trajectory
   Eigen::MatrixXf way_points(5, 3); // Should be n
@@ -85,15 +85,15 @@ void TargetTrackingEnv<EnvBase>::init(void)
   MinimumSnapTrajectory trajectory3 = MinimumSnapTrajectory();
   trajectory3.setMinimumSnapTrajectory(way_points, segment_times);
 
-  // way_points << 5, -8, 5,   8, -5, 5,   5, -2, 5,   2, -5, 5,   5, -8, 5;
-  // segment_times << 2.0, 2.0, 2.0, 2.0;
-  // MinimumSnapTrajectory trajectory4 = MinimumSnapTrajectory();
-  // trajectory4.setMinimumSnapTrajectory(way_points, segment_times);
+  way_points << 5, -8, 5,   8, -5, 5,   5, -2, 5,   2, -5, 5,   5, -8, 5;
+  segment_times << 2.0, 2.0, 2.0, 2.0;
+  MinimumSnapTrajectory trajectory4 = MinimumSnapTrajectory();
+  trajectory4.setMinimumSnapTrajectory(way_points, segment_times);
 
   trajectories_.push_back(trajectory1);
   trajectories_.push_back(trajectory2);
   trajectories_.push_back(trajectory3);
-  // trajectories_.push_back(trajectory4);
+  trajectories_.push_back(trajectory4);
 
   // Data recoder
   multi_save_ = std::make_shared<MultiAgentSave>();
@@ -337,21 +337,21 @@ void TargetTrackingEnv<EnvBase>::perTrackerStep(int agent_id, Ref<MatrixRowMajor
 template<typename EnvBase>
 Scalar TargetTrackingEnv<EnvBase>::computeGlobalReward() {
 
-  // 3 targets
-  std::vector<Scalar> min_cov_det_list = {std::numeric_limits<Scalar>::infinity(),
-                                          std::numeric_limits<Scalar>::infinity(),
-                                          std::numeric_limits<Scalar>::infinity()};
-  std::vector<Vector<3>> min_position = {Vector<3>(), Vector<3>(), Vector<3>()};
-  std::vector<Matrix<3, 3>> min_cov = {Matrix<3, 3>(), Matrix<3, 3>(), Matrix<3, 3>()};
-
-
-  // // 4 targets
+  // // 3 targets
   // std::vector<Scalar> min_cov_det_list = {std::numeric_limits<Scalar>::infinity(),
   //                                         std::numeric_limits<Scalar>::infinity(),
-  //                                         std::numeric_limits<Scalar>::infinity(),
   //                                         std::numeric_limits<Scalar>::infinity()};
-  // std::vector<Vector<3>> min_position = {Vector<3>(), Vector<3>(), Vector<3>(), Vector<3>()};
-  // std::vector<Matrix<3, 3>> min_cov = {Matrix<3, 3>(), Matrix<3, 3>(), Matrix<3, 3>(), Matrix<3, 3>()};
+  // std::vector<Vector<3>> min_position = {Vector<3>(), Vector<3>(), Vector<3>()};
+  // std::vector<Matrix<3, 3>> min_cov = {Matrix<3, 3>(), Matrix<3, 3>(), Matrix<3, 3>()};
+
+
+  // 4 targets
+  std::vector<Scalar> min_cov_det_list = {std::numeric_limits<Scalar>::infinity(),
+                                          std::numeric_limits<Scalar>::infinity(),
+                                          std::numeric_limits<Scalar>::infinity(),
+                                          std::numeric_limits<Scalar>::infinity()};
+  std::vector<Vector<3>> min_position = {Vector<3>(), Vector<3>(), Vector<3>(), Vector<3>()};
+  std::vector<Matrix<3, 3>> min_cov = {Matrix<3, 3>(), Matrix<3, 3>(), Matrix<3, 3>(), Matrix<3, 3>()};
 
 
   // Hungarian algorithm
