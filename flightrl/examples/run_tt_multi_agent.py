@@ -50,7 +50,8 @@ class Runner:
         self.replay_buffer = ReplayBuffer(self.args)
 
         # Create a tensorboard
-        self.writer = SummaryWriter(log_dir='runs/multi/batch_{}_{}'.format(self.args.batch_size, self.args.policy))
+        # self.writer = SummaryWriter(log_dir='runs/multi/batch_{}_{}'.format(self.args.batch_size, self.args.policy))
+        self.writer = SummaryWriter(log_dir='runs/multi/multi_ctbr'.format(self.args.batch_size, self.args.policy))
         # Total training time step
         self.time_steps = 0
         # TQDM training bar
@@ -120,7 +121,8 @@ class Runner:
         evaluate_reward = evaluate_reward / self.args.evaluation_times
         
         # Save best model
-        save_path = os.path.join('./model', 'batch_{}_{}'.format(self.args.batch_size, self.args.policy))
+        # save_path = os.path.join('./model', 'batch_{}_{}'.format(self.args.batch_size, self.args.policy))
+        save_path = os.path.join('./model', 'multi_ctbr'.format(self.args.batch_size, self.args.policy))
         if not os.path.exists(save_path):
             os.makedirs(save_path)
         if self.best_score == None or evaluate_reward > self.best_score:
@@ -146,6 +148,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser("Hyperparameters Setting for MADDPG and MATD3")
 
     parser.add_argument('--n', type=int, default=3, help="Number of agent (tracker)")
+    parser.add_argument('--n_targets', type=int, default=1, help="Number of target")
     parser.add_argument('--train', action="store_true", help="To train new model or simply test pre-trained model")
     parser.add_argument('--load_weight', action="store_true", help="To train new model or simply test pre-trained model")
     parser.add_argument('--render', type=int, default=1, help="Enable Unity Render")
@@ -154,23 +157,27 @@ if __name__ == '__main__':
     parser.add_argument('--iteration', type=str, default='0', help='Choose trained iteration')
     parser.add_argument('--gpu_id', type=str, default='cuda:0', help='Choose gpu device id')
 
-    parser.add_argument("--max_training_timesteps", type=int, default=int(1e7), help=" Maximum number of training steps")
-    parser.add_argument("--max_episode_steps", type=int, default=1000, help="Maximum number of steps per episode")
+    parser.add_argument("--max_training_timesteps", type=int, default=int(5e6), help=" Maximum number of training steps")
+    parser.add_argument("--max_episode_steps", type=int, default=200, help="Maximum number of steps per episode")
     parser.add_argument("--evaluation_time_steps", type=float, default=5000, help="Evaluate the policy every 'evaluation_time_steps'")
-    parser.add_argument("--evaluation_times", type=float, default=10, help="Evaluate times")
+    parser.add_argument("--evaluation_times", type=float, default=5, help="Evaluate times")
     parser.add_argument("--max_action", type=float, default=3.0, help="Max action")
 
     parser.add_argument("--policy", type=str, default="maddpg", help="maddpg or matd3")
-    parser.add_argument("--buffer_size", type=int, default=int(1e6), help="The capacity of the replay buffer")
-    parser.add_argument("--batch_size", type=int, default=128, help="Batch size")
+    parser.add_argument("--buffer_size", type=int, default=int(5e5), help="The capacity of the replay buffer")
+    parser.add_argument("--batch_size", type=int, default=32, help="Batch size")
     parser.add_argument("--actor_hidden_dim", type=int, default=256, help="The number of neurons in hidden layers of the neural network")
-    parser.add_argument("--critic_hidden_dim", type=int, default=512, help="The number of neurons in hidden layers of the neural network")
+    parser.add_argument("--critic_hidden_dim", type=int, default=256, help="The number of neurons in hidden layers of the neural network")
     parser.add_argument("--noise_std_init", type=float, default=0.2, help="The std of Gaussian noise for exploration")
     parser.add_argument("--noise_std_min", type=float, default=0.05, help="The std of Gaussian noise for exploration")
     parser.add_argument("--noise_decay_steps", type=float, default=3e5, help="How many steps before the noise_std decays to the minimum")
     parser.add_argument("--use_noise_decay", type=bool, default=True, help="Whether to decay the noise_std")
-    parser.add_argument("--lr_a", type=float, default=5e-4, help="Learning rate of actor")
-    parser.add_argument("--lr_c", type=float, default=5e-4, help="Learning rate of critic")
+    # parser.add_argument("--lr_a", type=float, default=5e-4, help="Learning rate of actor")
+    # parser.add_argument("--lr_c", type=float, default=5e-4, help="Learning rate of critic")
+
+    parser.add_argument("--lr_a", type=float, default=3e-4, help="Learning rate of actor")
+    parser.add_argument("--lr_c", type=float, default=3e-4, help="Learning rate of critic")
+
     parser.add_argument("--gamma", type=float, default=0.95, help="Discount factor")
     parser.add_argument("--tau", type=float, default=0.01, help="Softly update the target network")
     parser.add_argument("--use_orthogonal_init", type=bool, default=True, help="Orthogonal initialization")
@@ -199,10 +206,12 @@ if __name__ == '__main__':
     if args.train:
         cfg["env"]["num_envs"] = args.n
         cfg["env"]["num_threads"] = 10
+        cfg["env"]["num_targets"] = args.n_targets
         cfg["env"]["scene_id"] = 0
     else:
         cfg["env"]["num_envs"] = args.n
         cfg["env"]["num_threads"] = 1
+        cfg["env"]["num_targets"] = args.n_targets
         cfg["env"]["scene_id"] = 0
     if args.render:
         cfg["env"]["render"] = "yes"

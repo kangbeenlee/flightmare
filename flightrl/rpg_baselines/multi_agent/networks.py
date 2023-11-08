@@ -12,24 +12,77 @@ def orthogonal_init(layer, gain=1.0):
             nn.init.orthogonal_(param, gain=gain)
 
 
+
+# # ************************************************************************
+# # ******************************** SRT ***********************************
+# # ************************************************************************
+# class Actor(nn.Module):
+#     def __init__(self, args):
+#         super(Actor, self).__init__()
+#         self.fc1 = nn.Linear(args.obs_dim, args.actor_hidden_dim)
+#         self.fc2 = nn.Linear(args.actor_hidden_dim, args.actor_hidden_dim)
+#         self.fc3 = nn.Linear(args.actor_hidden_dim, args.action_dim)
+#         if args.use_orthogonal_init:
+#             print("------use_orthogonal_init------")
+#             orthogonal_init(self.fc1)
+#             orthogonal_init(self.fc2)
+#             orthogonal_init(self.fc3)
+
+#     def forward(self, x):
+#         x = F.relu(self.fc1(x))
+#         x = F.relu(self.fc2(x))
+#         return torch.tanh(self.fc3(x))
+
+
+
+# ************************************************************************
+# ******************************** CTBR **********************************
+# ************************************************************************
 class Actor(nn.Module):
     def __init__(self, args):
         super(Actor, self).__init__()
         self.max_action = args.max_action
         self.fc1 = nn.Linear(args.obs_dim, args.actor_hidden_dim)
         self.fc2 = nn.Linear(args.actor_hidden_dim, args.actor_hidden_dim)
-        self.fc3 = nn.Linear(args.actor_hidden_dim, args.action_dim)
+        self.fc3 = nn.Linear(args.actor_hidden_dim, 1)
+        self.fc4 = nn.Linear(args.actor_hidden_dim, 3)
         if args.use_orthogonal_init:
             print("------use_orthogonal_init------")
             orthogonal_init(self.fc1)
             orthogonal_init(self.fc2)
             orthogonal_init(self.fc3)
+            orthogonal_init(self.fc4)
 
     def forward(self, x):
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
-        a = self.max_action * torch.tanh(self.fc3(x))
-        return a
+        c = torch.sigmoid(self.fc3(x)) # Collective thrust
+        w = torch.tanh(self.fc4(x)) * 3.0 # Body-Rates
+        return torch.cat([c, w], dim=-1)
+
+
+
+# # ************************************************************************
+# # ********************************* LV ***********************************
+# # ************************************************************************
+# class Actor(nn.Module):
+#     def __init__(self, args):
+#         super(Actor, self).__init__()
+#         self.max_action = args.max_action
+#         self.fc1 = nn.Linear(args.obs_dim, args.actor_hidden_dim)
+#         self.fc2 = nn.Linear(args.actor_hidden_dim, args.actor_hidden_dim)
+#         self.fc3 = nn.Linear(args.actor_hidden_dim, args.action_dim)
+#         if args.use_orthogonal_init:
+#             print("------use_orthogonal_init------")
+#             orthogonal_init(self.fc1)
+#             orthogonal_init(self.fc2)
+#             orthogonal_init(self.fc3)
+
+#     def forward(self, x):
+#         x = F.relu(self.fc1(x))
+#         x = F.relu(self.fc2(x))
+#         a = self.max_action * torch.tanh(self.fc3(x))
+#         return a
 
 
 class Critic_MADDPG(nn.Module):

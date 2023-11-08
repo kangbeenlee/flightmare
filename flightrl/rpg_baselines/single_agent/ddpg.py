@@ -273,11 +273,12 @@ class DDPG:
         # torch.save(self.critic.state_dict(), filename_critic)
 
     def load(self, load_nn):
-        self.actor.load_state_dict(torch.load(load_nn))
+        self.actor.load_state_dict(torch.load(load_nn, map_location='cuda:0'))
         # self.critic.load_state_dict(torch.load(load_nn_critic))
 
 class Trainer:
     def __init__(self,
+                 args,
                  model=None,
                  env=None,
                  max_training_timesteps=None,
@@ -314,93 +315,15 @@ class Trainer:
         # Main agent id
         self.main = 0
 
-    # def evaluate_policy(self, env, policy, max_episode_steps, eval_episodes=10):
-    #     avg_reward = 0.
-    #     for _ in range(eval_episodes):
-    #         obs, done, epi_step = env.reset(), False, 0
-    #         while not (done or (epi_step > max_episode_steps)):
-    #             epi_step += 1
-    #             action = policy.select_action(np.array(obs))
-    #             obs, reward, done, _ = env.step(action)
-    #             avg_reward += reward[0]
-    #     avg_reward = round(avg_reward / eval_episodes, 2)
-    #     return avg_reward
-
-    # def learn(self, render=False):
-    #     time_step = 0 # Total training time step
-    #     tqdm_bar = tqdm(initial=0, desc="Training", total=self.max_training_timesteps, unit="timestep", dynamic_ncols=True)
-    #     n_episode, best_score, best_timestep = 0, None, 0
-
-    #     if render:
-    #         self.env.connectUnity()
-
-    #     while time_step < self.max_training_timesteps:
-    #         n_episode += 1 # Start new episode
-    #         obs, epi_step, score = self.env.reset(), 0, 0.0
-            
-    #         while not epi_step > self.max_episode_steps:
-    #             tqdm_bar.update(1)
-    #             time_step += 1
-    #             epi_step += 1
-                
-    #             # Select action randomly or according to policy
-    #             if time_step < self.training_start:
-    #                 action = np.random.uniform(-self.max_action, self.max_action, self.action_dim).reshape(1, -1).astype(np.float32)
-    #             else:
-    #                 action = self.model.select_action(np.array(obs))
-
-    #             obs_prime, reward, done, _ = self.env.step(action)
-    #             self.replay_buffer.store(obs, action, reward, obs_prime, done)
-    #             obs = obs_prime
-
-    #             score += reward[0] # Record episodic reward
-    #             if done:
-    #                 break
-
-    #             if time_step > self.training_start:
-    #                 critic_loss, actor_loss = self.model.train(self.replay_buffer)
-    #                 self.writer.add_scalar("critic_loss", critic_loss, global_step=time_step)
-    #                 self.writer.add_scalar("actor_loss", -actor_loss, global_step=time_step)                    
-
-    #             if time_step % self.evaluation_time_steps == 0:
-    #                 avg_reward = self.evaluate_policy(self.env, self.model, self.max_episode_steps, self.evaluation_times)
-    #                 if best_score == None or avg_reward > best_score:
-    #                     best_score = avg_reward
-    #                     best_timestep = int(time_step/1000)
-
-    #                 print("Episode : {} \t\t Timestep : {} \t\t Average Reward : {} \t\t Best timestep : {}k".format(n_episode, time_step, avg_reward, best_timestep))
-    #                 self.save(self.save_dir, int(time_step/1000))
-
-    #         self.writer.add_scalar("score", score, global_step=time_step) # Save episodic reward
-
-    #     tqdm_bar.close()
-    #     self.env.close()
-    #     self.writer.flush()
-    #     self.writer.close()
-
-    #     if render:
-    #         self.env.disconnectUnity()
-
-
     def evaluate_policy(self, env, policy, max_episode_steps, eval_episodes=10):
         avg_reward = 0.
         for _ in range(eval_episodes):
             obs, done, epi_step = env.reset(), False, 0
-            obs = obs[self.main]
             while not (done or (epi_step > max_episode_steps)):
                 epi_step += 1
-                action = policy.select_action(np.array(obs)).reshape(1, -1).astype(np.float32)
-
-                pseudo_action = np.array([[0.0, 0.0, 0.0, 0.0],
-                                          [0.0, 0.0, 0.0, 0.0]], dtype=np.float32)
-                # pseudo_action = np.array([[0.0, 0.0, 0.0, 0.0]], dtype=np.float32)                
-                pseudo_action = np.concatenate((action, pseudo_action), axis=0)
-
-                obs, reward, done, _ = env.step(pseudo_action)
-                obs = obs[self.main]
-                done = done[self.main]
-
-                avg_reward += reward[self.main]
+                action = policy.select_action(np.array(obs))
+                obs, reward, done, _ = env.step(action)
+                avg_reward += reward[0]
         avg_reward = round(avg_reward / eval_episodes, 2)
         return avg_reward
 
@@ -415,9 +338,7 @@ class Trainer:
         while time_step < self.max_training_timesteps:
             n_episode += 1 # Start new episode
             obs, epi_step, score = self.env.reset(), 0, 0.0
-
-            obs = obs[self.main]
-
+            
             while not epi_step > self.max_episode_steps:
                 tqdm_bar.update(1)
                 time_step += 1
@@ -427,25 +348,13 @@ class Trainer:
                 if time_step < self.training_start:
                     action = np.random.uniform(-self.max_action, self.max_action, self.action_dim).reshape(1, -1).astype(np.float32)
                 else:
-                    action = self.model.select_action(np.array(obs)).reshape(1, -1).astype(np.float32)
+                    action = self.model.select_action(np.array(obs))
 
-
-                pseudo_action = np.array([[0.0, 0.0, 0.0, 0.0],
-                                          [0.0, 0.0, 0.0, 0.0]], dtype=np.float32)
-                # pseudo_action = np.array([[0.0, 0.0, 0.0, 0.0]], dtype=np.float32)
-                pseudo_action = np.concatenate((action, pseudo_action), axis=0)
-
-
-                obs_prime, reward, done, _ = self.env.step(pseudo_action)
-
-                obs_prime = obs_prime[self.main]
-                reward = reward[self.main]
-                done = done[self.main]
-
+                obs_prime, reward, done, _ = self.env.step(action)
                 self.replay_buffer.store(obs, action, reward, obs_prime, done)
                 obs = obs_prime
 
-                score += reward # Record episodic reward
+                score += reward[0] # Record episodic reward
                 if done:
                     break
 
@@ -473,6 +382,97 @@ class Trainer:
         if render:
             self.env.disconnectUnity()
 
+
+    # def evaluate_policy(self, env, policy, max_episode_steps, eval_episodes=10):
+    #     avg_reward = 0.
+    #     for _ in range(eval_episodes):
+    #         obs, done, epi_step = env.reset(), False, 0
+    #         obs = obs[self.main]
+    #         while not (done or (epi_step > max_episode_steps)):
+    #             epi_step += 1
+    #             action = policy.select_action(np.array(obs)).reshape(1, -1).astype(np.float32)
+
+    #             pseudo_action = np.array([[0.0, 0.0, 0.0, 0.0],
+    #                                       [0.0, 0.0, 0.0, 0.0]], dtype=np.float32)
+    #             # pseudo_action = np.array([[0.0, 0.0, 0.0, 0.0]], dtype=np.float32)                
+    #             pseudo_action = np.concatenate((action, pseudo_action), axis=0)
+
+    #             obs, reward, done, _ = env.step(pseudo_action)
+    #             obs = obs[self.main]
+    #             done = done[self.main]
+
+    #             avg_reward += reward[self.main]
+    #     avg_reward = round(avg_reward / eval_episodes, 2)
+    #     return avg_reward
+
+    # def learn(self, render=False):
+    #     time_step = 0 # Total training time step
+    #     tqdm_bar = tqdm(initial=0, desc="Training", total=self.max_training_timesteps, unit="timestep", dynamic_ncols=True)
+    #     n_episode, best_score, best_timestep = 0, None, 0
+
+    #     if render:
+    #         self.env.connectUnity()
+
+    #     while time_step < self.max_training_timesteps:
+    #         n_episode += 1 # Start new episode
+    #         obs, epi_step, score = self.env.reset(), 0, 0.0
+
+    #         obs = obs[self.main]
+
+    #         while not epi_step > self.max_episode_steps:
+    #             tqdm_bar.update(1)
+    #             time_step += 1
+    #             epi_step += 1
+                
+    #             # Select action randomly or according to policy
+    #             if time_step < self.training_start:
+    #                 action = np.random.uniform(-self.max_action, self.max_action, self.action_dim).reshape(1, -1).astype(np.float32)
+    #             else:
+    #                 action = self.model.select_action(np.array(obs)).reshape(1, -1).astype(np.float32)
+
+
+    #             pseudo_action = np.array([[0.0, 0.0, 0.0, 0.0],
+    #                                       [0.0, 0.0, 0.0, 0.0]], dtype=np.float32)
+    #             # pseudo_action = np.array([[0.0, 0.0, 0.0, 0.0]], dtype=np.float32)
+    #             pseudo_action = np.concatenate((action, pseudo_action), axis=0)
+
+
+    #             obs_prime, reward, done, _ = self.env.step(pseudo_action)
+
+    #             obs_prime = obs_prime[self.main]
+    #             reward = reward[self.main]
+    #             done = done[self.main]
+
+    #             self.replay_buffer.store(obs, action, reward, obs_prime, done)
+    #             obs = obs_prime
+
+    #             score += reward # Record episodic reward
+    #             if done:
+    #                 break
+
+    #             if time_step > self.training_start:
+    #                 critic_loss, actor_loss = self.model.train(self.replay_buffer)
+    #                 self.writer.add_scalar("critic_loss", critic_loss, global_step=time_step)
+    #                 self.writer.add_scalar("actor_loss", -actor_loss, global_step=time_step)                    
+
+    #             if time_step % self.evaluation_time_steps == 0:
+    #                 avg_reward = self.evaluate_policy(self.env, self.model, self.max_episode_steps, self.evaluation_times)
+    #                 if best_score == None or avg_reward > best_score:
+    #                     best_score = avg_reward
+    #                     best_timestep = int(time_step/1000)
+
+    #                 print("Episode : {} \t\t Timestep : {} \t\t Average Reward : {} \t\t Best timestep : {}k".format(n_episode, time_step, avg_reward, best_timestep))
+    #                 self.save(self.save_dir, int(time_step/1000))
+
+    #         self.writer.add_scalar("score", score, global_step=time_step) # Save episodic reward
+
+    #     tqdm_bar.close()
+    #     self.env.close()
+    #     self.writer.flush()
+    #     self.writer.close()
+
+    #     if render:
+    #         self.env.disconnectUnity()
 
 
     def save(self, save_dir=None, timestep=None):

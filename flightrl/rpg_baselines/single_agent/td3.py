@@ -31,6 +31,71 @@ def orthogonal_init(layer, gain=1.0):
             nn.init.orthogonal_(param, gain=gain)
 
 
+
+# # ************************************************************************
+# # ******************************** SRT ***********************************
+# # ************************************************************************
+# class Actor(nn.Module):
+#     def __init__(self, args, obs_dim, action_dim, max_action):
+#         super(Actor, self).__init__()
+#         self.use_orthogonal_init = args.use_orthogonal_init
+#         self.use_z_score_normalization = args.use_z_score_normalization
+#         self.max_action = max_action
+#         self.l1 = nn.Linear(obs_dim, 256)
+#         self.l2 = nn.Linear(256, 256)
+#         self.l3 = nn.Linear(256, action_dim)
+
+#         if self.use_orthogonal_init:
+#             print("------use_orthogonal_init------")
+#             orthogonal_init(self.l1)
+#             orthogonal_init(self.l2)
+#             orthogonal_init(self.l3)
+
+#     def forward(self, x):
+#         with torch.autograd.set_detect_anomaly(True):
+#             if self.use_z_score_normalization:
+#                 x = z_score_normalize(x)     
+#             x = F.relu(self.l1(x))
+#             x = F.relu(self.l2(x))
+#             return torch.tanh(self.l3(x))
+
+
+
+# # ************************************************************************
+# # ******************************** CTBR **********************************
+# # ************************************************************************
+# class Actor(nn.Module):
+#     def __init__(self, args, obs_dim, action_dim, max_action):
+#         super(Actor, self).__init__()
+#         self.use_orthogonal_init = args.use_orthogonal_init
+#         self.use_z_score_normalization = args.use_z_score_normalization
+#         self.max_action = max_action
+#         self.l1 = nn.Linear(obs_dim, 256)
+#         self.l2 = nn.Linear(256, 256)
+#         self.l3 = nn.Linear(256, 1)
+#         self.l4 = nn.Linear(256, 3)
+
+#         if self.use_orthogonal_init:
+#             print("------use_orthogonal_init------")
+#             orthogonal_init(self.l1)
+#             orthogonal_init(self.l2)
+#             orthogonal_init(self.l3)
+#             orthogonal_init(self.l4)
+
+#     def forward(self, x):
+#         if self.use_z_score_normalization:
+#             x = z_score_normalize(x)     
+#         x = F.relu(self.l1(x))
+#         x = F.relu(self.l2(x))
+#         c = torch.sigmoid(self.l3(x)) # Collective thrust
+#         w = torch.tanh(self.l4(x)) * 3.0 # Body-Rates
+#         return torch.cat([c, w], dim=-1)
+
+
+
+# ************************************************************************
+# ********************************* LV ***********************************
+# ************************************************************************
 class Actor(nn.Module):
     def __init__(self, args, obs_dim, action_dim, max_action):
         super(Actor, self).__init__()
@@ -247,7 +312,7 @@ class TD3(object):
         # torch.save(self.critic.state_dict(), filename_critic)
 
     def load(self, load_nn):
-        self.actor.load_state_dict(torch.load(load_nn))
+        self.actor.load_state_dict(torch.load(load_nn, map_location='cuda:0'))
         # self.critic.load_state_dict(torch.load(load_nn_critic))
 
 class Trainer:
@@ -281,95 +346,25 @@ class Trainer:
         self.max_action = max_action
         self.expl_noise = expl_noise
         self.training_start = training_start
-        self.save_dir = os.path.join(save_dir, "model", "batch_{}_td3".format(batch_size))
+        # self.save_dir = os.path.join(save_dir, "model", "batch_{}_td3".format(batch_size))
+        self.save_dir = os.path.join(save_dir, "model", "td3_srt".format(batch_size))
         self.replay_buffer = ReplayBuffer(args, obs_dim=obs_dim, action_dim=action_dim, memory_capacity=memory_capacity, batch_size=batch_size)
 
         # Tensorboard results
-        self.writer = SummaryWriter(log_dir="runs/single/batch_{}_td3/".format(batch_size))
+        # self.writer = SummaryWriter(log_dir="runs/single/batch_{}_td3/".format(batch_size))
+        self.writer = SummaryWriter(log_dir="runs/single/td3_srt/".format(batch_size))
 
         self.main = 0
-
-    # def evaluate_policy(self, env, policy, max_episode_steps, eval_episodes=10):
-    #     avg_reward = 0.
-    #     for _ in range(eval_episodes):
-    #         obs, done, epi_step = env.reset(), False, 0
-    #         while not (done or (epi_step > max_episode_steps)):
-    #             epi_step += 1
-    #             action = policy.select_action(np.array(obs))
-    #             obs, reward, done, _ = env.step(action)
-    #             avg_reward += reward[0]
-    #     avg_reward = round(avg_reward / eval_episodes, 2)
-    #     return avg_reward
-
-    # def learn(self, render=False):
-    #     time_step = 0 # Total training time step
-    #     tqdm_bar = tqdm(initial=0, desc="Training", total=self.max_training_timesteps, unit="timestep", dynamic_ncols=True)
-    #     n_episode, best_score, best_timestep = 0, None, 0
-
-    #     if render:
-    #         self.env.connectUnity()
-
-    #     while time_step < self.max_training_timesteps:
-    #         n_episode += 1 # Start new episode
-    #         obs, epi_step, score = self.env.reset(), 0, 0.0
-            
-    #         while not epi_step > self.max_episode_steps:
-    #             tqdm_bar.update(1)
-    #             time_step += 1
-    #             epi_step += 1
-                
-    #             # Select action randomly or according to policy
-    #             if time_step < self.training_start:
-    #                 action = np.random.uniform(-self.max_action, self.max_action, self.action_dim).reshape(1, -1).astype(np.float32)
-    #             else:
-    #                 action = (self.model.select_action(np.array(obs)) + 
-    #                           np.random.normal(0, self.max_action * self.expl_noise, size=self.action_dim)).clip(-self.max_action, self.max_action).reshape(1, -1).astype(np.float32)
-                    
-    #             obs_prime, reward, done, _ = self.env.step(action)
-    #             self.replay_buffer.add(obs, action, reward, obs_prime, done)
-    #             obs = obs_prime
-
-    #             score += reward[0] # Record episodic reward
-    #             if done:
-    #                 break
-
-    #             if time_step > self.training_start:
-    #                 critic_loss, actor_loss = self.model.train(self.replay_buffer)
-    #                 if actor_loss:
-    #                     self.writer.add_scalar("critic_loss", critic_loss, global_step=time_step)
-    #                     self.writer.add_scalar("actor_loss", -actor_loss, global_step=time_step)
-
-    #             if time_step % self.evaluation_time_steps == 0:
-    #                 avg_reward = self.evaluate_policy(self.env, self.model, self.max_episode_steps, self.evaluation_times)
-    #                 if best_score == None or avg_reward > best_score:
-    #                     best_score = avg_reward
-    #                     best_timestep = int(time_step/1000)
-
-    #                 print("Episode : {} \t\t Timestep : {} \t\t Average Reward : {} \t\t Best timestep : {}k".format(n_episode, time_step, avg_reward, best_timestep))
-    #                 self.save(self.save_dir, int(time_step/1000))
-
-    #         self.writer.add_scalar("score", score, global_step=time_step) # Save episodic reward
-
 
     def evaluate_policy(self, env, policy, max_episode_steps, eval_episodes=10):
         avg_reward = 0.
         for _ in range(eval_episodes):
             obs, done, epi_step = env.reset(), False, 0
-            obs = obs[self.main]
             while not (done or (epi_step > max_episode_steps)):
                 epi_step += 1
-                action = policy.select_action(np.array(obs)).reshape(1, -1).astype(np.float32)
-
-                pseudo_action = np.array([[0.0, 0.0, 0.0, 0.0],
-                                          [0.0, 0.0, 0.0, 0.0]], dtype=np.float32)
-                # pseudo_action = np.array([[0.0, 0.0, 0.0, 0.0]], dtype=np.float32)
-                pseudo_action = np.concatenate((action, pseudo_action), axis=0)
-
-                obs, reward, done, _ = env.step(pseudo_action)
-                obs = obs[self.main]
-                done = done[self.main]
-
-                avg_reward += reward[self.main]
+                action = policy.select_action(np.array(obs))
+                obs, reward, done, _ = env.step(action)
+                avg_reward += reward[0]
         avg_reward = round(avg_reward / eval_episodes, 2)
         return avg_reward
 
@@ -384,7 +379,6 @@ class Trainer:
         while time_step < self.max_training_timesteps:
             n_episode += 1 # Start new episode
             obs, epi_step, score = self.env.reset(), 0, 0.0
-            obs = obs[self.main]
             
             while not epi_step > self.max_episode_steps:
                 tqdm_bar.update(1)
@@ -398,21 +392,11 @@ class Trainer:
                     action = (self.model.select_action(np.array(obs)) + 
                               np.random.normal(0, self.max_action * self.expl_noise, size=self.action_dim)).clip(-self.max_action, self.max_action).reshape(1, -1).astype(np.float32)
                     
-                pseudo_action = np.array([[0.0, 0.0, 0.0, 0.0],
-                                          [0.0, 0.0, 0.0, 0.0]], dtype=np.float32)
-                # pseudo_action = np.array([[0.0, 0.0, 0.0, 0.0]], dtype=np.float32)
-                pseudo_action = np.concatenate((action, pseudo_action), axis=0)
-
-                obs_prime, reward, done, _ = self.env.step(pseudo_action)
-
-                obs_prime = obs_prime[self.main]
-                reward = reward[self.main]
-                done = done[self.main]
-
+                obs_prime, reward, done, _ = self.env.step(action)
                 self.replay_buffer.add(obs, action, reward, obs_prime, done)
                 obs = obs_prime
 
-                score += reward # Record episodic reward
+                score += reward[0] # Record episodic reward
                 if done:
                     break
 
@@ -431,12 +415,99 @@ class Trainer:
                     print("Episode : {} \t\t Timestep : {} \t\t Average Reward : {} \t\t Best timestep : {}k".format(n_episode, time_step, avg_reward, best_timestep))
                     self.save(self.save_dir, int(time_step/1000))
 
-            self.writer.add_scalar("score", score, global_step=time_step) # Save
+            self.writer.add_scalar("score", score, global_step=time_step) # Save episodic reward
 
         tqdm_bar.close()
         self.env.close()
         self.writer.flush()
         self.writer.close()
+
+    # def evaluate_policy(self, env, policy, max_episode_steps, eval_episodes=10):
+    #     avg_reward = 0.
+    #     for _ in range(eval_episodes):
+    #         obs, done, epi_step = env.reset(), False, 0
+    #         obs = obs[self.main]
+    #         while not (done or (epi_step > max_episode_steps)):
+    #             epi_step += 1
+    #             action = policy.select_action(np.array(obs)).reshape(1, -1).astype(np.float32)
+
+    #             pseudo_action = np.array([[0.0, 0.0, 0.0, 0.0],
+    #                                       [0.0, 0.0, 0.0, 0.0]], dtype=np.float32)
+    #             # pseudo_action = np.array([[0.0, 0.0, 0.0, 0.0]], dtype=np.float32)
+    #             pseudo_action = np.concatenate((action, pseudo_action), axis=0)
+
+    #             obs, reward, done, _ = env.step(pseudo_action)
+    #             obs = obs[self.main]
+    #             done = done[self.main]
+
+    #             avg_reward += reward[self.main]
+    #     avg_reward = round(avg_reward / eval_episodes, 2)
+    #     return avg_reward
+
+    # def learn(self, render=False):
+    #     time_step = 0 # Total training time step
+    #     tqdm_bar = tqdm(initial=0, desc="Training", total=self.max_training_timesteps, unit="timestep", dynamic_ncols=True)
+    #     n_episode, best_score, best_timestep = 0, None, 0
+
+    #     if render:
+    #         self.env.connectUnity()
+
+    #     while time_step < self.max_training_timesteps:
+    #         n_episode += 1 # Start new episode
+    #         obs, epi_step, score = self.env.reset(), 0, 0.0
+    #         obs = obs[self.main]
+            
+    #         while not epi_step > self.max_episode_steps:
+    #             tqdm_bar.update(1)
+    #             time_step += 1
+    #             epi_step += 1
+                
+    #             # Select action randomly or according to policy
+    #             if time_step < self.training_start:
+    #                 action = np.random.uniform(-self.max_action, self.max_action, self.action_dim).reshape(1, -1).astype(np.float32)
+    #             else:
+    #                 action = (self.model.select_action(np.array(obs)) + 
+    #                           np.random.normal(0, self.max_action * self.expl_noise, size=self.action_dim)).clip(-self.max_action, self.max_action).reshape(1, -1).astype(np.float32)
+                    
+    #             pseudo_action = np.array([[0.0, 0.0, 0.0, 0.0],
+    #                                       [0.0, 0.0, 0.0, 0.0]], dtype=np.float32)
+    #             # pseudo_action = np.array([[0.0, 0.0, 0.0, 0.0]], dtype=np.float32)
+    #             pseudo_action = np.concatenate((action, pseudo_action), axis=0)
+
+    #             obs_prime, reward, done, _ = self.env.step(pseudo_action)
+
+    #             obs_prime = obs_prime[self.main]
+    #             reward = reward[self.main]
+    #             done = done[self.main]
+
+    #             self.replay_buffer.add(obs, action, reward, obs_prime, done)
+    #             obs = obs_prime
+
+    #             score += reward # Record episodic reward
+    #             if done:
+    #                 break
+
+    #             if time_step > self.training_start:
+    #                 critic_loss, actor_loss = self.model.train(self.replay_buffer)
+    #                 if actor_loss:
+    #                     self.writer.add_scalar("critic_loss", critic_loss, global_step=time_step)
+    #                     self.writer.add_scalar("actor_loss", -actor_loss, global_step=time_step)
+
+    #             if time_step % self.evaluation_time_steps == 0:
+    #                 avg_reward = self.evaluate_policy(self.env, self.model, self.max_episode_steps, self.evaluation_times)
+    #                 if best_score == None or avg_reward > best_score:
+    #                     best_score = avg_reward
+    #                     best_timestep = int(time_step/1000)
+
+    #                 print("Episode : {} \t\t Timestep : {} \t\t Average Reward : {} \t\t Best timestep : {}k".format(n_episode, time_step, avg_reward, best_timestep))
+    #                 self.save(self.save_dir, int(time_step/1000))
+
+    #         self.writer.add_scalar("score", score, global_step=time_step) # Save
+
+    #     tqdm_bar.close()
+    #     self.env.close()
+    #     self.writer.flush()
+    #     self.writer.close()
 
     def save(self, save_dir=None, timestep=None):
         if not os.path.exists(save_dir):
