@@ -32,10 +32,11 @@ def configure_random_seed(seed, env=None):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--n', type=int, default=3, help="Number of agent (tracker)")
-    parser.add_argument('--n_targets', type=int, default=4, help="Number of target")
+    parser.add_argument('--n', type=int, default=2, help="Number of agent (tracker)")
+    parser.add_argument('--n_targets', type=int, default=3, help="Number of target")
 
     parser.add_argument('--train', action="store_true", help="To train new model or simply test pre-trained model")
+    parser.add_argument('--load_weight', action="store_true", help="To train new model or simply test pre-trained model")
     parser.add_argument('--gpu_id', type=str, default='cuda:0', help='Choose gpu device id')
     parser.add_argument('--render', type=int, default=1, help="Enable Unity Render")
     parser.add_argument('--save_dir', type=str, default=os.path.dirname(os.path.realpath(__file__)), help="Directory where to save the checkpoints and training metrics")
@@ -160,7 +161,8 @@ def main():
                          obs_dim=env.num_obs,
                          action_dim=env.num_acts,
                          max_action=args.max_action)
-            trainer = DDPGTrainer(model=model,
+            trainer = DDPGTrainer(args,
+                                  model=model,
                                   env=env,
                                   max_training_timesteps=args.max_training_timesteps,
                                   max_episode_steps=args.max_episode_steps,

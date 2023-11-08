@@ -59,12 +59,14 @@ void TargetTrackingEnv<EnvBase>::init(void)
   }
 
 
-
   // Set initial start position
-  target_positions_.push_back(Vector<3>{-5.0, 8.0, 5.0}); // LU
-  target_positions_.push_back(Vector<3>{5.0, 2.0, 5.0}); // RU
-  target_positions_.push_back(Vector<3>{-5.0, -2.0, 5.0}); // LD
-  target_positions_.push_back(Vector<3>{5.0, -8.0, 5.0}); // RD
+  target_positions_.push_back(Vector<3>{0.0, 0.0, 5.0});
+
+  // // Set initial start position
+  // target_positions_.push_back(Vector<3>{-5.0, 8.0, 5.0}); // LU
+  // target_positions_.push_back(Vector<3>{5.0, 2.0, 5.0}); // RU
+  // target_positions_.push_back(Vector<3>{-5.0, -2.0, 5.0}); // LD
+  // target_positions_.push_back(Vector<3>{5.0, -8.0, 5.0}); // RD
 
   // Target minimum snap trajectory
   Eigen::MatrixXf way_points(5, 3); // Should be n
@@ -75,25 +77,25 @@ void TargetTrackingEnv<EnvBase>::init(void)
   MinimumSnapTrajectory trajectory1 = MinimumSnapTrajectory();
   trajectory1.setMinimumSnapTrajectory(way_points, segment_times);
 
-  way_points << 5, 2, 5,   2, 5, 5,   5, 8, 5,   8, 5, 5,   5, 2, 5;
-  segment_times << 2.0, 2.0, 2.0, 2.0;
-  MinimumSnapTrajectory trajectory2 = MinimumSnapTrajectory();
-  trajectory2.setMinimumSnapTrajectory(way_points, segment_times);
+  // way_points << 5, 2, 5,   2, 5, 5,   5, 8, 5,   8, 5, 5,   5, 2, 5;
+  // segment_times << 2.0, 2.0, 2.0, 2.0;
+  // MinimumSnapTrajectory trajectory2 = MinimumSnapTrajectory();
+  // trajectory2.setMinimumSnapTrajectory(way_points, segment_times);
 
-  way_points << -5, -2, 5,   -2, -5, 5,   -5, -8, 5,   -8, -5, 5,   -5, -2, 5;
-  segment_times << 2.0, 2.0, 2.0, 2.0;
-  MinimumSnapTrajectory trajectory3 = MinimumSnapTrajectory();
-  trajectory3.setMinimumSnapTrajectory(way_points, segment_times);
+  // way_points << -5, -2, 5,   -2, -5, 5,   -5, -8, 5,   -8, -5, 5,   -5, -2, 5;
+  // segment_times << 2.0, 2.0, 2.0, 2.0;
+  // MinimumSnapTrajectory trajectory3 = MinimumSnapTrajectory();
+  // trajectory3.setMinimumSnapTrajectory(way_points, segment_times);
 
-  way_points << 5, -8, 5,   8, -5, 5,   5, -2, 5,   2, -5, 5,   5, -8, 5;
-  segment_times << 2.0, 2.0, 2.0, 2.0;
-  MinimumSnapTrajectory trajectory4 = MinimumSnapTrajectory();
-  trajectory4.setMinimumSnapTrajectory(way_points, segment_times);
+  // way_points << 5, -8, 5,   8, -5, 5,   5, -2, 5,   2, -5, 5,   5, -8, 5;
+  // segment_times << 2.0, 2.0, 2.0, 2.0;
+  // MinimumSnapTrajectory trajectory4 = MinimumSnapTrajectory();
+  // trajectory4.setMinimumSnapTrajectory(way_points, segment_times);
 
   trajectories_.push_back(trajectory1);
-  trajectories_.push_back(trajectory2);
-  trajectories_.push_back(trajectory3);
-  trajectories_.push_back(trajectory4);
+  // trajectories_.push_back(trajectory2);
+  // trajectories_.push_back(trajectory3);
+  // trajectories_.push_back(trajectory4);
 
   // Data recoder
   multi_save_ = std::make_shared<MultiAgentSave>();
@@ -228,11 +230,27 @@ bool TargetTrackingEnv<EnvBase>::step(Ref<MatrixRowMajor<>> act, Ref<MatrixRowMa
   //   reward(i) += w * cooperative_reward; // individual reward + w * cooperative reward, (1.3 + w * 1.0)
   // }
 
+
+  // //************************************************************************
+  // // // For pseudo single network
+  // Scalar w = 0.3;
+  // Scalar cooperative_reward = computeGlobalReward();
+  // reward(0) += w * cooperative_reward; // individual reward + w * cooperative reward, (1.3 + w * 1.0)
+
+
   //************************************************************************
-  // // For pseudo single network
-  Scalar w = 0.3;
-  Scalar cooperative_reward = computeGlobalReward();
-  reward(0) += w * cooperative_reward; // individual reward + w * cooperative reward, (1.3 + w * 1.0)
+  // For multi control policy network
+  Scalar global_reward = 0.0;
+  for (int i = 0; i < num_envs_; i++)
+  {
+    global_reward += reward(i);
+  }
+  global_reward /= num_envs_;
+
+  for (int i = 0; i < num_envs_; i++)
+  {
+    reward(i) = global_reward;
+  }
 
   //************************************************************************
   //*************************** Global Reward ******************************
