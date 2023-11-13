@@ -47,21 +47,94 @@ bool TrackerQuadrotor::run(const Scalar ctl_dt) {
   const Scalar max_dt = integrator_ptr_->dtMax();
   Scalar remain_ctl_dt = ctl_dt;
 
+  bool mpc_success = false;
+
   // simulation loop
   while (remain_ctl_dt > 0.0) {
     const Scalar sim_dt = std::min(remain_ctl_dt, max_dt);
+    velocity_controller_.setDt(sim_dt);
 
-    // const Vector<4> motor_thrusts_des = cmd_.isSingleRotorThrusts() ? cmd_.thrusts : runFlightCtl(sim_dt, state_.w, cmd_);
-    const Vector<4> motor_thrusts_des = runFlightCtl(sim_dt, state_.w, cmd_);
+    const Vector<4> velocity_des = cmd_.velocity;
 
+    Vector<3> euler = quaternionToEuler(state_);
+    Scalar phi = euler[0];
+    Scalar theta = euler[1];
+    Scalar psi = euler[2];
+
+    // // For vehicle frame based controller
+    // Matrix<3, 3> R_z = (Matrix<3, 3>() << cos(psi), sin(psi), 0, -sin(psi), cos(psi), 0, 0, 0, 1).finished();
+    // Vector<3> velocity = R_z * state_.v;
+
+    // For world frame based controller
+    Vector<3> velocity = state_.v;
+
+    /////////////////////////// PID controller ///////////////////////////
+    const Vector<4> control_input = velocity_controller_.control(velocity_des[0], velocity_des[1], velocity_des[2], velocity_des[3],
+                                                            velocity[0], velocity[1], velocity[2], state_.x(QS::OMEZ),
+                                                            phi, theta, psi);
+    //////////////////////////////////////////////////////////////////////
+
+    // /////////////////////////// MPC controller ///////////////////////////
+    // std::vector<float> command{velocity_des[0], velocity_des[1], velocity_des[2], velocity_des[3]};
+    
+    // // Run mpc only 1 time 
+    // if (!mpc_success) {
+    //   mpc_success =  mpc_controller_.runMPC(state_.x(QS::POSX), state_.x(QS::POSY), state_.x(QS::POSZ),
+    //                                         state_.x(QS::VELX), state_.x(QS::VELY), state_.x(QS::VELZ),
+    //                                         phi, theta, psi,
+    //                                         state_.x(QS::OMEX), state_.x(QS::OMEY), state_.x(QS::OMEZ),
+    //                                         command, control_);
+    // }
+
+    // const Vector<4> control_input(control_[0], control_[1], control_[2], control_[3]);
+    // //////////////////////////////////////////////////////////////////////
+
+    // Control input: T, Mx, My, Mz
+    const Vector<4> motor_thrusts_des = B_allocation_inv_ * control_input; // 
+
+    // Cliping motor thrust with motor constraint
     runMotors(sim_dt, motor_thrusts_des);
-    // motor_thrusts_ = cmd_.thrusts;
 
     const Vector<4> force_torques = B_allocation_ * motor_thrusts_;
 
     // Compute linear acceleration and body torque
     const Vector<3> force(0.0, 0.0, force_torques[0]);
-    state_.a = state_.q() * force * 1.0 / dynamics_.getMass() + gz_;
+
+
+
+    //************************************************************************
+    //*************************** Data Recoder *******************************
+    //************************************************************************
+
+    // // PID controller step input response check & PID gain tuning
+    // if (save_flag_)
+    //   controller_save_.store(velocity_des[0], velocity_des[1], velocity_des[2], velocity_des[3], velocity_controller_.getControlPhi(), velocity_controller_.getControlTheta(),
+    //                          force_torques[0], force_torques[1], force_torques[2], force_torques[3],
+    //                          velocity[0], velocity[1], velocity[2], state_.x(QS::OMEZ),
+    //                          phi, theta, psi,
+    //                          sim_dt);
+
+    // // // MPC controller step input reponse check
+    // // if (save_flag_)
+    // //   controller_save_.store(velocity_des[0], velocity_des[1], velocity_des[2], velocity_des[3],
+    // //                          force_torques[0], force_torques[1], force_torques[2], force_torques[3],
+    // //                          velocity[0], velocity[1], velocity[2], state_.x(QS::OMEZ),
+    // //                          phi, theta, psi,
+    // //                          sim_dt);
+
+    // if (save_flag_ && controller_save_.isFull()) {
+    //   controller_save_.save();
+    //   save_flag_ = false;
+    //   std::cout << ">>> Controller output save is done" << std::endl;
+    // }
+
+    //************************************************************************
+    //*************************** Data Recoder *******************************
+    //************************************************************************
+
+
+
+    state_.a = state_.q() * force * 1.0 / dynamics_.getMass() + gz_; // state_.q(): coordinates of body frame w.r.t. world frame
 
     // compute body torque
     state_.tau = force_torques.segment<3>(1);
@@ -86,12 +159,24 @@ void TrackerQuadrotor::init(void) {
   // reset
   updateDynamics(dynamics_);
   reset();
+  velocity_controller_ = VelocityController();
+  velocity_controller_.setQuadrotorMass(dynamics_.getMass());
+  velocity_controller_.setGravity(-Gz);
+  // controller_save_ = PIDControllerSave();
+
+  // mpc_controller_ = MPCController();
+  // mpc_controller_.init(0.02, 10);
+  // controller_save_ = MPCControllerSave();
 }
 
 bool TrackerQuadrotor::reset(void) {
   state_.setZero();
   motor_omega_.setZero();
   motor_thrusts_.setZero();
+  velocity_controller_.reset();
+  velocity_controller_.setQuadrotorMass(dynamics_.getMass());
+  velocity_controller_.setGravity(-Gz);
+  // controller_save_.reset();
   return true;
 }
 
@@ -100,29 +185,11 @@ bool TrackerQuadrotor::reset(const QuadState &state) {
   state_ = state;
   motor_omega_.setZero();
   motor_thrusts_.setZero();
+  velocity_controller_.reset();
+  velocity_controller_.setQuadrotorMass(dynamics_.getMass());
+  velocity_controller_.setGravity(-Gz);
+  // controller_save_.reset();
   return true;
-}
-
-void TrackerQuadrotor::clampTrustAndTorque(Vector<4>& thrust_and_torque){
-    if (thrust_and_torque[0] >= T_max_)
-        thrust_and_torque[0] = T_max_;
-    else if (thrust_and_torque[0] <= T_min_)
-        thrust_and_torque[0] = T_min_;
-
-    if (thrust_and_torque[1] >= Mxy_max_)
-        thrust_and_torque[1] = Mxy_max_;
-    else if (thrust_and_torque[1] <= Mxy_min_)
-        thrust_and_torque[1] = Mxy_min_;
-    
-    if (thrust_and_torque[2] >= Mxy_max_)
-        thrust_and_torque[2] = Mxy_max_;
-    else if (thrust_and_torque[2] <= Mxy_min_)
-        thrust_and_torque[2] = Mxy_min_;
-    
-    if (thrust_and_torque[3] >= Mz_max_)
-        thrust_and_torque[3] = Mz_max_;
-    else if (thrust_and_torque[3] <= Mz_min_)
-        thrust_and_torque[3] = Mz_min_;
 }
 
 Vector<4> TrackerQuadrotor::runFlightCtl(const Scalar sim_dt, const Vector<3> &omega, const Command &command) {
@@ -132,8 +199,7 @@ Vector<4> TrackerQuadrotor::runFlightCtl(const Scalar sim_dt, const Vector<3> &o
 
   const Vector<3> body_torque_des = dynamics_.getJ() * Kinv_ang_vel_tau_ * omega_err +  state_.w.cross(dynamics_.getJ() * state_.w);
 
-  Vector<4> thrust_and_torque(force, body_torque_des.x(), body_torque_des.y(), body_torque_des.z());
-  clampTrustAndTorque(thrust_and_torque);
+  const Vector<4> thrust_and_torque(force, body_torque_des.x(), body_torque_des.y(), body_torque_des.z());
 
   const Vector<4> motor_thrusts_des = B_allocation_inv_ * thrust_and_torque;
 
@@ -231,6 +297,13 @@ Vector<3> TrackerQuadrotor::quaternionToEuler(QuadState& state) const {
   return Vector<3>(atan2(2*(e0*e1 + e2*e3), pow(e0, 2) + pow(e3, 2) - pow(e1, 2) - pow(e2, 2)),
                     asin(2*(e0*e2 - e1*e3)),
                     atan2(2*(e0*e3 + e1*e2), pow(e0, 2) + pow(e1, 2) - pow(e2, 2) - pow(e3, 2)));
+}
+
+void TrackerQuadrotor::setVelocityPIDGain(const Scalar kp_vxy, const Scalar ki_vxy, const Scalar kd_vxy,
+                                          const Scalar kp_vz, const Scalar ki_vz, const Scalar kd_vz,
+                                          const Scalar kp_angle, const Scalar ki_angle, const Scalar kd_angle,
+                                          const Scalar kp_wz, const Scalar ki_wz, const Scalar kd_wz) {
+  velocity_controller_.setPIDGain(kp_vxy, ki_vxy, kd_vxy, kp_vz, ki_vz, kd_vz, kp_angle, ki_angle, kd_angle, kp_wz, ki_wz, kd_wz);
 }
 
 bool TrackerQuadrotor::getState(QuadState *const state) const {
