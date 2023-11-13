@@ -49,9 +49,10 @@ def test_model(env, model, render=True):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--n', type=int, default=2, help="Number of agent (tracker)")
-    parser.add_argument('--n_targets', type=int, default=3, help="Number of target")
+    parser.add_argument('--n', type=int, default=3, help="Number of agent (tracker)")
+    parser.add_argument('--n_targets', type=int, default=4, help="Number of target")
     parser.add_argument('--load_nn', type=str, default='./model/ddpg/actor.pkl', help='Trained actor weight path for ddpg, td3')
+    parser.add_argument('--render', type=int, default=1, help="Enable Unity Render")
     parser.add_argument('--gpu_id', type=str, default='cuda:0', help='Choose gpu device id')
     parser.add_argument("--policy", type=str, default="ddpg", help='ddpg or td3')
     parser.add_argument("--use_orthogonal_init", type=bool, default=True, help="Orthogonal initialization")
@@ -98,7 +99,7 @@ def main():
     elif args.policy == "td3":
         model = TD3(args, obs_dim=env.num_obs, action_dim=env.num_acts)
         model.load(args.load_nn)
-    test_model(env, model=model)
+    test_model(env, model=model, render=args.render)
         
 if __name__ == "__main__":
     main()

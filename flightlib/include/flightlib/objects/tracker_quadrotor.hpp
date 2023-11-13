@@ -12,12 +12,14 @@
 #include "flightlib/objects/object_base.hpp"
 #include "flightlib/sensors/imu.hpp"
 #include "flightlib/sensors/rgb_camera.hpp"
-
+#include "flightlib/controller/mpc_controller.hpp"
+#include "flightlib/controller/velocity_controller.hpp"
+#include "flightlib/data/pid_controller_save.hpp"
+#include "flightlib/data/mpc_controller_save.hpp"
 
 
 namespace flightlib {
 
-/** @brief Mass-normalized collective thrust & body rates action tracker */
 class TrackerQuadrotor : ObjectBase {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -54,9 +56,6 @@ class TrackerQuadrotor : ObjectBase {
   bool updateDynamics(const QuadrotorDynamics& dynamics);
   bool addRGBCamera(std::shared_ptr<RGBCamera> camera);
 
-  //
-  void clampTrustAndTorque(Vector<4>& thrust_and_torque);
-
   // low-level controller
   Vector<4> runFlightCtl(const Scalar sim_dt, const Vector<3>& omega, const Command& cmd);
 
@@ -66,6 +65,12 @@ class TrackerQuadrotor : ObjectBase {
   // constrain world box
   bool setWorldBox(const Ref<Matrix<3, 2>> box);
   bool constrainInWorldBox(const QuadState& old_state);
+
+  // PID controller function
+  void setVelocityPIDGain(const Scalar kp_vxy, const Scalar ki_vxy, const Scalar kd_vxy,
+                          const Scalar kp_vz, const Scalar ki_vz, const Scalar kd_vz,
+                          const Scalar kp_angle, const Scalar ki_angle, const Scalar kd_angle,
+                          const Scalar kp_wz, const Scalar ki_wz, const Scalar kd_wz);
 
   Vector<3> quaternionToEuler(QuadState& state) const;
 
@@ -94,14 +99,27 @@ class TrackerQuadrotor : ObjectBase {
   Vector<3> size_;
   bool collision_;
 
+  // // MPC controller for reinforcement leraning action
+  // MPCController mpc_controller_;
+  // std::vector<float> control_{0., 0., 0., 0.};
+
+  // PID controller for reinforcement learning action
+  VelocityController velocity_controller_;
+  bool save_flag_{true};
+
+  // PID controller gain
+  Scalar kp_vxy_{1.0}, ki_vxy_{0.0}, kd_vxy_{0.0},
+         kp_vz_{1.0}, ki_vz_{0.0}, kd_vz_{0.0},
+         kp_angle_{1.0}, ki_angle_{0.0}, kd_angle_{0.0},
+         kp_wz_{1.0}, ki_wz_{0.0}, kd_wz_{0.0};
+
   // Clamp control input
   const Scalar thrust_max_{22.4449}, thrust_min_{0.0};
   const Scalar torque_max_{7.9355}, torque_min_{0.0};
 
-  // Quadrotor constraints
-  Scalar T_max_{43.416}, T_min_{0.0};
-  Scalar Mxy_max_{7.672}, Mxy_min_{-7.672};
-  Scalar Mz_max_{0.157}, Mz_min_{-0.157};
+  // Save controller output
+  // PIDControllerSave controller_save_;
+//   MPCControllerSave controller_save_;
 
   // auxiliar variablers
   Vector<4> motor_omega_;

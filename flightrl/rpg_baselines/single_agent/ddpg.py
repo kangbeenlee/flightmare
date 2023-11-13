@@ -302,7 +302,7 @@ class Trainer:
         self.evaluation_times = evaluation_times
         self.training_start = training_start
         self.save_dir = os.path.join(save_dir, "model", "batch_{}_ddpg".format(batch_size))
-        # self.save_dir = os.path.join(save_dir, "model", "ddpg".format(batch_size))
+        # self.save_dir = os.path.join(save_dir, "model", "ddpg_srt".format(batch_size))
         self.action_dim = action_dim
         self.max_action = max_action
         self.expl_noise = expl_noise
@@ -310,7 +310,7 @@ class Trainer:
 
         # Tensorboard results
         self.writer = SummaryWriter(log_dir="runs/single/batch_{}_ddpg/".format(batch_size))
-        # self.writer = SummaryWriter(log_dir="runs/single/ddpg/".format(batch_size))
+        # self.writer = SummaryWriter(log_dir="runs/single/ddpg_srt/".format(batch_size))
 
         # Main agent id
         self.main = 0

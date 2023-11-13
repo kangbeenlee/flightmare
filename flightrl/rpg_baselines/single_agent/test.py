@@ -41,9 +41,9 @@ def test_model(env, model=None, render=False, max_episode_steps=500):
         while not (done or (epi_step > max_episode_steps)):
             epi_step += 1
             action = model.select_action(np.array(obs)).reshape(1, -1).astype(np.float32)
-            # pseudo_action = np.array([[0.0, 0.0, 0.0, 0.0],
-            #                           [0.0, 0.0, 0.0, 0.0]], dtype=np.float32)
-            pseudo_action = np.array([[0.0, 0.0, 0.0, 0.0]], dtype=np.float32)
+            pseudo_action = np.array([[0.0, 0.0, 0.0, 0.0],
+                                      [0.0, 0.0, 0.0, 0.0]], dtype=np.float32)
+            # pseudo_action = np.array([[0.0, 0.0, 0.0, 0.0]], dtype=np.float32)
             pseudo_action = np.concatenate((action, pseudo_action), axis=0)
 
             obs, reward, done, _ = env.step(pseudo_action)

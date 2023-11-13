@@ -1,6 +1,8 @@
 import numpy as np
 from numpy import linalg
 import matplotlib.pyplot as plt
+from matplotlib import cm
+from matplotlib.colors import Normalize
 import argparse
 from matplotlib.animation import FuncAnimation, PillowWriter
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
@@ -194,7 +196,7 @@ def plot_ego(center, orientation, ax):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_dir', type=str, default="/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/tracking_output/")
-    parser.add_argument('--targets', type=int, default=2, help="The number of targets")
+    parser.add_argument('--targets', type=int, default=4, help="The number of targets")
     parser.add_argument('--trackers', type=int, default=0, help="The number of other trackers except itself (total # of tracker - 1)")
     parser.add_argument('--tracker_id', type=int, default=0, help="The id of ego tracker (agent)")
     args = parser.parse_args()
@@ -209,14 +211,62 @@ def main():
             min_avg_metric[t] += 27 * np.sqrt(np.linalg.det(target_cov[j, :, :, t]))
             
     min_avg_metric /= args.targets
-    # min_avg_cov = np.log(min_avg_cov)
+    # Save performance
+    # np.save('/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/estimation_performance/time.npy', time)
+    np.save('/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/estimation_performance/ddpg_data_2_3_.npy', min_avg_metric)
+
     plt.figure(figsize=(10, 5))
-    plt.plot(min_avg_metric)
-    plt.title('Average Minimum 3-Sigma Covariance from multi tracker')
-    plt.xlabel('time')
+    plt.plot(time, min_avg_metric)
+    plt.title('Average Minimum 3-Sigma Covariance')
+    plt.xlabel('time (sec)')
     plt.ylabel('average min covariance norm')
-    plt.ylim(0.0, 10.0)
+    plt.ylim(0.0, 15.0)
     plt.show()
+
+
+
+    # # Visualize unknown target trajectories
+    # fig = plt.figure()
+    # ax = fig.add_subplot(111, projection='3d')
+
+    # # Create a colormap
+    # cmap = cm.viridis
+
+    # # Normalize object to map the time values to [0, 1] range for the colormap
+    # itr_time=700
+    # norm = Normalize(vmin=0, vmax=itr_time)
+
+    # # Targets and trackers
+    # for t in range(itr_time):
+    #     for i in range(args.targets):
+    #         # Map the time 't' to a color
+    #         color = cmap(norm(t))
+    #         ax.plot(target_gt[i, 0, t:t+1], target_gt[i, 1, t:t+1], target_gt[i, 2, t:t+1], '.', color=color, markersize=3)
+
+    # # Set the axis limits
+    # ax.axes.set_xlim3d(left=-20, right=20)
+    # ax.axes.set_ylim3d(bottom=-20, top=20)
+    # ax.axes.set_zlim3d(bottom=0, top=15)
+    # ax.set_aspect('equal')
+    # ax.set_xlabel('x')
+    # ax.set_ylabel('y')
+    # ax.set_zlabel('z')
+
+    # # Create a ScalarMappable and initialize a data structure
+    # mappable = cm.ScalarMappable(norm=norm, cmap=cmap)
+    # mappable.set_array(np.linspace(0, itr_time, num=itr_time))
+
+    # # Add the colorbar to the figure
+    # cbar = plt.colorbar(mappable, ax=ax, pad=0.1)
+    # cbar.set_label('Time (sec)')
+    # time_ticks = np.linspace(0, itr_time, num=4)  # 4 points including 0 and itr_time
+    # cbar.set_ticks(time_ticks)  # Set the ticks on the color bar
+    # cbar.set_ticklabels(['0', '1', '2', '3.5'])  # Label them as 0, 1, 2, 3 seconds
+
+    # plt.title('Trajectory 3')
+    # plt.show()
+
+
 
     # Show animation
     fig = plt.figure()

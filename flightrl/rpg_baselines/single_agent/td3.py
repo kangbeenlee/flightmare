@@ -346,13 +346,13 @@ class Trainer:
         self.max_action = max_action
         self.expl_noise = expl_noise
         self.training_start = training_start
-        # self.save_dir = os.path.join(save_dir, "model", "batch_{}_td3".format(batch_size))
-        self.save_dir = os.path.join(save_dir, "model", "td3_srt".format(batch_size))
+        self.save_dir = os.path.join(save_dir, "model", "batch_{}_td3".format(batch_size))
+        # self.save_dir = os.path.join(save_dir, "model", "td3_srt".format(batch_size))
         self.replay_buffer = ReplayBuffer(args, obs_dim=obs_dim, action_dim=action_dim, memory_capacity=memory_capacity, batch_size=batch_size)
 
         # Tensorboard results
-        # self.writer = SummaryWriter(log_dir="runs/single/batch_{}_td3/".format(batch_size))
-        self.writer = SummaryWriter(log_dir="runs/single/td3_srt/".format(batch_size))
+        self.writer = SummaryWriter(log_dir="runs/single/batch_{}_td3/".format(batch_size))
+        # self.writer = SummaryWriter(log_dir="runs/single/td3_srt/".format(batch_size))
 
         self.main = 0
 

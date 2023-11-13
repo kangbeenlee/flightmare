@@ -21,7 +21,7 @@ class MultiAgentSave {
     num_targets_ = num_targets;
     state_size_ = 3; // x, y, z
     cov_size_ = 9;
-    buffer_ = 600; // time buffer
+    buffer_ = 1000; // time buffer
 
     for (int k = 0; k < num_targets_; ++k) {
       target_estim_data_.push_back(arma::zeros<arma::mat>(state_size_, buffer_));
