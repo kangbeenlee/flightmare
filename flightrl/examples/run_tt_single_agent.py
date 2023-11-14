@@ -32,8 +32,8 @@ def configure_random_seed(seed, env=None):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--n', type=int, default=3, help="Number of agent (tracker)")
-    parser.add_argument('--n_targets', type=int, default=4, help="Number of target")
+    parser.add_argument('--n', type=int, default=1, help="Number of agent (tracker)")
+    parser.add_argument('--n_targets', type=int, default=6, help="Number of target")
 
     parser.add_argument('--train', action="store_true", help="To train new model or simply test pre-trained model")
     parser.add_argument('--load_weight', action="store_true", help="To train new model or simply test pre-trained model")
@@ -50,11 +50,11 @@ def main():
     parser.add_argument("--use_z_score_normalization", type=bool, default=False, help="Z score normalization to observation")
 
     # Learning parameters
-    parser.add_argument('--max_training_timesteps', default=int(1e6), type=int, help='Number of training timesteps')
+    parser.add_argument('--max_training_timesteps', default=int(1.5e6), type=int, help='Number of training timesteps')
     parser.add_argument('--max_episode_steps', default=1000, type=int, help='Number of steps per episode')
     parser.add_argument('--evaluation_time_steps', default=5000, type=int, help='Number of steps for evaluation')
     parser.add_argument("--evaluation_times", type=int, default=5, help="Evaluate times")
-    parser.add_argument('--memory_capacity', default=100000, type=int, help='Replay memory capacity')
+    parser.add_argument('--memory_capacity', default=300000, type=int, help='Replay memory capacity')
     parser.add_argument('--training_start', default=2000, type=int, help='The number of timestep when training start')
     parser.add_argument("--batch_size", default=32, type=int, help="Batch size")
     
