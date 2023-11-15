@@ -166,8 +166,8 @@ class TrackerQuadrotorEnv final : public EnvBase {
 
 
 
-  // Vector<31> quad_obs_; // new single (2 targets)
-  Vector<43> quad_obs_; // new single (4 targets)
+  Vector<31> quad_obs_; // new single (2 targets)
+  // Vector<43> quad_obs_; // new single (4 targets)
   // Vector<55> quad_obs_; // new single (6 targets)
 
 
