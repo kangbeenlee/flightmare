@@ -26,6 +26,8 @@ def test_model(env, render=False):
     if render:
         env.connectUnity()
 
+    prev_pos = np.array([0.0, 0.0, 0.0])
+
     for n_roll in range(num_rollouts):
         obs, done, epi_step = env.reset(), False, 0
 
@@ -33,7 +35,7 @@ def test_model(env, render=False):
             epi_step += 1
             
             # vx, vy, vz, wz (m/s, m/s, m/s, rad/s)
-            act = np.array([[0.0, 3.0, 0.0, 0.0]], dtype=np.float32)
+            act = np.array([[-3.0, 0.0, 0.0, 0.0]], dtype=np.float32)
             # h = 9.82 / 2.0
             # act = np.array([[h / 5.5, 0.0, h / 5.5, 0.0]], dtype=np.float32)
             
@@ -49,7 +51,15 @@ def test_model(env, render=False):
             #     act = np.array([[-vx, -vy, -vz, -wz]], dtype=np.float32)
 
             obs, rew, done, infos = env.step(act)
+            
             # print(obs[0, 3:6])
+            cur_pos = obs[0, 0:3]
+            delta = cur_pos - prev_pos
+            vel = np.sqrt(delta[0]**2 + delta[1]**2 + delta[2]**2) / 0.02
+            prev_pos = cur_pos
+            print("velocity:", vel)
+
+
 
     if render:
         env.disconnectUnity()

@@ -148,7 +148,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser("Hyperparameters Setting for MADDPG and MATD3")
 
     parser.add_argument('--n', type=int, default=3, help="Number of agent (tracker)")
-    parser.add_argument('--n_targets', type=int, default=1, help="Number of target")
+    parser.add_argument('--n_targets', type=int, default=6, help="Number of target")
     parser.add_argument('--train', action="store_true", help="To train new model or simply test pre-trained model")
     parser.add_argument('--load_weight', action="store_true", help="To train new model or simply test pre-trained model")
     parser.add_argument('--render', type=int, default=1, help="Enable Unity Render")
@@ -157,15 +157,15 @@ if __name__ == '__main__':
     parser.add_argument('--iteration', type=str, default='0', help='Choose trained iteration')
     parser.add_argument('--gpu_id', type=str, default='cuda:0', help='Choose gpu device id')
 
-    parser.add_argument("--max_training_timesteps", type=int, default=int(5e6), help=" Maximum number of training steps")
-    parser.add_argument("--max_episode_steps", type=int, default=200, help="Maximum number of steps per episode")
+    parser.add_argument("--max_training_timesteps", type=int, default=int(3e6), help=" Maximum number of training steps")
+    parser.add_argument("--max_episode_steps", type=int, default=1000, help="Maximum number of steps per episode")
     parser.add_argument("--evaluation_time_steps", type=float, default=5000, help="Evaluate the policy every 'evaluation_time_steps'")
     parser.add_argument("--evaluation_times", type=float, default=5, help="Evaluate times")
     parser.add_argument("--max_action", type=float, default=3.0, help="Max action")
 
     parser.add_argument("--policy", type=str, default="maddpg", help="maddpg or matd3")
     parser.add_argument("--buffer_size", type=int, default=int(5e5), help="The capacity of the replay buffer")
-    parser.add_argument("--batch_size", type=int, default=32, help="Batch size")
+    parser.add_argument("--batch_size", type=int, default=64, help="Batch size")
     parser.add_argument("--actor_hidden_dim", type=int, default=256, help="The number of neurons in hidden layers of the neural network")
     parser.add_argument("--critic_hidden_dim", type=int, default=256, help="The number of neurons in hidden layers of the neural network")
     parser.add_argument("--noise_std_init", type=float, default=0.2, help="The std of Gaussian noise for exploration")
