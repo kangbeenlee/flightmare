@@ -66,8 +66,8 @@ TrackerQuadrotorEnv::TrackerQuadrotorEnv(const std::string &cfg_path) : EnvBase(
 
   // obs_dim_ = 31; // new single (2 targets)
   // obs_dim_ = 43; // new single (4 targets)
-  // obs_dim_ = 55; // new single (6 targets)
-  obs_dim_ = 67; // new multi (3 UAV & 6 targets)
+  obs_dim_ = 55; // new single (6 targets)
+  // obs_dim_ = 67; // new multi (3 UAV & 6 targets)
 
 
 
@@ -601,25 +601,25 @@ bool TrackerQuadrotorEnv::getObs(Ref<Vector<>> obs)
   //              estimated_target_positions_[2], radius_, estimated_target_ranges_[2], radius_ * 2,
   //              estimated_target_positions_[3], radius_, estimated_target_ranges_[3], radius_ * 2;
 
-  // // New single target tracking (6 targets)
-  // quad_obs_ << quad_state_.p, quad_state_.v, ori, quad_state_.w, radius_,
-  //              estimated_target_positions_[0], radius_, estimated_target_ranges_[0], radius_ * 2,
-  //              estimated_target_positions_[1], radius_, estimated_target_ranges_[1], radius_ * 2,
-  //              estimated_target_positions_[2], radius_, estimated_target_ranges_[2], radius_ * 2,
-  //              estimated_target_positions_[3], radius_, estimated_target_ranges_[3], radius_ * 2,
-  //              estimated_target_positions_[4], radius_, estimated_target_ranges_[4], radius_ * 2,
-  //              estimated_target_positions_[5], radius_, estimated_target_ranges_[5], radius_ * 2;
-
-  // New multi target tracking (3 UAV & 6 targets)
+  // New single target tracking (6 targets)
   quad_obs_ << quad_state_.p, quad_state_.v, ori, quad_state_.w, radius_,
                estimated_target_positions_[0], radius_, estimated_target_ranges_[0], radius_ * 2,
                estimated_target_positions_[1], radius_, estimated_target_ranges_[1], radius_ * 2,
                estimated_target_positions_[2], radius_, estimated_target_ranges_[2], radius_ * 2,
                estimated_target_positions_[3], radius_, estimated_target_ranges_[3], radius_ * 2,
                estimated_target_positions_[4], radius_, estimated_target_ranges_[4], radius_ * 2,
-               estimated_target_positions_[5], radius_, estimated_target_ranges_[5], radius_ * 2,
-               gt_tracker_positions_[0], radius_, gt_tracker_ranges[0], radius_ * 2,
-               gt_tracker_positions_[1], radius_, gt_tracker_ranges[1], radius_ * 2;
+               estimated_target_positions_[5], radius_, estimated_target_ranges_[5], radius_ * 2;
+
+  // // New multi target tracking (3 UAV & 6 targets)
+  // quad_obs_ << quad_state_.p, quad_state_.v, ori, quad_state_.w, radius_,
+  //              estimated_target_positions_[0], radius_, estimated_target_ranges_[0], radius_ * 2,
+  //              estimated_target_positions_[1], radius_, estimated_target_ranges_[1], radius_ * 2,
+  //              estimated_target_positions_[2], radius_, estimated_target_ranges_[2], radius_ * 2,
+  //              estimated_target_positions_[3], radius_, estimated_target_ranges_[3], radius_ * 2,
+  //              estimated_target_positions_[4], radius_, estimated_target_ranges_[4], radius_ * 2,
+  //              estimated_target_positions_[5], radius_, estimated_target_ranges_[5], radius_ * 2,
+  //              gt_tracker_positions_[0], radius_, gt_tracker_ranges[0], radius_ * 2,
+  //              gt_tracker_positions_[1], radius_, gt_tracker_ranges[1], radius_ * 2;
 
 
   //************************************************************************
@@ -659,8 +659,8 @@ bool TrackerQuadrotorEnv::getObs(Ref<Vector<>> obs)
 
   // obs.segment<31>(0) = quad_obs_; // new single (2 targets)
   // obs.segment<43>(0) = quad_obs_; // new single (4 targets)
-  // obs.segment<55>(0) = quad_obs_; // new single (6 targets)
-  obs.segment<67>(0) = quad_obs_; // new multi (3 UAV & 6 targets)
+  obs.segment<55>(0) = quad_obs_; // new single (6 targets)
+  // obs.segment<67>(0) = quad_obs_; // new multi (3 UAV & 6 targets)
 
 
   // obs.segment<56>(0) = quad_obs_; // multi (2 agents & 3 targets)

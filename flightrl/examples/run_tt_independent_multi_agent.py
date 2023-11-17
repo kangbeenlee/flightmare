@@ -49,7 +49,7 @@ def test_model(env, model, render=True):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--n', type=int, default=3, help="Number of agent (tracker)")
+    parser.add_argument('--n', type=int, default=2, help="Number of agent (tracker)")
     parser.add_argument('--n_targets', type=int, default=4, help="Number of target")
     parser.add_argument('--load_nn', type=str, default='./model/ddpg/actor.pkl', help='Trained actor weight path for ddpg, td3')
     parser.add_argument('--render', type=int, default=1, help="Enable Unity Render")
