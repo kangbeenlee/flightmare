@@ -221,7 +221,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_dir', type=str, default="/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/tracking_output/")
     parser.add_argument('--targets', type=int, default=4, help="The number of targets")
-    parser.add_argument('--trackers', type=int, default=3, help="The number of trackers")
+    parser.add_argument('--trackers', type=int, default=2, help="The number of trackers")
     parser.add_argument('--other_trackers', type=int, default=1, help="The number of other trackers")
     args = parser.parse_args()
 
@@ -242,77 +242,77 @@ def main():
 
     target_estim, target_cov = load_multi_data(os.path.join(args.data_dir, 'multi/'), args.targets)
 
-    # # Compute average target covariance norm graph
-    # min_avg_metric = np.zeros([1000])
-    # for t in range(1000):
-    #     for j in range(args.targets):
-    #         min_avg_metric[t] += 27 * np.sqrt(np.linalg.det(target_cov[j, :, :, t]))
-            
-    # min_avg_metric /= args.targets
-
-    # np.save('/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/estimation_performance/matd3_data_3_4_.npy', min_avg_metric)
-
-    # plt.figure(figsize=(10, 5))
-    # plt.plot(min_avg_metric)
-    # plt.title('Average Minimum 3-Sigma Covariance from multi tracker')
-    # plt.xlabel('time')
-    # plt.ylabel('average min covariance norm')
-    # plt.ylim(0.0, 5.0)
-    # plt.show()
-
-    # Show animation
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-
-    # Update function for animation
-    def update(t):
-        ax.cla()
-        
-        # Ego drone (tracker 0 ~ 2)
-        for i in range(args.trackers):
-            plot_ego(ego_pos_list[i][:, t], ego_orien_list[i][:, t], ax)
-
-        # total_cov_det = []
-
-        # Targets
+    # Compute average target covariance norm graph
+    min_avg_metric = np.zeros([1000])
+    for t in range(1000):
         for j in range(args.targets):
-            ax.plot(target_gt_list[0][j, 0, t], target_gt_list[0][j, 1, t], target_gt_list[0][j, 2, t], 'o', color='#fa0000', markersize=3, label='true')
-            ax.plot(target_estim[j, 0, t], target_estim[j, 1, t], target_estim[j, 2, t], 'o', color='#ff7575', markersize=3, label='estimate')
-            plot_3d_ellipsoid(target_estim[j, :, t], target_cov[j, :, :, t], ax)
+            min_avg_metric[t] += 27 * np.sqrt(np.linalg.det(target_cov[j, :, :, t]))
+            
+    min_avg_metric /= args.targets
 
-        #     total_cov_det.append(np.linalg.det(target_cov[j, :, :, t]))
+    np.save('/home/kblee/catkin_ws/src/flightmare/flightlib/include/flightlib/data/estimation_performance/matd3_data_2_4_.npy', min_avg_metric)
 
-        # total_cov_det = np.array(total_cov_det)
-        # sigma_cov_det = np.sqrt(total_cov_det) * 27
-        # avg_sigma = np.sum(sigma_cov_det) / args.targets
-        # avg_reward = np.exp(-20.0 * (avg_sigma ** 5))
-        # print("----------------------------------------")
-        # print("all cov det    :", np.around(total_cov_det, 4))
-        # print("exp cov det    :", np.around(sigma_cov_det, 4))
-        # print("avg cov det    :", np.around(avg_sigma, 4))
-        # print("avg reward     :", np.around(avg_reward, 4))
-
-        ax.axes.set_xlim3d(left=-20, right=20)
-        ax.axes.set_ylim3d(bottom=-20, top=20)
-        ax.axes.set_zlim3d(bottom=0, top=15)
-        ax.set_aspect('equal')
-        ax.set_xlabel('x')
-        ax.set_ylabel('y')
-        ax.set_zlabel('z')
-        ax.view_init(90, -90)  # 90 degrees elevation for top-down view, -90 degrees azimuth for proper orientation
-        ax.set_title("Time[s]: {:.2f}".format(time_list[0][t]))
-
-    # Set up the animation
-    ani = FuncAnimation(fig, update, frames=500, interval=10, repeat=False)
-
-    # Connect key event to figure
-    fig.canvas.mpl_connect('key_press_event', lambda event: [exit(0) if event.key == 'escape' else None])
-
-    # Save as GIF
-    writer = PillowWriter(fps=20)  # Adjust fps (frames per second) as needed
-    ani.save(args.data_dir + 'multi.gif', writer=writer)
-
+    plt.figure(figsize=(10, 5))
+    plt.plot(min_avg_metric)
+    plt.title('Average Minimum 3-Sigma Covariance from multi tracker')
+    plt.xlabel('time')
+    plt.ylabel('average min covariance norm')
+    plt.ylim(0.0, 10.0)
     plt.show()
+
+    # # Show animation
+    # fig = plt.figure()
+    # ax = fig.add_subplot(111, projection='3d')
+
+    # # Update function for animation
+    # def update(t):
+    #     ax.cla()
+        
+    #     # Ego drone (tracker 0 ~ 2)
+    #     for i in range(args.trackers):
+    #         plot_ego(ego_pos_list[i][:, t], ego_orien_list[i][:, t], ax)
+
+    #     # total_cov_det = []
+
+    #     # Targets
+    #     for j in range(args.targets):
+    #         ax.plot(target_gt_list[0][j, 0, t], target_gt_list[0][j, 1, t], target_gt_list[0][j, 2, t], 'o', color='#fa0000', markersize=3, label='true')
+    #         ax.plot(target_estim[j, 0, t], target_estim[j, 1, t], target_estim[j, 2, t], 'o', color='#ff7575', markersize=3, label='estimate')
+    #         plot_3d_ellipsoid(target_estim[j, :, t], target_cov[j, :, :, t], ax)
+
+    #     #     total_cov_det.append(np.linalg.det(target_cov[j, :, :, t]))
+
+    #     # total_cov_det = np.array(total_cov_det)
+    #     # sigma_cov_det = np.sqrt(total_cov_det) * 27
+    #     # avg_sigma = np.sum(sigma_cov_det) / args.targets
+    #     # avg_reward = np.exp(-20.0 * (avg_sigma ** 5))
+    #     # print("----------------------------------------")
+    #     # print("all cov det    :", np.around(total_cov_det, 4))
+    #     # print("exp cov det    :", np.around(sigma_cov_det, 4))
+    #     # print("avg cov det    :", np.around(avg_sigma, 4))
+    #     # print("avg reward     :", np.around(avg_reward, 4))
+
+    #     ax.axes.set_xlim3d(left=-20, right=20)
+    #     ax.axes.set_ylim3d(bottom=-20, top=20)
+    #     ax.axes.set_zlim3d(bottom=0, top=15)
+    #     ax.set_aspect('equal')
+    #     ax.set_xlabel('x')
+    #     ax.set_ylabel('y')
+    #     ax.set_zlabel('z')
+    #     ax.view_init(90, -90)  # 90 degrees elevation for top-down view, -90 degrees azimuth for proper orientation
+    #     ax.set_title("Time[s]: {:.2f}".format(time_list[0][t]))
+
+    # # Set up the animation
+    # ani = FuncAnimation(fig, update, frames=500, interval=10, repeat=False)
+
+    # # Connect key event to figure
+    # fig.canvas.mpl_connect('key_press_event', lambda event: [exit(0) if event.key == 'escape' else None])
+
+    # # Save as GIF
+    # writer = PillowWriter(fps=20)  # Adjust fps (frames per second) as needed
+    # ani.save(args.data_dir + 'multi.gif', writer=writer)
+
+    # plt.show()
 
 if __name__ == "__main__":
     main()
